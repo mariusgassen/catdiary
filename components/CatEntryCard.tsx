@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 type CatEntryCardProps = {
   entry: {
     id: string;
@@ -11,16 +13,25 @@ type CatEntryCardProps = {
     owner: { id: string; displayName: string };
     _count?: { likes: number; comments: number };
   };
+  viewerId?: string | null;
 };
 
-export function CatEntryCard({ entry }: CatEntryCardProps) {
+export function CatEntryCard({ entry, viewerId }: CatEntryCardProps) {
   const date = new Date(entry.createdAt);
+  const isOwner = viewerId != null && viewerId === entry.owner.id;
 
   return (
     <article className="flex flex-col gap-2 rounded-lg border border-black/10 p-4 dark:border-white/10">
       <div className="flex items-center justify-between text-sm text-black/60 dark:text-white/60">
         <span>{entry.owner.displayName}</span>
-        <time dateTime={date.toISOString()}>{date.toLocaleDateString()}</time>
+        <div className="flex items-center gap-3">
+          <time dateTime={date.toISOString()}>{date.toLocaleDateString()}</time>
+          {isOwner && (
+            <Link href={`/cat-entries/${entry.id}/edit`} className="font-medium underline">
+              Edit
+            </Link>
+          )}
+        </div>
       </div>
 
       {entry.photoUrl && (

@@ -13,6 +13,17 @@ export type CreateCatEntryInput = {
   longitude: number;
 };
 
+export class CatEntryNotFoundError extends Error {}
+export class CatEntryForbiddenError extends Error {}
+
+export type UpdateCatEntryInput = {
+  name?: string | null;
+  breed?: string | null;
+  notes?: string | null;
+  latitude?: number;
+  longitude?: number;
+};
+
 export async function createCatEntry(input: CreateCatEntryInput) {
   return db.catEntry.create({
     data: {
@@ -26,6 +37,33 @@ export async function createCatEntry(input: CreateCatEntryInput) {
       longitude: input.longitude,
     },
   });
+}
+
+/** Fetches a CatEntry only if `ownerId` owns it — used for edit/delete flows. */
+export async function getOwnedCatEntry(entryId: string, ownerId: string) {
+  const entry = await db.catEntry.findUnique({ where: { id: entryId } });
+  if (!entry || entry.ownerId !== ownerId) return null;
+  return entry;
+}
+
+export async function updateCatEntry(entryId: string, ownerId: string, input: UpdateCatEntryInput) {
+  const entry = await db.catEntry.findUnique({ where: { id: entryId }, select: { ownerId: true } });
+  if (!entry) throw new CatEntryNotFoundError();
+  if (entry.ownerId !== ownerId) throw new CatEntryForbiddenError();
+
+  return db.catEntry.update({ where: { id: entryId }, data: input });
+}
+
+export async function deleteCatEntry(entryId: string, ownerId: string) {
+  const entry = await db.catEntry.findUnique({
+    where: { id: entryId },
+    select: { ownerId: true, photoKey: true, thumbKey: true },
+  });
+  if (!entry) throw new CatEntryNotFoundError();
+  if (entry.ownerId !== ownerId) throw new CatEntryForbiddenError();
+
+  await db.catEntry.delete({ where: { id: entryId } });
+  return entry;
 }
 
 /**

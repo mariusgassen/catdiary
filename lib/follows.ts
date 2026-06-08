@@ -45,3 +45,8 @@ export async function approveFollowRequest(followeeId: string, followerId: strin
     data: { approved: true },
   });
 }
+
+/** Declines (removes) a pending follow request on `followeeId`'s private profile. */
+export async function denyFollowRequest(followeeId: string, followerId: string) {
+  await db.follow.deleteMany({ where: { followerId, followeeId, approved: false } });
+}
