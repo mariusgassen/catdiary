@@ -34,13 +34,35 @@ notifications, etc.) until there's a concrete feature that needs them.
 
 | Concern | Choice | Why |
 |---|---|---|
-| App framework | **Next.js (App Router, TypeScript)** | One deployable unit serving both UI and API routes — keeps docker-compose simple |
+| App framework | **Next.js (App Router, TypeScript)** | One deployable unit serving both UI and a real JSON API — see "API design for multi-client support" below for why this scales fine |
 | Database | **PostgreSQL** | Reliable relational store; lat/lng as plain `Float` columns is enough for now (revisit PostGIS only if geo queries get complex) |
 | ORM | **Prisma** | Type-safe schema/migrations, plays well with Next.js + TypeScript |
-| Auth | **Auth.js (NextAuth)** | Email/password credentials provider for open registration; session via database adapter |
+| Auth | **Auth.js (NextAuth)**, JWT session strategy | Email/password credentials provider for open registration. JWT (not database) sessions mean the same login flow issues a token usable as a browser cookie *or* a bearer token for the future native mobile app — no divergent auth code paths later |
 | Object storage | **MinIO** (S3-compatible) | Self-hosted, Coolify-friendly; photos accessed via presigned URLs so the app never proxies binary data |
 | Image processing | **sharp** | Generate thumbnails on upload before storing to MinIO |
-| Deployment | **docker-compose** (`web`, `db`, `minio`) | Deploys directly as a Coolify Docker Compose resource |
+| Deployment | **docker-compose** (`web`, `db`, `minio`) | Deploys directly as a Coolify Docker Compose resource; `web` is a stateless Node container, so scale it horizontally with replicas behind Coolify's proxy if/when load requires it |
+
+## API design for multi-client support
+
+A native mobile app is planned for later (the initial launch is web + installable
+PWA). To avoid a painful rewrite when that happens, **the route handlers under
+`app/api/` are the single source of truth JSON API** — the web frontend is just
+the first consumer of it, calling the same endpoints a future mobile client would.
+Concretely:
+
+- Don't build core features (creating a `CatEntry`, following, liking, feed
+  pagination, etc.) as server-only data-fetching paths that only the web app can
+  use (e.g. RSC-only data loading with no corresponding API route). If a mobile
+  app would need it, it goes through `app/api/`.
+- Auth issues JWTs (see Auth row above), so the same credentials endpoint serves
+  browser sessions (httpOnly cookie) and future mobile/API clients (bearer token)
+  without separate implementations.
+- The web app should be configured as an installable **PWA** (web app manifest +
+  service worker, e.g. via `next-pwa` or a hand-rolled manifest) from the start —
+  it's the natural stepping stone to a native app and costs little to set up early.
+- This is what makes "Next.js scales fine here" actually true in practice: the
+  mobile app becomes just another consumer of the existing `lib/`-backed API
+  rather than forcing a new backend to be built from scratch.
 
 ## Planned directory structure
 
@@ -102,9 +124,14 @@ Treat this as a sketch to refine during implementation, not a final schema.
 ## Conventions
 
 - **TypeScript strict mode** everywhere; no `any` without a comment explaining why
-- **Server logic** (DB queries, auth checks, storage access) lives in `lib/`
-  and is called from route handlers/server components — keep it out of
-  client components
+- **Hard rule — business logic lives in `lib/`, not in route handlers**: every
+  `app/api/**/route.ts` handler does exactly three things — parse/validate the
+  request, call into a `lib/` function, and serialize the response. DB queries,
+  authorization checks, and storage access are implemented in `lib/` and are
+  unit-testable independent of HTTP. This is the seam that lets the API be
+  extracted into a standalone service later (e.g. for the mobile app, or for
+  scaling) with minimal rewrite — treat any business logic that creeps into a
+  route handler as a bug to fix, not a style nitpick
 - **Migrations**: always generate them via `npx prisma migrate dev --name <description>`;
   never hand-edit files in `prisma/migrations/`
 - **Authorization checks belong server-side**: every read/write of a

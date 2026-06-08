@@ -18,6 +18,8 @@ with — and you can follow other cat lovers to browse theirs too.
 - **Follow other cat lovers**: build a feed of cats spotted by people you follow
 - **Map & feed views**: browse cat sightings geographically or chronologically
 - **Open registration**: anyone can sign up with an email and password
+- **Installable on your phone**: the web app works as a PWA today, with native
+  mobile apps planned for later — both talk to the same JSON API
 
 ## Tech stack
 
