@@ -2,14 +2,28 @@
 
 Guidance for Claude Code (and other contributors) working on Cat Diary.
 
-## Status: greenfield blueprint
+## Status: initial scaffold in place
 
-As of this writing, the repository contains no application code yet — only
-this document, the README, and project skills. **This file describes the
-intended architecture and conventions that the implementation should follow.**
-As real code lands, keep this document in sync with reality: update sections
-that turn out to be wrong, fill in details that emerge during development, and
-remove the "blueprint" framing once the described structure actually exists.
+The initial scaffold has landed: a Next.js (App Router) app with Auth.js
+(credentials + optional Google/Apple/Facebook social login), Prisma/Postgres,
+MinIO-backed photo upload with sharp thumbnailing, the core `CatEntry`
+create/list loop, Follow + a basic feed, and a docker-compose stack
+(`web`/`db`/`minio`). Likes and comments have data models but no UI yet — see
+the roadmap below for what's still ahead. Keep this document in sync with
+reality as the app evolves: update sections that turn out to be wrong and fill
+in details that emerge during development.
+
+## Roadmap (post-scaffold)
+
+1. **Core diary polish** — edit/delete entries, richer profile pages, full
+   public/private visibility enforcement, pending-follow approval UI
+2. **Engagement** — like/comment UI on top of the existing data models,
+   in-app notifications
+3. **Discovery** — real map view (the `/map` route is currently a stub),
+   search/filter, "on this day" resurfacing
+4. **Mobile readiness** — PWA polish (the manifest/service-worker scaffold is
+   minimal today), API hardening (pagination, rate limits, versioning), push
+   notifications
 
 ## Project overview
 
