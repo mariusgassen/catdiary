@@ -6,6 +6,7 @@ import { listPendingFollowRequests } from "@/lib/follows";
 import { getDownloadUrl } from "@/lib/storage";
 import { CatEntryCard } from "@/components/CatEntryCard";
 import { FollowButton } from "@/components/FollowButton";
+import { FollowRequestRow } from "@/components/FollowRequestRow";
 
 export default async function ProfilePage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId } = await params;
@@ -56,7 +57,11 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
         <section className="flex flex-col gap-2 rounded border border-black/10 p-3 text-sm dark:border-white/10">
           <h2 className="font-medium">Follow requests</h2>
           {pendingRequests.map((request) => (
-            <p key={request.followerId}>{request.follower.displayName}</p>
+            <FollowRequestRow
+              key={request.followerId}
+              followerId={request.followerId}
+              displayName={request.follower.displayName}
+            />
           ))}
         </section>
       )}
@@ -66,7 +71,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
       ) : (
         <div className="flex flex-col gap-4">
           {withPhotos.map((entry) => (
-            <CatEntryCard key={entry.id} entry={entry} />
+            <CatEntryCard key={entry.id} entry={entry} viewerId={viewerId} />
           ))}
         </div>
       )}

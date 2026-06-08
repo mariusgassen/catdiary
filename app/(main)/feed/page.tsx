@@ -6,7 +6,8 @@ import { CatEntryCard } from "@/components/CatEntryCard";
 
 export default async function FeedPage() {
   const session = await auth();
-  const { entries } = await listCatEntriesForViewer({ viewerId: session?.user?.id ?? null });
+  const viewerId = session?.user?.id ?? null;
+  const { entries } = await listCatEntriesForViewer({ viewerId });
 
   const withPhotos = await Promise.all(
     entries.map(async (entry) => ({
@@ -29,7 +30,7 @@ export default async function FeedPage() {
   return (
     <div className="flex flex-col gap-4">
       {withPhotos.map((entry) => (
-        <CatEntryCard key={entry.id} entry={entry} />
+        <CatEntryCard key={entry.id} entry={entry} viewerId={viewerId} />
       ))}
     </div>
   );
