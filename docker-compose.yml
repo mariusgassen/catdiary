@@ -20,6 +20,13 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
       MINIO_BUCKET: ${MINIO_BUCKET}
       NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL}
+    labels:
+      - traefik.enable=true
+      - "traefik.http.routers.catdiary.rule=Host(`${DOMAIN}`)"
+      - traefik.http.routers.catdiary.entrypoints=websecure
+      - traefik.http.routers.catdiary.tls=true
+      - traefik.http.routers.catdiary.tls.certresolver=letsencrypt
+      - traefik.http.services.catdiary.loadbalancer.server.port=3000
     depends_on:
       db:
         condition: service_healthy
