@@ -167,6 +167,20 @@ docker compose exec web npx prisma db seed       # seed sample data (if/when a s
 
 See the `catdiary-dev` and `catdiary-db-migration` skills for detailed workflows.
 
+## Gotchas
+
+- **Always regenerate `package-lock.json` after changing version ranges in
+  `package.json`**: `npm ci` (used in CI) hard-fails if the lock file is out of
+  sync. After any version bump run `npm install --package-lock-only` and commit
+  the updated lock file in the same PR. Learned from: bumping `@types/node ^20`
+  → `^24` without updating the lock file caused CI to fail immediately.
+
+- **Keep env var names consistent across docker-compose and application code**:
+  the names on the left-hand side of `environment:` in docker-compose are what
+  the app reads via `process.env`. Don't introduce aliases (e.g. a
+  `MINIO_ACCESS_KEY` that shadows `MINIO_ROOT_USER`) — use the same name
+  everywhere so there's only one variable to set per concern.
+
 ## Deployment notes (Coolify / docker-compose)
 
 - The compose file defines three services: `web` (Next.js, built from a
