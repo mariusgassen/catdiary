@@ -3,7 +3,6 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { listCatEntriesForViewer } from "@/lib/catEntries";
 import { listPendingFollowRequests } from "@/lib/follows";
-import { getDownloadUrl } from "@/lib/storage";
 import { CatEntryCard } from "@/components/CatEntryCard";
 import { FollowButton } from "@/components/FollowButton";
 import { FollowRequestRow } from "@/components/FollowRequestRow";
@@ -33,12 +32,10 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
     isOwnProfile && profileUser.isPrivate ? listPendingFollowRequests(profileUser.id) : Promise.resolve([]),
   ]);
 
-  const withPhotos = await Promise.all(
-    entries.map(async (entry) => ({
-      ...entry,
-      photoUrl: await getDownloadUrl(entry.thumbKey ?? entry.photoKey).catch(() => null),
-    }))
-  );
+  const withPhotos = entries.map((entry) => ({
+    ...entry,
+    photoUrl: `/api/photos/${entry.thumbKey ?? entry.photoKey}`,
+  }));
 
   return (
     <div className="flex flex-col gap-6">

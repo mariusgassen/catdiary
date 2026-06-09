@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { requireUserId, UnauthorizedError } from "@/lib/auth-helpers";
-import { generateObjectKey, getUploadUrl } from "@/lib/storage";
+import { generateObjectKey, processAndStoreThumbnail, uploadObject } from "@/lib/storage";
 
-const requestSchema = z.object({
-  contentType: z.enum(["image/jpeg", "image/png", "image/webp"]),
-  extension: z.enum(["jpg", "jpeg", "png", "webp"]),
-});
+const ALLOWED_TYPES: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
 
 export async function POST(request: Request) {
   let userId: string;
@@ -19,14 +19,24 @@ export async function POST(request: Request) {
     throw err;
   }
 
-  const body = await request.json().catch(() => null);
-  const parsed = requestSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: "INVALID_INPUT", issues: parsed.error.issues }, { status: 400 });
+  const formData = await request.formData().catch(() => null);
+  const file = formData?.get("file");
+  if (!(file instanceof File)) {
+    return NextResponse.json({ error: "INVALID_INPUT" }, { status: 400 });
   }
 
-  const key = generateObjectKey(userId, parsed.data.extension);
-  const uploadUrl = await getUploadUrl(key, parsed.data.contentType);
+  const extension = ALLOWED_TYPES[file.type];
+  if (!extension) {
+    return NextResponse.json({ error: "UNSUPPORTED_TYPE" }, { status: 400 });
+  }
 
-  return NextResponse.json({ key, uploadUrl });
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const key = generateObjectKey(userId, extension);
+
+  const [thumbKey] = await Promise.all([
+    processAndStoreThumbnail(buffer, key),
+    uploadObject(key, buffer, file.type),
+  ]);
+
+  return NextResponse.json({ key, thumbKey });
 }
