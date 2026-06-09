@@ -25,6 +25,9 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+    networks:
+      - default
+      - coolify
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 10s
@@ -70,3 +73,7 @@ services:
 volumes:
   db_data:
   minio_data:
+
+networks:
+  coolify:
+    external: true
