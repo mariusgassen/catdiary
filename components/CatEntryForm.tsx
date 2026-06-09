@@ -3,12 +3,6 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
-const EXTENSION_BY_TYPE: Record<string, "jpg" | "png" | "webp"> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-};
-
 export function CatEntryForm() {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
@@ -31,40 +25,24 @@ export function CatEntryForm() {
       return;
     }
 
-    const extension = EXTENSION_BY_TYPE[file.type];
-    if (!extension) {
-      setError("Photo must be a JPEG, PNG, or WebP image.");
-      return;
-    }
-
     setSubmitting(true);
     try {
-      const presign = await fetch("/api/upload-url", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contentType: file.type, extension }),
-      });
-      if (!presign.ok) {
-        setError("Could not prepare the upload.");
-        return;
-      }
-      const { key, uploadUrl } = await presign.json();
+      const formData = new FormData();
+      formData.append("file", file);
 
-      const upload = await fetch(uploadUrl, {
-        method: "PUT",
-        headers: { "Content-Type": file.type },
-        body: file,
-      });
+      const upload = await fetch("/api/upload-url", { method: "POST", body: formData });
       if (!upload.ok) {
         setError("Photo upload failed.");
         return;
       }
+      const { key, thumbKey } = await upload.json();
 
       const create = await fetch("/api/cat-entries", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           photoKey: key,
+          thumbKey,
           name: name || undefined,
           breed: breed || undefined,
           notes: notes || undefined,

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { listCatEntriesForViewer } from "@/lib/catEntries";
-import { getDownloadUrl } from "@/lib/storage";
 import { CatEntryCard } from "@/components/CatEntryCard";
 
 export default async function FeedPage() {
@@ -9,12 +8,10 @@ export default async function FeedPage() {
   const viewerId = session?.user?.id ?? null;
   const { entries } = await listCatEntriesForViewer({ viewerId });
 
-  const withPhotos = await Promise.all(
-    entries.map(async (entry) => ({
-      ...entry,
-      photoUrl: await getDownloadUrl(entry.thumbKey ?? entry.photoKey).catch(() => null),
-    }))
-  );
+  const withPhotos = entries.map((entry) => ({
+    ...entry,
+    photoUrl: `/api/photos/${entry.thumbKey ?? entry.photoKey}`,
+  }));
 
   if (withPhotos.length === 0) {
     return (
