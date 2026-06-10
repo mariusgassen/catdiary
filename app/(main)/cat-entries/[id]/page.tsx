@@ -6,6 +6,7 @@ import { photoUrlsFor } from "@/lib/photo-urls";
 import { listComments } from "@/lib/comments";
 import { CatEntryCard } from "@/components/CatEntryCard";
 import { CommentsSection } from "@/components/CommentsSection";
+import { SimilarCats } from "@/components/SimilarCats";
 import { displayNameFor } from "@/lib/userDisplay";
 
 type Props = { params: Promise<{ id: string }> };
@@ -55,6 +56,7 @@ export default async function CatEntryPage({ params }: Props) {
         viewerId={viewerId}
         initialComments={comments}
       />
+      <SimilarCats entryId={entry.id} />
     </div>
   );
 }

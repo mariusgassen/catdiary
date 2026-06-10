@@ -207,7 +207,8 @@ export async function getSimilarCatEntries(
     WHERE ce.id != ${entryId}
       AND ce."ownerId" = ANY(${ownerIds}::text[])
       AND ce.embedding IS NOT NULL
-    ORDER BY ce.embedding <-> ${embeddingStr}::vector
+    -- cosine distance: matches the metric of CatEntry_embedding_hnsw_idx
+    ORDER BY ce.embedding <=> ${embeddingStr}::vector
     LIMIT 6
   `;
 }
