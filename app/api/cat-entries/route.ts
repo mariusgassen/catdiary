@@ -22,6 +22,7 @@ export async function GET(request: Request) {
     viewerId: session?.user?.id ?? null,
     ownerId: searchParams.get("ownerId") ?? undefined,
     cursor: searchParams.get("cursor") ?? undefined,
+    query: searchParams.get("q") ?? undefined,
   });
 
   return NextResponse.json(result);

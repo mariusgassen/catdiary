@@ -107,14 +107,25 @@ export async function listCatEntriesForViewer(opts: {
   viewerId: string | null;
   ownerId?: string;
   cursor?: string;
+  query?: string;
 }) {
   const ownerIds = await listVisibleOwnerIds(opts.viewerId, opts.ownerId);
   if (ownerIds.length === 0) {
     return { entries: [], nextCursor: null as string | null };
   }
 
+  const queryFilter = opts.query
+    ? {
+        OR: [
+          { notes: { contains: opts.query, mode: "insensitive" as const } },
+          { name: { contains: opts.query, mode: "insensitive" as const } },
+          { breed: { contains: opts.query, mode: "insensitive" as const } },
+        ],
+      }
+    : undefined;
+
   const entries = await db.catEntry.findMany({
-    where: { ownerId: { in: ownerIds } },
+    where: { ownerId: { in: ownerIds }, ...queryFilter },
     orderBy: { createdAt: "desc" },
     take: PAGE_SIZE + 1,
     ...(opts.cursor ? { cursor: { id: opts.cursor }, skip: 1 } : {}),
