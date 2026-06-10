@@ -15,6 +15,36 @@ export async function getUserSettings(userId: string) {
   });
 }
 
+/**
+ * Find people by handle or display name for the Discover screen. Private
+ * users are listed too (profiles are linkable either way); their diaries
+ * stay protected by the entry-visibility checks.
+ */
+export async function searchUsers(query: string, limit = 12) {
+  const q = query.trim().replace(/^@/, "");
+  if (!q) return [];
+
+  return db.user.findMany({
+    where: {
+      OR: [
+        { username: { contains: q, mode: "insensitive" } },
+        { displayName: { contains: q, mode: "insensitive" } },
+      ],
+    },
+    select: {
+      id: true,
+      username: true,
+      displayName: true,
+      avatarKey: true,
+      image: true,
+      isPrivate: true,
+      _count: { select: { catEntries: true } },
+    },
+    orderBy: { createdAt: "asc" },
+    take: limit,
+  });
+}
+
 export type UpdateUserSettingsInput = {
   displayName?: string | null; // null clears it; the username becomes the displayed name
   username?: string;

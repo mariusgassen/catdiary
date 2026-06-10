@@ -47,6 +47,27 @@ Keep this document in sync with reality as the app evolves.
   notebook page (`.ruled-page`: horizontal ruling + red margin rule, avatars in
   the gutter) with each note signed "— name · date"; delete by comment author
   or entry owner (`/api/cat-entries/[id]/comments`, `DELETE /api/comments/[id]`)
+- **Threaded replies (tabulated margin notes)**: comments can be replied to;
+  `Comment.parentId` always points at the thread root (replying to a reply
+  joins the same thread), so display depth is capped at 2 and replies stay in
+  posting order within a thread; replies render indented under their note and
+  cascade-delete with the root
+- **Similar cats** on the entry detail page: "Cats that look alike" strip of
+  small prints under the comments, backed by pgvector CLIP embeddings
+  (`GET /api/cat-entries/[id]/similar`, cosine distance + HNSW index,
+  visibility-filtered)
+- **Edit screen as a mobile dialog**: full-height sheet with top navigation —
+  Cancel on the left, Save on the right, delete demoted to a destructive
+  action at the bottom (still confirm()-guarded); bottom tab bar hidden while
+  editing; the edit affordance on cards is a `SquarePen`
+- **People in Discover**: search matches users by handle/display name next to
+  entries, grouped by type ("People" rows linking to profiles, then "Cats"
+  cards); `#tag` queries skip the people lookup (`GET /api/users?q=`,
+  `searchUsers` in `lib/users.ts`)
+- **Pull-to-refresh**: touch gesture on all main pages (capture/edit excluded)
+  via `components/PullToRefresh.tsx` — axis-locked so photo swipes don't
+  trigger it, calls `router.refresh()`; native browser pull-to-refresh is
+  suppressed with `overscroll-behavior-y: contain`
 - **Multiple photos per entry (up to 10)**: `CatEntryPhoto` model (ordered by
   `position`, photo 0 is the cover used for thumbnails/OG/embeddings); capture
   flow takes several shots or a multi-select from the gallery; cards show a
@@ -70,7 +91,6 @@ Keep this document in sync with reality as the app evolves.
 - Theme setting: Light / Dark / System (default System) via next-themes, in Settings
 
 ### Core diary polish
-- Edit/delete entries with confirmation
 - Richer profile pages: grid/list toggle, entry count, follower/following counts
 - Public/private visibility enforcement in all paths
 - Pending-follow approval UI (data model exists, no UI yet)
@@ -97,7 +117,6 @@ Keep this document in sync with reality as the app evolves.
 - **"On This Day"** resurfacing in the feed
 - **Nearby cats** — distance-based filter using lat/lng; requires PostGIS or
   Haversine in a raw query
-- Search: user search tab (currently only searches entries)
 
 ### Profile & settings
 - Account deletion, avatar upload in Settings
@@ -110,7 +129,6 @@ Keep this document in sync with reality as the app evolves.
 - Haptic feedback on like/follow (`navigator.vibrate`)
 - Offline-capable read view (cache feed in SW)
 - Add-to-home-screen prompt
-- Pull-to-refresh gesture
 
 ### API hardening
 - Pagination: cursor already in `listCatEntriesForViewer`; feed needs infinite
