@@ -15,9 +15,11 @@ const OAUTH_ICONS: Record<string, string> = {
 export function AuthForm({
   mode,
   oauthProviders,
+  intro,
 }: {
   mode: "sign-in" | "register";
   oauthProviders: OAuthProvider[];
+  intro?: React.ReactNode;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -85,9 +87,12 @@ export function AuthForm({
 
   return (
     <div className="mx-auto flex w-full max-w-sm flex-col gap-6 rounded-xl border border-border bg-surface px-6 py-7 shadow-sm">
-      <h1 className="text-2xl font-bold tracking-tight">
-        {mode === "sign-in" ? "Open your diary" : "Start your diary"}
-      </h1>
+      <div className="flex flex-col gap-3">
+        <h1 className="text-2xl font-bold tracking-tight">
+          {mode === "sign-in" ? "Open your diary" : "Start your diary"}
+        </h1>
+        {intro}
+      </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         {mode === "register" && (

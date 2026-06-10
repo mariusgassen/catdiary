@@ -9,13 +9,17 @@ export default auth((req) => {
 
   const isAuthPage = pathname.startsWith("/sign-in") || pathname.startsWith("/register");
 
+  // The landing page pitches the app to signed-out visitors (it redirects
+  // signed-in users to /feed itself).
+  const isLandingPage = pathname === "/";
+
   // Entry detail pages and invite landing pages are shareable links: leave
   // them open to signed-out visitors (the entry page 404s anything the viewer
   // isn't allowed to see; the invite page only shows public profile bits).
   const isShareablePage =
     /^\/cat-entries\/(?!new$)[^/]+$/.test(pathname) || /^\/invite\/[^/]+$/.test(pathname);
 
-  if (!isSignedIn && !isAuthPage && !isShareablePage) {
+  if (!isSignedIn && !isAuthPage && !isLandingPage && !isShareablePage) {
     const signInUrl = new URL("/sign-in", req.nextUrl.origin);
     signInUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(signInUrl);
