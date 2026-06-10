@@ -4,12 +4,12 @@ import { auth } from "@/lib/auth";
 import { createCatEntry, listCatEntriesForViewer, storeCatEntryEmbedding } from "@/lib/catEntries";
 import { requireUserId, UnauthorizedError } from "@/lib/auth-helpers";
 import { getObject } from "@/lib/storage";
-import { getImageEmbedding } from "@/lib/embeddings";
 
 async function embedInBackground(entryId: string, photoKey: string) {
   try {
     const obj = await getObject(photoKey);
     const buffer = Buffer.from(await obj.Body!.transformToByteArray());
+    const { getImageEmbedding } = await import("@/lib/embeddings");
     const embedding = await getImageEmbedding(buffer);
     await storeCatEntryEmbedding(entryId, embedding);
   } catch (err) {
