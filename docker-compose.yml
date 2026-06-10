@@ -3,8 +3,6 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
-    expose:
-      - "3000"
     environment:
       DATABASE_URL: ${DATABASE_URL}
       AUTH_SECRET: ${AUTH_SECRET}
