@@ -76,10 +76,12 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   const result = await withOwner(async (userId) => {
     try {
       const entry = await deleteCatEntry(id, userId);
-      await Promise.all([
-        deleteObject(entry.photoKey).catch(() => {}),
-        entry.thumbKey ? deleteObject(entry.thumbKey).catch(() => {}) : Promise.resolve(),
-      ]);
+      await Promise.all(
+        entry.photos.flatMap((photo) => [
+          deleteObject(photo.photoKey).catch(() => {}),
+          photo.thumbKey ? deleteObject(photo.thumbKey).catch(() => {}) : Promise.resolve(),
+        ]),
+      );
       return NextResponse.json({ ok: true });
     } catch (err) {
       return mapCatEntryError(err);

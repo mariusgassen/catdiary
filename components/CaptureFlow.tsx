@@ -9,13 +9,18 @@ import {
   Camera,
   ImageIcon,
   ChevronLeft,
+  ChevronRight,
   Loader2,
+  Plus,
 } from "lucide-react";
 import { parseCaption } from "@/components/HashtagCaption";
 import { LocationPicker, reverseGeocode, type PickedLocation } from "@/components/LocationPicker";
+import { MAX_PHOTOS_PER_ENTRY } from "@/lib/photo-urls";
 
 type Step = "camera" | "details";
 type Facing = "environment" | "user";
+
+type Shot = { file: File; previewUrl: string };
 
 // ── Caption textarea with live hashtag highlighting ──────────────────────────
 
@@ -94,8 +99,7 @@ export function CaptureFlow() {
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
 
-  const [capturedFile, setCapturedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [shots, setShots] = useState<Shot[]>([]);
 
   const [caption, setCaption] = useState("");
   const [catName, setCatName] = useState("");
@@ -110,7 +114,25 @@ export function CaptureFlow() {
   const [isLocating, setIsLocating] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
+  const [uploadedCount, setUploadedCount] = useState(0);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const slotsLeft = MAX_PHOTOS_PER_ENTRY - shots.length;
+
+  function addShots(files: File[]) {
+    setShots((prev) => {
+      const room = MAX_PHOTOS_PER_ENTRY - prev.length;
+      const next = files.slice(0, room).map((file) => ({ file, previewUrl: URL.createObjectURL(file) }));
+      return [...prev, ...next];
+    });
+  }
+
+  function removeShot(index: number) {
+    setShots((prev) => {
+      URL.revokeObjectURL(prev[index].previewUrl);
+      return prev.filter((_, i) => i !== index);
+    });
+  }
 
   const startCamera = useCallback(async (f: Facing) => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -159,7 +181,7 @@ export function CaptureFlow() {
   function capturePhoto() {
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    if (!video || !canvas) return;
+    if (!video || !canvas || slotsLeft <= 0) return;
 
     const size = Math.min(video.videoWidth, video.videoHeight);
     canvas.width = size;
@@ -172,51 +194,58 @@ export function CaptureFlow() {
     canvas.toBlob(
       (blob) => {
         if (!blob) return;
-        const file = new File([blob], "cat.jpg", { type: "image/jpeg" });
-        setCapturedFile(file);
-        setPreviewUrl(URL.createObjectURL(blob));
-        setStep("details");
+        // Stay in the camera so more shots can be taken; "Next" moves on.
+        addShots([new File([blob], "cat.jpg", { type: "image/jpeg" })]);
       },
       "image/jpeg",
       0.92
     );
   }
 
-  async function handleGalleryFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setCapturedFile(file);
-    setPreviewUrl(URL.createObjectURL(file));
+  async function handleGalleryFiles(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = ""; // allow re-picking the same files later
+    if (files.length === 0) return;
+    addShots(files);
+    setStep("details");
 
-    // Prefer the location where the photo was actually taken (EXIF GPS).
-    const gps = await exifr.gps(file).catch(() => null);
-    if (gps && Number.isFinite(gps.latitude) && Number.isFinite(gps.longitude)) {
-      setLocation({ name: "Where the photo was taken", lat: gps.latitude, lng: gps.longitude });
-      setStep("details");
-      const name = await reverseGeocode(gps.latitude, gps.longitude);
-      setLocation({ name, lat: gps.latitude, lng: gps.longitude });
-    } else {
-      setStep("details");
+    // Prefer the location where a photo was actually taken (EXIF GPS) — the
+    // first picked photo that carries GPS data wins.
+    if (location || geoDisabled) return;
+    for (const file of files) {
+      const gps = await exifr.gps(file).catch(() => null);
+      if (gps && Number.isFinite(gps.latitude) && Number.isFinite(gps.longitude)) {
+        setLocation({ name: "Where the photo was taken", lat: gps.latitude, lng: gps.longitude });
+        const name = await reverseGeocode(gps.latitude, gps.longitude);
+        setLocation({ name, lat: gps.latitude, lng: gps.longitude });
+        break;
+      }
     }
   }
 
   async function handlePost() {
-    if (!capturedFile || (!location && !geoDisabled)) return;
+    if (shots.length === 0 || (!location && !geoDisabled)) return;
     setSubmitting(true);
+    setUploadedCount(0);
     setSubmitError(null);
     try {
-      const fd = new FormData();
-      fd.append("file", capturedFile);
-      const upload = await fetch("/api/upload-url", { method: "POST", body: fd });
-      if (!upload.ok) throw new Error("Photo upload failed");
-      const { key, thumbKey } = await upload.json();
+      // Upload one at a time: keeps display order and memory use predictable.
+      const photos: { photoKey: string; thumbKey?: string }[] = [];
+      for (const shot of shots) {
+        const fd = new FormData();
+        fd.append("file", shot.file);
+        const upload = await fetch("/api/upload-url", { method: "POST", body: fd });
+        if (!upload.ok) throw new Error("Photo upload failed");
+        const { key, thumbKey } = await upload.json();
+        photos.push({ photoKey: key, thumbKey });
+        setUploadedCount(photos.length);
+      }
 
       const create = await fetch("/api/cat-entries", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          photoKey: key,
-          thumbKey,
+          photos,
           name: catName.trim() || undefined,
           breed: breed.trim() || undefined,
           notes: caption.trim() || undefined,
@@ -227,7 +256,7 @@ export function CaptureFlow() {
       });
       if (!create.ok) throw new Error("Could not save the entry");
 
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      shots.forEach((shot) => URL.revokeObjectURL(shot.previewUrl));
       router.push("/feed");
       router.refresh();
     } catch (err) {
@@ -306,23 +335,47 @@ export function CaptureFlow() {
           {/* Capture */}
           <button
             onClick={capturePhoto}
-            disabled={!cameraReady || !!cameraError}
+            disabled={!cameraReady || !!cameraError || slotsLeft <= 0}
             className="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center disabled:opacity-40 active:scale-95 transition-transform"
             aria-label="Capture photo"
           >
             <div className="w-14 h-14 rounded-full bg-white" />
           </button>
 
-          {/* Spacer */}
-          <div className="w-16" />
+          {/* Shots taken so far → details step */}
+          {shots.length > 0 ? (
+            <button
+              onClick={() => setStep("details")}
+              className="flex w-16 flex-col items-center gap-1.5 text-white/90 hover:text-white transition-colors"
+              aria-label={`Continue with ${shots.length} photo${shots.length === 1 ? "" : "s"}`}
+            >
+              <div className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={shots[shots.length - 1].previewUrl}
+                  alt=""
+                  className="w-12 h-12 rounded-2xl border-2 border-white/70 object-cover"
+                />
+                <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-[11px] font-bold text-black">
+                  {shots.length}
+                </span>
+              </div>
+              <span className="flex items-center text-xs">
+                Next <ChevronRight size={12} />
+              </span>
+            </button>
+          ) : (
+            <div className="w-16" />
+          )}
         </div>
 
         <input
           ref={galleryInputRef}
           type="file"
           accept="image/jpeg,image/png,image/webp"
+          multiple
           className="hidden"
-          onChange={handleGalleryFile}
+          onChange={handleGalleryFiles}
         />
       </div>
     );
@@ -344,27 +397,57 @@ export function CaptureFlow() {
         <span className="font-semibold text-sm">New post</span>
         <button
           onClick={handlePost}
-          disabled={(!location && !geoDisabled) || submitting}
-          className="text-sm font-bold text-accent disabled:opacity-40 transition-opacity"
+          disabled={shots.length === 0 || (!location && !geoDisabled) || submitting}
+          className="flex items-center gap-1.5 text-sm font-bold text-accent disabled:opacity-40 transition-opacity"
         >
-          {submitting ? <Loader2 size={18} className="animate-spin" /> : "Post"}
+          {submitting ? (
+            <>
+              <Loader2 size={16} className="animate-spin" />
+              {shots.length > 1 && (
+                <span className="tabular-nums">
+                  {Math.min(uploadedCount + 1, shots.length)}/{shots.length}
+                </span>
+              )}
+            </>
+          ) : (
+            "Post"
+          )}
         </button>
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {/* Preview + caption side by side (Instagram-style top row) */}
-        <div className="flex gap-3 px-4 pt-4">
-          {previewUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={previewUrl}
-              alt="Preview"
-              className="w-20 h-20 rounded-xl object-cover shrink-0"
-            />
+        {/* Photo strip — up to MAX_PHOTOS_PER_ENTRY shots, in the order they'll appear */}
+        <div className="flex gap-2 overflow-x-auto px-4 pt-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {shots.map((shot, i) => (
+            <div key={shot.previewUrl} className="relative shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={shot.previewUrl} alt={`Photo ${i + 1}`} className="w-20 h-20 rounded-xl object-cover" />
+              {!submitting && (
+                <button
+                  onClick={() => removeShot(i)}
+                  className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-foreground text-background shadow-sm"
+                  aria-label={`Remove photo ${i + 1}`}
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+          ))}
+          {slotsLeft > 0 && !submitting && (
+            <button
+              onClick={() => setStep("camera")}
+              className="flex h-20 w-20 shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border border-dashed border-border text-muted hover:text-foreground transition-colors"
+              aria-label="Add another photo"
+            >
+              <Plus size={18} />
+              <span className="text-[10px]">{shots.length}/{MAX_PHOTOS_PER_ENTRY}</span>
+            </button>
           )}
-          <div className="flex-1 min-w-0">
-            <CaptionInput value={caption} onChange={setCaption} />
-          </div>
+        </div>
+
+        {/* Caption */}
+        <div className="px-4 pt-3">
+          <CaptionInput value={caption} onChange={setCaption} />
         </div>
 
         {/* Location */}

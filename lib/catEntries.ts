@@ -1,11 +1,18 @@
 import { db } from "@/lib/db";
+import { MAX_PHOTOS_PER_ENTRY } from "@/lib/photo-urls";
 
 const PAGE_SIZE = 20;
 
-export type CreateCatEntryInput = {
-  ownerId: string;
+export { MAX_PHOTOS_PER_ENTRY };
+
+export type CatEntryPhotoInput = {
   photoKey: string;
   thumbKey?: string | null;
+};
+
+export type CreateCatEntryInput = {
+  ownerId: string;
+  photos: CatEntryPhotoInput[]; // 1..MAX_PHOTOS_PER_ENTRY, in display order
   name?: string | null;
   breed?: string | null;
   notes?: string | null;
@@ -26,19 +33,31 @@ export type UpdateCatEntryInput = {
   longitude?: number | null;
 };
 
+export class CatEntryPhotoCountError extends Error {}
+
 export async function createCatEntry(input: CreateCatEntryInput) {
+  if (input.photos.length < 1 || input.photos.length > MAX_PHOTOS_PER_ENTRY) {
+    throw new CatEntryPhotoCountError(`an entry needs 1–${MAX_PHOTOS_PER_ENTRY} photos`);
+  }
+
   return db.catEntry.create({
     data: {
       ownerId: input.ownerId,
-      photoKey: input.photoKey,
-      thumbKey: input.thumbKey ?? null,
       name: input.name ?? null,
       breed: input.breed ?? null,
       notes: input.notes ?? null,
       locationName: input.locationName ?? null,
       latitude: input.latitude ?? null,
       longitude: input.longitude ?? null,
+      photos: {
+        create: input.photos.map((photo, position) => ({
+          photoKey: photo.photoKey,
+          thumbKey: photo.thumbKey ?? null,
+          position,
+        })),
+      },
     },
+    include: { photos: { orderBy: { position: "asc" } } },
   });
 }
 
@@ -60,7 +79,7 @@ export async function updateCatEntry(entryId: string, ownerId: string, input: Up
 export async function deleteCatEntry(entryId: string, ownerId: string) {
   const entry = await db.catEntry.findUnique({
     where: { id: entryId },
-    select: { ownerId: true, photoKey: true, thumbKey: true },
+    select: { ownerId: true, photos: { select: { photoKey: true, thumbKey: true } } },
   });
   if (!entry) throw new CatEntryNotFoundError();
   if (entry.ownerId !== ownerId) throw new CatEntryForbiddenError();
@@ -120,6 +139,7 @@ export async function getCatEntryForViewer(entryId: string, viewerId: string | n
   const entry = await db.catEntry.findUnique({
     where: { id: entryId },
     include: {
+      photos: { orderBy: { position: "asc" } },
       owner: { select: { id: true, username: true, displayName: true, avatarKey: true, image: true } },
       _count: { select: { likes: true, comments: true } },
       likes: viewerId ? { where: { userId: viewerId }, select: { userId: true } } : false,
@@ -138,7 +158,7 @@ export async function storeCatEntryEmbedding(entryId: string, embedding: number[
 type SimilarEntry = {
   id: string;
   ownerId: string;
-  photoKey: string;
+  photoKey: string | null;
   thumbKey: string | null;
   name: string | null;
   breed: string | null;
@@ -166,8 +186,8 @@ export async function getSimilarCatEntries(
     SELECT
       ce.id,
       ce."ownerId",
-      ce."photoKey",
-      ce."thumbKey",
+      cover."photoKey",
+      cover."thumbKey",
       ce.name,
       ce.breed,
       ce."createdAt",
@@ -177,6 +197,13 @@ export async function getSimilarCatEntries(
       u.image         AS "ownerImage"
     FROM "CatEntry" ce
     JOIN "User" u ON u.id = ce."ownerId"
+    LEFT JOIN LATERAL (
+      SELECT p."photoKey", p."thumbKey"
+      FROM "CatEntryPhoto" p
+      WHERE p."catEntryId" = ce.id
+      ORDER BY p.position ASC
+      LIMIT 1
+    ) cover ON TRUE
     WHERE ce.id != ${entryId}
       AND ce."ownerId" = ANY(${ownerIds}::text[])
       AND ce.embedding IS NOT NULL
@@ -212,6 +239,7 @@ export async function listCatEntriesForViewer(opts: {
     take: PAGE_SIZE + 1,
     ...(opts.cursor ? { cursor: { id: opts.cursor }, skip: 1 } : {}),
     include: {
+      photos: { orderBy: { position: "asc" } },
       owner: { select: { id: true, username: true, displayName: true, avatarKey: true, image: true } },
       _count: { select: { likes: true, comments: true } },
       // Only the viewer's own like row — lets the UI render initial like state.

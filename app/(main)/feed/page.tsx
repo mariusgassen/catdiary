@@ -2,10 +2,11 @@ import Link from "next/link";
 import { PawPrint } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { listCatEntriesForViewer } from "@/lib/catEntries";
+import { photoUrlsFor } from "@/lib/photo-urls";
 import { CatEntryCard } from "@/components/CatEntryCard";
 
 type FeedEntry = Awaited<ReturnType<typeof listCatEntriesForViewer>>["entries"][number] & {
-  photoUrl: string;
+  photoUrls: string[];
 };
 
 function dayLabel(date: Date, now: Date): string {
@@ -40,7 +41,7 @@ export default async function FeedPage() {
 
   const withPhotos: FeedEntry[] = entries.map((entry) => ({
     ...entry,
-    photoUrl: `/api/photos/${entry.thumbKey ?? entry.photoKey}`,
+    photoUrls: photoUrlsFor(entry.photos),
   }));
 
   if (withPhotos.length === 0) {
