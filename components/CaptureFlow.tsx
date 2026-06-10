@@ -383,7 +383,7 @@ export function CaptureFlow() {
   // ── Camera step ─────────────────────────────────────────────────────────────
   if (step === "camera") {
     return (
-      <div className="flex flex-col h-dvh bg-black">
+      <div className="fixed inset-0 z-[100] flex flex-col bg-black">
         <canvas ref={canvasRef} className="hidden" />
 
         {/* Top bar */}
