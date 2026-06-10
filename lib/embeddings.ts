@@ -22,7 +22,7 @@ function getModel(): Promise<CLIPVisionModelWithProjection> {
 /** Returns a 512-dimensional CLIP embedding for the given image buffer. */
 export async function getImageEmbedding(imageBuffer: Buffer): Promise<number[]> {
   const [processor, model] = await Promise.all([getProcessor(), getModel()]);
-  const blob = new Blob([imageBuffer]);
+  const blob = new Blob([new Uint8Array(imageBuffer)]);
   const image = await RawImage.fromBlob(blob);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const inputs = await (processor as any)(image);
