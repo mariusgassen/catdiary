@@ -1,8 +1,21 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
-import { createCatEntry, listCatEntriesForViewer } from "@/lib/catEntries";
+import { createCatEntry, listCatEntriesForViewer, storeCatEntryEmbedding } from "@/lib/catEntries";
 import { requireUserId, UnauthorizedError } from "@/lib/auth-helpers";
+import { getObject } from "@/lib/storage";
+import { getImageEmbedding } from "@/lib/embeddings";
+
+async function embedInBackground(entryId: string, photoKey: string) {
+  try {
+    const obj = await getObject(photoKey);
+    const buffer = Buffer.from(await obj.Body!.transformToByteArray());
+    const embedding = await getImageEmbedding(buffer);
+    await storeCatEntryEmbedding(entryId, embedding);
+  } catch (err) {
+    console.error("[embeddings] failed for entry", entryId, err);
+  }
+}
 
 const createSchema = z.object({
   photoKey: z.string().min(1),
@@ -46,5 +59,9 @@ export async function POST(request: Request) {
   }
 
   const entry = await createCatEntry({ ownerId, ...parsed.data });
+
+  // Generate and store embedding in background — does not block the response
+  embedInBackground(entry.id, parsed.data.photoKey);
+
   return NextResponse.json({ entry }, { status: 201 });
 }

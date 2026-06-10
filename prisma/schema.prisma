@@ -70,6 +70,8 @@ model CatEntry {
   longitude Float
   createdAt DateTime @default(now())
 
+  embedding Unsupported("vector(512)")?
+
   likes    Like[]
   comments Comment[]
 
