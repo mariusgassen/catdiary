@@ -278,6 +278,7 @@ export function CaptureFlow() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (step === "camera") startCamera(facing);
     return () => streamRef.current?.getTracks().forEach((t) => t.stop());
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -286,6 +287,7 @@ export function CaptureFlow() {
   // Auto-locate when entering details step
   useEffect(() => {
     if (step !== "details" || coords) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
