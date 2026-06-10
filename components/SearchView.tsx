@@ -15,7 +15,13 @@ type Entry = {
   longitude: number | null;
   createdAt: string | Date;
   photoUrl?: string | null;
-  owner: { id: string; displayName: string; avatarKey?: string | null; image?: string | null };
+  owner: {
+    id: string;
+    displayName: string | null;
+    username?: string | null;
+    avatarKey?: string | null;
+    image?: string | null;
+  };
   _count?: { likes: number; comments: number };
   likes?: { userId: string }[];
 };

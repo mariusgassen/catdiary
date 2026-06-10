@@ -11,9 +11,14 @@ type SettingsUser = {
   id: string;
   email: string;
   username: string | null;
-  displayName: string;
+  displayName: string | null;
   bio: string | null;
   isPrivate: boolean;
+};
+
+const PROFILE_ERRORS: Record<string, string> = {
+  USERNAME_TAKEN: "That username is taken.",
+  INVALID_USERNAME: "Usernames are 3-30 lowercase letters, numbers, dots or underscores.",
 };
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -27,7 +32,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export function SettingsView({ user }: { user: SettingsUser }) {
   const router = useRouter();
-  const [displayName, setDisplayName] = useState(user.displayName);
+  const [displayName, setDisplayName] = useState(user.displayName ?? "");
+  const [username, setUsername] = useState(user.username ?? "");
   const [bio, setBio] = useState(user.bio ?? "");
   const [isPrivate, setIsPrivate] = useState(user.isPrivate);
   const [savingProfile, setSavingProfile] = useState(false);
@@ -39,13 +45,23 @@ export function SettingsView({ user }: { user: SettingsUser }) {
     setSavingProfile(true);
     setError(null);
     setProfileSaved(false);
+    const nextUsername = username.trim().toLowerCase();
     try {
       const res = await fetch("/api/me", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ displayName: displayName.trim(), bio: bio.trim() || null }),
+        body: JSON.stringify({
+          displayName: displayName.trim() || null,
+          bio: bio.trim() || null,
+          // The handle can be changed but not removed — only send it when set.
+          ...(nextUsername && nextUsername !== user.username ? { username: nextUsername } : {}),
+        }),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setError(PROFILE_ERRORS[data?.error as string] ?? "Could not save your profile.");
+        return;
+      }
       setProfileSaved(true);
       router.refresh();
     } catch {
@@ -89,13 +105,33 @@ export function SettingsView({ user }: { user: SettingsUser }) {
       <Section title="Profile">
         <form onSubmit={saveProfile} className="flex flex-col gap-3">
           <label className="flex flex-col gap-1 text-sm">
+            <span className="text-xs font-medium text-muted">Username</span>
+            <div className="flex items-center rounded-xl border border-border bg-background focus-within:ring-1 focus-within:ring-accent">
+              <span className="pl-3 text-sm text-muted select-none">@</span>
+              <input
+                required={user.username != null}
+                value={username}
+                minLength={3}
+                maxLength={30}
+                pattern="[a-z0-9][a-z0-9._]*"
+                autoCapitalize="none"
+                autoCorrect="off"
+                onChange={(e) => setUsername(e.target.value.toLowerCase())}
+                className="min-w-0 flex-1 bg-transparent py-2.5 pl-0.5 pr-3 text-sm outline-none"
+              />
+            </div>
+            <span className="text-xs text-muted">
+              Your handle — used to sign in and shown when you have no display name.
+            </span>
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
             <span className="text-xs font-medium text-muted">Display name</span>
             <input
-              required
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               maxLength={80}
-              className="rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:ring-1 focus:ring-accent"
+              placeholder={username ? `@${username}` : "How you appear to others"}
+              className="rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none placeholder:text-muted focus:ring-1 focus:ring-accent"
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
@@ -159,10 +195,6 @@ export function SettingsView({ user }: { user: SettingsUser }) {
 
       <Section title="Account">
         <dl className="flex flex-col gap-2 pb-3 text-sm">
-          <div className="flex justify-between gap-3">
-            <dt className="text-muted">Username</dt>
-            <dd className="font-medium">{user.username ? `@${user.username}` : "—"}</dd>
-          </div>
           <div className="flex justify-between gap-3">
             <dt className="text-muted">Email</dt>
             <dd className="truncate font-medium">{user.email}</dd>

@@ -22,7 +22,7 @@ export async function createUserWithPassword(input: {
   email: string;
   username: string;
   password: string;
-  displayName: string;
+  displayName: string | null;
 }) {
   const username = normalizeUsername(input.username);
   if (!USERNAME_PATTERN.test(username)) {
@@ -65,5 +65,5 @@ export async function verifyCredentials(input: { identifier: string; password: s
     return null;
   }
 
-  return { id: user.id, email: user.email, name: user.displayName, image: user.image };
+  return { id: user.id, email: user.email, name: user.displayName ?? user.username, image: user.image };
 }

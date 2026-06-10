@@ -4,7 +4,7 @@ import { canViewCatEntry, CatEntryForbiddenError, CatEntryNotFoundError } from "
 export class CommentNotFoundError extends Error {}
 
 const commentInclude = {
-  user: { select: { id: true, displayName: true, avatarKey: true, image: true } },
+  user: { select: { id: true, username: true, displayName: true, avatarKey: true, image: true } },
 } as const;
 
 export async function listComments(catEntryId: string, viewerId: string | null) {
