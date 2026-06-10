@@ -40,14 +40,14 @@ export function FollowRequestRow({
         <button
           onClick={() => respond(true)}
           disabled={pending}
-          className="rounded border border-black/15 px-2 py-1 text-xs disabled:opacity-50 dark:border-white/20"
+          className="rounded-lg bg-accent px-2.5 py-1 text-xs font-medium text-white disabled:opacity-50"
         >
           Approve
         </button>
         <button
           onClick={() => respond(false)}
           disabled={pending}
-          className="rounded border border-black/15 px-2 py-1 text-xs disabled:opacity-50 dark:border-white/20"
+          className="rounded-lg border border-border bg-background px-2.5 py-1 text-xs text-muted disabled:opacity-50"
         >
           Deny
         </button>

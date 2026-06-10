@@ -1,25 +1,38 @@
 @import "tailwindcss";
 
+/* Theme is class-based (next-themes sets .dark on <html>), so the dark:
+   variant must key off the class rather than prefers-color-scheme. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Field-journal design language.
+ *
+ * Cat Diary is a naturalist's notebook, not a photo-sharing app: sunny paper
+ * surfaces, warm ink text, and a fountain-pen blue accent — highlights read
+ * like notes written in pen ink. Typography stays on Geist throughout for
+ * readability — the journal feel comes from layout (taped polaroids, stamps,
+ * day dividers), not decorative fonts.
+ */
 :root {
-  --background: #fafaf8;
-  --foreground: #1a1a1a;
-  --surface: #ffffff;
-  --accent: #ff6b35;
-  --accent-soft: #fff0e8;
-  --muted: #757570;
-  --border: #e8e4df;
+  --background: #fdfbf4; /* sunny cream */
+  --foreground: #292524; /* warm ink */
+  --surface: #ffffff; /* fresh page */
+  --accent: #3b6fe0; /* fountain-pen blue */
+  --accent-soft: #e4ebfb;
+  --muted: #79716b;
+  --border: #ebe5d6;
+  --tape: rgba(233, 220, 185, 0.65);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0f0f0d;
-    --foreground: #f0ede8;
-    --surface: #1a1a17;
-    --accent: #ff7a45;
-    --accent-soft: #2a1a12;
-    --muted: #9a9a94;
-    --border: #2a2a25;
-  }
+.dark {
+  --background: #15171c; /* inky night */
+  --foreground: #eaecf2;
+  --surface: #1f2229;
+  --accent: #6b95f0;
+  --accent-soft: #1e2a44;
+  --muted: #979ca8;
+  --border: #30343d;
+  --tape: rgba(110, 115, 135, 0.4);
 }
 
 @theme inline {
@@ -45,4 +58,33 @@ body {
   font-family: var(--font-geist-sans, Arial, Helvetica, sans-serif);
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Subtle dot-grid, like a bullet-journal page. */
+.paper-grid {
+  background-image: radial-gradient(var(--border) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* Rubber-stamp date/label box. */
+.stamp {
+  border: 1.5px solid currentColor;
+  border-radius: 4px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transform: rotate(2deg);
+  opacity: 0.85;
+}
+
+/* Strip of washi tape holding a photo down. */
+.tape-strip {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  width: 88px;
+  height: 22px;
+  transform: translateX(-50%) rotate(-2deg);
+  background: var(--tape);
+  backdrop-filter: blur(1px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }

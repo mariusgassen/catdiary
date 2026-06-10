@@ -10,10 +10,19 @@ social login), Prisma/Postgres, MinIO-backed photo upload with sharp
 thumbnailing, the core `CatEntry` create/list loop, Follow + a basic feed, and a
 docker-compose stack (`web`/`db`/`minio`).
 
-**Mobile design shipped:** bottom tab navigation (Feed · Search · Capture · Map
-· Profile), Instagram-style feed cards with hashtag-aware captions, a full
+**Mobile design shipped — "field journal" design language:** the UI is styled
+as a naturalist's notebook, not a photo-sharing feed clone. Sunny cream palette
+with a fountain-pen blue accent, dot-grid page backgrounds (`.paper-grid`),
+and Geist throughout for readability — the journal feel comes from layout, not
+decorative fonts. Entries render as journal-page cards: a taped-in, slightly
+tilted polaroid with a name/breed caption, a rubber-stamp date, diary notes,
+coordinates in the footer, and paw-print reactions. The feed is a date-grouped
+timeline ("Today", "Yesterday", …), profiles are diary covers ("X's Diary",
+follow = "Read along"), and bottom tab navigation is Journal · Discover · Log a
+cat (paw stamp) · Map · My diary. Theming is class-based via `next-themes`
+(Light / Dark / System setting on your own profile, System by default). Full
 capture flow (native camera API, gallery fallback, GPS + OpenStreetMap
-Nominatim location, hashtag highlight overlay in caption), and a search page
+Nominatim location, hashtag highlight overlay in caption) and a Discover page
 with tag/breed/name filtering.
 
 Keep this document in sync with reality as the app evolves.
@@ -21,12 +30,17 @@ Keep this document in sync with reality as the app evolves.
 ## Roadmap
 
 ### Done
-- Bottom tab nav with icons (Feed, Search, Capture, Map, Profile)
-- Instagram-style feed cards: 4:5 photo, like/comment/share buttons, hashtag captions
+- Bottom tab nav with icons (Journal, Discover, Log a cat, Map, My diary)
+- Field-journal entry cards: taped polaroid photo with name/breed caption,
+  rubber-stamp date, notes with hashtags, coordinates, paw-print likes
+- Date-grouped feed timeline with day dividers and masthead
 - Capture flow: camera viewfinder (front/back), gallery picker, GPS auto-location,
   Nominatim place search, hashtag highlighting in caption textarea
-- Search page: tag/name/breed filter, trending tag chips, URL-driven (`?q=`)
-- Design system: warm cat-themed color tokens (accent orange), dark mode
+- Discover page: tag/name/breed filter, "often spotted" tag chips, URL-driven (`?q=`)
+- Design system: sunny cream/ink palette, fountain-pen blue accent, dot-grid
+  texture, readable Geist typography
+- Theme setting: Light / Dark / System (default System) via next-themes,
+  toggle on own profile
 
 ### Core diary polish
 - Edit/delete entries with confirmation

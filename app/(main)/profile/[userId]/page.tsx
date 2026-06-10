@@ -6,6 +6,7 @@ import { listPendingFollowRequests } from "@/lib/follows";
 import { CatEntryCard } from "@/components/CatEntryCard";
 import { FollowButton } from "@/components/FollowButton";
 import { FollowRequestRow } from "@/components/FollowRequestRow";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default async function ProfilePage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId } = await params;
@@ -38,21 +39,35 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
   }));
 
   return (
-    <div className="flex flex-col gap-6">
-      <header className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-semibold">{profileUser.displayName}</h1>
-          {profileUser.bio && <p className="text-sm text-black/70 dark:text-white/70">{profileUser.bio}</p>}
-          {profileUser.isPrivate && <p className="text-xs text-black/50 dark:text-white/50">Private profile</p>}
+    <div className="paper-grid min-h-dvh flex flex-col gap-5 py-4">
+      {/* Diary cover */}
+      <header className="mx-3 rounded-xl border border-border bg-surface px-5 py-5 shadow-sm">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold tracking-tight">
+              {profileUser.displayName}&rsquo;s Diary
+            </h1>
+            <p className="pt-0.5 text-sm text-muted">
+              {withPhotos.length} {withPhotos.length === 1 ? "entry" : "entries"}
+              {profileUser.isPrivate && " · private diary"}
+            </p>
+            {profileUser.bio && <p className="pt-2 text-sm text-foreground/80">{profileUser.bio}</p>}
+          </div>
+          {!isOwnProfile && viewerId && (
+            <FollowButton followeeId={profileUser.id} initiallyFollowing={isFollowing} />
+          )}
         </div>
-        {!isOwnProfile && viewerId && (
-          <FollowButton followeeId={profileUser.id} initiallyFollowing={isFollowing} />
+        {isOwnProfile && (
+          <div className="mt-4 flex items-center justify-between border-t border-dashed border-border pt-3">
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted">Appearance</span>
+            <ThemeToggle />
+          </div>
         )}
       </header>
 
       {pendingRequests.length > 0 && (
-        <section className="flex flex-col gap-2 rounded border border-black/10 p-3 text-sm dark:border-white/10">
-          <h2 className="font-medium">Follow requests</h2>
+        <section className="mx-3 flex flex-col gap-2 rounded-xl border border-border bg-surface p-4 text-sm shadow-sm">
+          <h2 className="font-semibold">Waiting to read along</h2>
           {pendingRequests.map((request) => (
             <FollowRequestRow
               key={request.followerId}
@@ -64,7 +79,9 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
       )}
 
       {withPhotos.length === 0 ? (
-        <p className="text-black/60 dark:text-white/60">No cats logged here yet.</p>
+        <p className="px-6 py-10 text-center text-sm text-muted">
+          These pages are still blank.
+        </p>
       ) : (
         <div className="flex flex-col gap-4">
           {withPhotos.map((entry) => (

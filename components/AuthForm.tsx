@@ -63,8 +63,10 @@ export function AuthForm({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-sm flex-col gap-6">
-      <h1 className="text-xl font-semibold">{mode === "sign-in" ? "Sign in" : "Create your account"}</h1>
+    <div className="mx-auto flex w-full max-w-sm flex-col gap-6 rounded-xl border border-border bg-surface px-6 py-7 shadow-sm">
+      <h1 className="text-2xl font-bold tracking-tight">
+        {mode === "sign-in" ? "Open your diary" : "Start your diary"}
+      </h1>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         {mode === "register" && (
@@ -73,7 +75,7 @@ export function AuthForm({
             placeholder="Display name"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
-            className="rounded border border-black/15 px-3 py-2 dark:border-white/20"
+            className="rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none placeholder:text-muted focus:ring-1 focus:ring-accent"
           />
         )}
         <input
@@ -82,7 +84,7 @@ export function AuthForm({
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="rounded border border-black/15 px-3 py-2 dark:border-white/20"
+          className="rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none placeholder:text-muted focus:ring-1 focus:ring-accent"
         />
         <input
           required
@@ -91,13 +93,13 @@ export function AuthForm({
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="rounded border border-black/15 px-3 py-2 dark:border-white/20"
+          className="rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none placeholder:text-muted focus:ring-1 focus:ring-accent"
         />
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button
           type="submit"
           disabled={submitting}
-          className="rounded bg-black px-3 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+          className="rounded-xl bg-accent px-3 py-2.5 text-sm font-semibold text-white shadow-sm shadow-accent/30 transition-transform active:scale-[0.98] disabled:opacity-50"
         >
           {mode === "sign-in" ? "Sign in" : "Register"}
         </button>
@@ -105,17 +107,17 @@ export function AuthForm({
 
       {oauthProviders.length > 0 && (
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2 text-xs text-black/50 dark:text-white/50">
-            <span className="h-px flex-1 bg-current opacity-20" />
+          <div className="flex items-center gap-2 text-xs text-muted">
+            <span className="h-px flex-1 bg-border" />
             or continue with
-            <span className="h-px flex-1 bg-current opacity-20" />
+            <span className="h-px flex-1 bg-border" />
           </div>
           {oauthProviders.map((provider) => (
             <button
               key={provider.id}
               type="button"
               onClick={() => signIn(provider.id, { callbackUrl })}
-              className="flex items-center justify-center gap-2 rounded border border-black/15 px-3 py-2 text-sm dark:border-white/20"
+              className="flex items-center justify-center gap-2 rounded-xl border border-border bg-background px-3 py-2.5 text-sm transition-colors hover:border-accent/40"
             >
               <span aria-hidden>{OAUTH_ICONS[provider.id] ?? "→"}</span>
               Continue with {provider.label}

@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Collect cats you've met all around the world. Connect to other cat lovers.",
     start_url: "/",
     display: "standalone",
-    background_color: "#ffffff",
-    theme_color: "#000000",
+    background_color: "#fdfbf4",
+    theme_color: "#3b6fe0",
     icons: [
       {
         src: "/favicon.ico",
