@@ -2,28 +2,93 @@
 
 Guidance for Claude Code (and other contributors) working on Cat Diary.
 
-## Status: initial scaffold in place
+## Status: mobile-first design in place
 
-The initial scaffold has landed: a Next.js (App Router) app with Auth.js
-(credentials + optional Google/Apple/Facebook social login), Prisma/Postgres,
-MinIO-backed photo upload with sharp thumbnailing, the core `CatEntry`
-create/list loop, Follow + a basic feed, and a docker-compose stack
-(`web`/`db`/`minio`). Likes and comments have data models but no UI yet — see
-the roadmap below for what's still ahead. Keep this document in sync with
-reality as the app evolves: update sections that turn out to be wrong and fill
-in details that emerge during development.
+The initial scaffold has landed and the mobile-first redesign is live: a Next.js
+(App Router) app with Auth.js (credentials + optional Google/Apple/Facebook
+social login), Prisma/Postgres, MinIO-backed photo upload with sharp
+thumbnailing, the core `CatEntry` create/list loop, Follow + a basic feed, and a
+docker-compose stack (`web`/`db`/`minio`).
 
-## Roadmap (post-scaffold)
+**Mobile design shipped:** bottom tab navigation (Feed · Search · Capture · Map
+· Profile), Instagram-style feed cards with hashtag-aware captions, a full
+capture flow (native camera API, gallery fallback, GPS + OpenStreetMap
+Nominatim location, hashtag highlight overlay in caption), and a search page
+with tag/breed/name filtering.
 
-1. **Core diary polish** — edit/delete entries, richer profile pages, full
-   public/private visibility enforcement, pending-follow approval UI
-2. **Engagement** — like/comment UI on top of the existing data models,
-   in-app notifications
-3. **Discovery** — real map view (the `/map` route is currently a stub),
-   search/filter, "on this day" resurfacing
-4. **Mobile readiness** — PWA polish (the manifest/service-worker scaffold is
-   minimal today), API hardening (pagination, rate limits, versioning), push
-   notifications
+Keep this document in sync with reality as the app evolves.
+
+## Roadmap
+
+### Done
+- Bottom tab nav with icons (Feed, Search, Capture, Map, Profile)
+- Instagram-style feed cards: 4:5 photo, like/comment/share buttons, hashtag captions
+- Capture flow: camera viewfinder (front/back), gallery picker, GPS auto-location,
+  Nominatim place search, hashtag highlighting in caption textarea
+- Search page: tag/name/breed filter, trending tag chips, URL-driven (`?q=`)
+- Design system: warm cat-themed color tokens (accent orange), dark mode
+
+### Core diary polish
+- Edit/delete entries with confirmation
+- Richer profile pages: grid/list toggle, entry count, follower/following counts
+- Public/private visibility enforcement in all paths
+- Pending-follow approval UI (data model exists, no UI yet)
+- Edit profile: display name, bio, avatar upload, private toggle
+
+### Social / engagement
+- **Like API + optimistic UI** — button exists but calls no endpoint yet; needs
+  `POST /api/cat-entries/[id]/like` toggle, viewer's own like state in the feed query
+- **Comments UI** — data model exists; needs a detail page (`/cat-entries/[id]`)
+  with comment thread, inline comment compose
+- **In-app notifications** — new follower, like, comment; notification tab in nav
+  (Bell icon placeholder); needs a `Notification` model and polling/push
+- **Mentions** (`@username`) in captions — parser already handles `@`, needs
+  search-as-you-type autocomplete in the capture form
+- **Double-tap to like** — exists on the photo (onDoubleClick), but needs the
+  Like API wired in
+
+### Cat entry detail page
+- `/cat-entries/[id]` — full-res photo, full caption, comments thread, map pin,
+  like count; currently there is no detail page (cards do not link anywhere)
+- Deep-link sharing: copy link, Open Graph meta for social previews
+
+### Capture flow improvements
+- **Photo editing** — crop, basic brightness/contrast before upload
+- **Multiple photos** per entry (carousel), stored as an array of keys
+- **Draft recovery** — `localStorage` draft so back-navigation doesn't lose form
+- Gallery sheet polished for iOS (vs. browser file picker as fallback)
+
+### Discovery
+- **Map tab** — real map view with cat sighting pins using Leaflet + OpenStreetMap
+  tiles (no API key needed); `/map` route is currently a stub
+- **"On This Day"** resurfacing in the feed
+- **Nearby cats** — distance-based filter using lat/lng; requires PostGIS or
+  Haversine in a raw query
+- Search: user search tab (currently only searches entries)
+
+### Profile & settings
+- Settings page (privacy toggle, sign out, account deletion)
+- Public profile URL (`/@username` or `/profile/[id]`) with Open Graph tags
+- Follow requests approval/rejection UI
+
+### PWA / mobile hardening
+- Service worker caching strategy (currently minimal `public/sw.js`)
+- Web push notifications (VAPID keys, `PushSubscription` model)
+- Haptic feedback on like/follow (`navigator.vibrate`)
+- Offline-capable read view (cache feed in SW)
+- Add-to-home-screen prompt
+- Pull-to-refresh gesture
+
+### API hardening
+- Pagination: cursor already in `listCatEntriesForViewer`; feed needs infinite
+  scroll (Intersection Observer client-side)
+- Rate limiting on upload and entry creation
+- API versioning strategy before native mobile client launches
+
+### Native mobile app (future)
+- All core features already go through `app/api/` — the web frontend is the
+  first consumer; a React Native / Expo client is the intended second consumer
+- Auth issues JWTs (cookie for web, bearer token for native)
 
 ## Project overview
 
