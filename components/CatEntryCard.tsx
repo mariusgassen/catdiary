@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Heart, MessageCircle, Share2, MoreHorizontal } from "lucide-react";
+import { PawPrint, MessageSquareText, Share2, MapPin, Pencil } from "lucide-react";
 import { HashtagCaption } from "@/components/HashtagCaption";
 
 type CatEntryCardProps = {
@@ -21,22 +21,30 @@ type CatEntryCardProps = {
   viewerId?: string | null;
 };
 
-function relativeTime(date: Date): string {
-  const diff = (Date.now() - date.getTime()) / 1000;
-  if (diff < 60) return "just now";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
-  if (diff < 604800) return `${Math.floor(diff / 86400)}d`;
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+const STAMP_DATE = new Intl.DateTimeFormat("en", { day: "2-digit", month: "short" });
+
+function formatCoords(lat: number, lng: number): string {
+  const ns = lat >= 0 ? "N" : "S";
+  const ew = lng >= 0 ? "E" : "W";
+  return `${Math.abs(lat).toFixed(2)}° ${ns}, ${Math.abs(lng).toFixed(2)}° ${ew}`;
+}
+
+/* Each photo sits slightly crooked, like it was glued in by hand.
+   Derive the tilt from the entry id so it's stable across renders. */
+function tiltFor(id: string): string {
+  const tilts = ["-rotate-1", "rotate-1", "-rotate-[1.5deg]", "rotate-[0.75deg]"];
+  let hash = 0;
+  for (const ch of id) hash = (hash * 31 + ch.charCodeAt(0)) | 0;
+  return tilts[Math.abs(hash) % tilts.length];
 }
 
 function Avatar({ user }: { user: { displayName: string; image?: string | null } }) {
   if (user.image) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={user.image} alt={user.displayName} className="w-8 h-8 rounded-full object-cover" />;
+    return <img src={user.image} alt={user.displayName} className="w-6 h-6 rounded-full object-cover" />;
   }
   return (
-    <div className="w-8 h-8 rounded-full bg-accent-soft flex items-center justify-center text-accent text-sm font-semibold select-none">
+    <div className="w-6 h-6 rounded-full bg-accent-soft flex items-center justify-center text-accent text-[11px] font-semibold select-none">
       {user.displayName[0]?.toUpperCase() ?? "?"}
     </div>
   );
@@ -47,97 +55,96 @@ export function CatEntryCard({ entry, viewerId }: CatEntryCardProps) {
   const isOwner = viewerId != null && viewerId === entry.owner.id;
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(entry._count?.likes ?? 0);
+  const commentCount = entry._count?.comments ?? 0;
 
   function handleLike() {
     setLiked((prev) => !prev);
     setLikeCount((c) => (liked ? c - 1 : c + 1));
   }
 
-  const caption = entry.notes || entry.name;
-
   return (
-    <article className="border-b border-border bg-background">
-      {/* Header */}
-      <div className="flex items-center gap-2.5 px-3 py-2.5">
-        <Link href={`/profile/${entry.owner.id}`}>
+    <article className="relative mx-3 rounded-xl border border-border bg-surface px-4 pt-3.5 pb-3 shadow-sm">
+      {/* Page header: whose diary + rubber-stamped date */}
+      <div className="flex items-center justify-between gap-3 pb-3">
+        <Link href={`/profile/${entry.owner.id}`} className="flex min-w-0 items-center gap-2 group">
           <Avatar user={entry.owner} />
+          <span className="truncate font-display italic text-[15px] text-foreground group-hover:underline">
+            {entry.owner.displayName}&rsquo;s diary
+          </span>
         </Link>
-        <div className="flex-1 min-w-0">
-          <Link href={`/profile/${entry.owner.id}`} className="text-sm font-semibold truncate hover:underline">
-            {entry.owner.displayName}
-          </Link>
-          {(entry.name || entry.breed) && (
-            <p className="text-xs text-muted truncate">
-              {[entry.name, entry.breed].filter(Boolean).join(" · ")}
-            </p>
-          )}
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <time className="text-xs text-muted">{relativeTime(date)}</time>
+        <div className="flex shrink-0 items-center gap-2">
           {isOwner && (
             <Link
               href={`/cat-entries/${entry.id}/edit`}
-              className="p-1 -m-1 text-muted hover:text-foreground transition-colors"
+              className="p-1 text-muted hover:text-foreground transition-colors"
               aria-label="Edit entry"
             >
-              <MoreHorizontal size={16} />
+              <Pencil size={14} />
             </Link>
           )}
+          <time className="stamp px-1.5 py-0.5 text-[10px] font-semibold text-accent">
+            {STAMP_DATE.format(date)}
+          </time>
         </div>
       </div>
 
-      {/* Photo */}
-      {entry.photoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={entry.photoUrl}
-          alt={entry.name ?? "A cat"}
-          className="w-full aspect-[4/5] object-cover bg-surface"
-          onDoubleClick={handleLike}
-        />
-      ) : (
-        <div className="w-full aspect-[4/5] bg-accent-soft flex items-center justify-center text-6xl select-none">
-          🐱
-        </div>
+      {/* Taped-in polaroid */}
+      <figure className={`relative mx-auto mb-3 mt-2 w-[88%] bg-white p-2 pb-2.5 shadow-md dark:bg-[#efe8da] ${tiltFor(entry.id)}`}>
+        <span className="tape-strip" aria-hidden />
+        {entry.photoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={entry.photoUrl}
+            alt={entry.name ?? "A cat"}
+            className="w-full aspect-square object-cover bg-accent-soft"
+            onDoubleClick={handleLike}
+          />
+        ) : (
+          <div className="flex aspect-square w-full select-none items-center justify-center bg-accent-soft text-6xl">
+            🐱
+          </div>
+        )}
+        <figcaption className="pt-1.5 text-center font-hand text-xl leading-none text-[#3a3128]">
+          {entry.name ?? "a cat I met"}
+          {entry.breed && <span className="text-[#8a7d6b]"> · {entry.breed}</span>}
+        </figcaption>
+      </figure>
+
+      {/* Diary text */}
+      {entry.notes && (
+        <p className="pb-2.5 font-display text-[15px] leading-relaxed text-foreground">
+          <HashtagCaption text={entry.notes} />
+        </p>
       )}
 
-      {/* Actions */}
-      <div className="flex items-center px-1.5 pt-1 pb-0.5">
-        <button
-          onClick={handleLike}
-          className={`p-2 transition-all active:scale-90 ${liked ? "text-red-500" : "text-foreground hover:text-muted"}`}
-          aria-label={liked ? "Unlike" : "Like"}
-        >
-          <Heart size={24} strokeWidth={1.75} fill={liked ? "currentColor" : "none"} />
-        </button>
-        <button className="p-2 text-foreground hover:text-muted transition-colors" aria-label="Comment">
-          <MessageCircle size={24} strokeWidth={1.75} />
-        </button>
-        <div className="flex-1" />
-        <button className="p-2 text-foreground hover:text-muted transition-colors" aria-label="Share">
-          <Share2 size={22} strokeWidth={1.75} />
-        </button>
-      </div>
-
-      {/* Counts + caption */}
-      <div className="px-3 pb-3 space-y-1">
-        {likeCount > 0 && (
-          <p className="text-sm font-semibold">{likeCount} {likeCount === 1 ? "like" : "likes"}</p>
-        )}
-        {caption && (
-          <p className="text-sm leading-snug">
-            <Link href={`/profile/${entry.owner.id}`} className="font-semibold mr-1.5">
-              {entry.owner.displayName}
-            </Link>
-            <HashtagCaption text={caption} />
-          </p>
-        )}
-        {(entry._count?.comments ?? 0) > 0 && (
-          <p className="text-sm text-muted">
-            View all {entry._count!.comments} comments
-          </p>
-        )}
-        <p className="text-xs text-muted">{relativeTime(date)}</p>
+      {/* Footer: where it happened + reactions */}
+      <div className="flex items-center justify-between border-t border-dashed border-border pt-2 text-muted">
+        <p className="flex min-w-0 items-center gap-1 text-xs">
+          <MapPin size={12} className="shrink-0" />
+          <span className="truncate">{formatCoords(entry.latitude, entry.longitude)}</span>
+        </p>
+        <div className="flex shrink-0 items-center gap-0.5">
+          <button
+            onClick={handleLike}
+            className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium transition-all active:scale-90 ${
+              liked ? "text-accent" : "hover:text-foreground"
+            }`}
+            aria-label={liked ? "Remove paw" : "Leave a paw"}
+          >
+            <PawPrint size={16} strokeWidth={1.75} fill={liked ? "currentColor" : "none"} />
+            {likeCount > 0 && <span>{likeCount}</span>}
+          </button>
+          <button
+            className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium hover:text-foreground transition-colors"
+            aria-label="Margin notes"
+          >
+            <MessageSquareText size={16} strokeWidth={1.75} />
+            {commentCount > 0 && <span>{commentCount}</span>}
+          </button>
+          <button className="rounded-lg px-2 py-1 hover:text-foreground transition-colors" aria-label="Share">
+            <Share2 size={15} strokeWidth={1.75} />
+          </button>
+        </div>
       </div>
     </article>
   );
