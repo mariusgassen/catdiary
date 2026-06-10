@@ -8,30 +8,31 @@
  * Field-journal design language.
  *
  * Cat Diary is a naturalist's notebook, not a photo-sharing app: sunny paper
- * surfaces, warm ink text, and a cheerful tangerine accent. Typography stays
- * on Geist throughout for readability — the journal feel comes from layout
- * (taped polaroids, stamps, day dividers), not decorative fonts.
+ * surfaces, warm ink text, and a fountain-pen blue accent — highlights read
+ * like notes written in pen ink. Typography stays on Geist throughout for
+ * readability — the journal feel comes from layout (taped polaroids, stamps,
+ * day dividers), not decorative fonts.
  */
 :root {
-  --background: #fffbf2; /* sunny cream */
+  --background: #fdfbf4; /* sunny cream */
   --foreground: #292524; /* warm ink */
   --surface: #ffffff; /* fresh page */
-  --accent: #f97316; /* tangerine */
-  --accent-soft: #ffedd5;
+  --accent: #3b6fe0; /* fountain-pen blue */
+  --accent-soft: #e4ebfb;
   --muted: #79716b;
-  --border: #f0e7d8;
-  --tape: rgba(255, 214, 130, 0.55);
+  --border: #ebe5d6;
+  --tape: rgba(233, 220, 185, 0.65);
 }
 
 .dark {
-  --background: #1f1b16; /* evening desk */
-  --foreground: #f5f0e8;
-  --surface: #2a251f;
-  --accent: #fb923c;
-  --accent-soft: #3d2c1c;
-  --muted: #a89e92;
-  --border: #3a332b;
-  --tape: rgba(150, 125, 80, 0.5);
+  --background: #15171c; /* inky night */
+  --foreground: #eaecf2;
+  --surface: #1f2229;
+  --accent: #6b95f0;
+  --accent-soft: #1e2a44;
+  --muted: #979ca8;
+  --border: #30343d;
+  --tape: rgba(110, 115, 135, 0.4);
 }
 
 @theme inline {

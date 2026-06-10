@@ -12,7 +12,7 @@ docker-compose stack (`web`/`db`/`minio`).
 
 **Mobile design shipped — "field journal" design language:** the UI is styled
 as a naturalist's notebook, not a photo-sharing feed clone. Sunny cream palette
-with a cheerful tangerine accent, dot-grid page backgrounds (`.paper-grid`),
+with a fountain-pen blue accent, dot-grid page backgrounds (`.paper-grid`),
 and Geist throughout for readability — the journal feel comes from layout, not
 decorative fonts. Entries render as journal-page cards: a taped-in, slightly
 tilted polaroid with a name/breed caption, a rubber-stamp date, diary notes,
@@ -37,8 +37,8 @@ Keep this document in sync with reality as the app evolves.
 - Capture flow: camera viewfinder (front/back), gallery picker, GPS auto-location,
   Nominatim place search, hashtag highlighting in caption textarea
 - Discover page: tag/name/breed filter, "often spotted" tag chips, URL-driven (`?q=`)
-- Design system: sunny cream/ink palette, tangerine accent, dot-grid texture,
-  readable Geist typography
+- Design system: sunny cream/ink palette, fountain-pen blue accent, dot-grid
+  texture, readable Geist typography
 - Theme setting: Light / Dark / System (default System) via next-themes,
   toggle on own profile
 
