@@ -10,6 +10,7 @@ datasource db {
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
+  username      String?   @unique // nullable: OAuth-only users may not have picked one yet
   emailVerified DateTime?
   passwordHash  String? // nullable: OAuth-only users have no password
   displayName   String
@@ -63,12 +64,13 @@ model CatEntry {
   owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   photoKey  String // MinIO object key (original)
   thumbKey  String? // MinIO object key (sharp-generated thumbnail)
-  name      String?
-  breed     String?
-  notes     String?
-  latitude  Float
-  longitude Float
-  createdAt DateTime @default(now())
+  name         String?
+  breed        String?
+  notes        String?
+  locationName String? // human-readable place name shown in the UI
+  latitude     Float? // null when the user disabled geo data for this entry
+  longitude    Float?
+  createdAt    DateTime @default(now())
 
   embedding Unsupported("vector(512)")?
 

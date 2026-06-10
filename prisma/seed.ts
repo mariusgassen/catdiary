@@ -13,6 +13,7 @@ async function main() {
     update: {},
     create: {
       email: "demo@catdiary.local",
+      username: "demo",
       passwordHash,
       displayName: "Demo Cat Lover",
       bio: "Just here for the cats.",
@@ -29,6 +30,7 @@ async function main() {
       name: "Whiskers",
       breed: "Tabby",
       notes: "Found napping in a sunny doorway.",
+      locationName: "Berlin",
       latitude: 52.52,
       longitude: 13.405,
     },

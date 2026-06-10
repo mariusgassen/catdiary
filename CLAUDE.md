@@ -32,15 +32,31 @@ Keep this document in sync with reality as the app evolves.
 ### Done
 - Bottom tab nav with icons (Journal, Discover, Log a cat, Map, My diary)
 - Field-journal entry cards: taped polaroid photo with name/breed caption,
-  rubber-stamp date, notes with hashtags, coordinates, paw-print likes
+  rubber-stamp date, notes with hashtags, place name, paw-print likes
 - Date-grouped feed timeline with day dividers and masthead
-- Capture flow: camera viewfinder (front/back), gallery picker, GPS auto-location,
-  Nominatim place search, hashtag highlighting in caption textarea
+- Capture flow: camera viewfinder (front/back), gallery picker, hashtag
+  highlighting in caption textarea
+- **Location as a place name — never raw lat/lng in the UI.** Defaults in
+  priority order: photo EXIF GPS (`exifr`), device location, Nominatim place
+  search; the user can also switch geo data off per entry. `latitude`/`longitude`
+  are nullable and stay in the DB for the future map view; `locationName` is
+  what gets displayed
+- **Likes (paws)**: `POST /api/cat-entries/[id]/like` toggle with optimistic UI,
+  viewer's own like state in feed/detail queries, double-tap on the photo
+- **Comments**: thread + compose on the detail page; delete by comment author
+  or entry owner (`/api/cat-entries/[id]/comments`, `DELETE /api/comments/[id]`)
+- **Entry detail page** `/cat-entries/[id]` with comments and Open Graph meta;
+  shareable while signed out (middleware lets these URLs through, the page
+  404s anything the viewer isn't allowed to see)
+- **Share links**: share button on cards (Web Share API, clipboard fallback)
+- **Settings page** (`/settings`, cog on own profile): display name + bio edit,
+  private-diary toggle, theme, sign out (`GET`/`PATCH /api/me`)
+- **Username or email sign-in**: unique `username` column; registration requires
+  one (both email and username unique), the sign-in form accepts either
 - Discover page: tag/name/breed filter, "often spotted" tag chips, URL-driven (`?q=`)
 - Design system: sunny cream/ink palette, fountain-pen blue accent, dot-grid
   texture, readable Geist typography
-- Theme setting: Light / Dark / System (default System) via next-themes,
-  toggle on own profile
+- Theme setting: Light / Dark / System (default System) via next-themes, in Settings
 
 ### Core diary polish
 - Edit/delete entries with confirmation
@@ -50,21 +66,13 @@ Keep this document in sync with reality as the app evolves.
 - Edit profile: display name, bio, avatar upload, private toggle
 
 ### Social / engagement
-- **Like API + optimistic UI** — button exists but calls no endpoint yet; needs
-  `POST /api/cat-entries/[id]/like` toggle, viewer's own like state in the feed query
-- **Comments UI** — data model exists; needs a detail page (`/cat-entries/[id]`)
-  with comment thread, inline comment compose
 - **In-app notifications** — new follower, like, comment; notification tab in nav
   (Bell icon placeholder); needs a `Notification` model and polling/push
 - **Mentions** (`@username`) in captions — parser already handles `@`, needs
   search-as-you-type autocomplete in the capture form
-- **Double-tap to like** — exists on the photo (onDoubleClick), but needs the
-  Like API wired in
 
 ### Cat entry detail page
-- `/cat-entries/[id]` — full-res photo, full caption, comments thread, map pin,
-  like count; currently there is no detail page (cards do not link anywhere)
-- Deep-link sharing: copy link, Open Graph meta for social previews
+- Map pin on the detail page once the map view exists
 
 ### Capture flow improvements
 - **Photo editing** — crop, basic brightness/contrast before upload
@@ -81,7 +89,7 @@ Keep this document in sync with reality as the app evolves.
 - Search: user search tab (currently only searches entries)
 
 ### Profile & settings
-- Settings page (privacy toggle, sign out, account deletion)
+- Account deletion, avatar upload, username change in Settings
 - Public profile URL (`/@username` or `/profile/[id]`) with Open Graph tags
 - Follow requests approval/rejection UI
 
@@ -183,6 +191,7 @@ Adjust as the app takes shape — this is a starting layout, not a mandate.
 model User {
   id          String   @id @default(cuid())
   email       String   @unique
+  username    String?  @unique // required for credentials accounts, set at registration
   displayName String
   bio         String?
   avatarKey   String?  // MinIO object key
@@ -198,10 +207,11 @@ model CatEntry {
   photoKey  String   // MinIO object key
   name      String?
   breed     String?
-  notes     String?
-  latitude  Float
-  longitude Float
-  createdAt DateTime @default(now())
+  notes        String?
+  locationName String? // human-readable place shown in the UI
+  latitude     Float?  // null = geo data disabled for this entry
+  longitude    Float?
+  createdAt    DateTime @default(now())
 }
 
 model Follow {

@@ -17,15 +17,21 @@ async function embedInBackground(entryId: string, photoKey: string) {
   }
 }
 
-const createSchema = z.object({
-  photoKey: z.string().min(1),
-  thumbKey: z.string().min(1).optional(),
-  name: z.string().max(120).optional(),
-  breed: z.string().max(120).optional(),
-  notes: z.string().max(2000).optional(),
-  latitude: z.number().min(-90).max(90),
-  longitude: z.number().min(-180).max(180),
-});
+const createSchema = z
+  .object({
+    photoKey: z.string().min(1),
+    thumbKey: z.string().min(1).optional(),
+    name: z.string().max(120).optional(),
+    breed: z.string().max(120).optional(),
+    notes: z.string().max(2000).optional(),
+    locationName: z.string().max(200).nullish(),
+    // Both null/absent when the user disabled geo data for this entry.
+    latitude: z.number().min(-90).max(90).nullish(),
+    longitude: z.number().min(-180).max(180).nullish(),
+  })
+  .refine((v) => (v.latitude == null) === (v.longitude == null), {
+    message: "latitude and longitude must be provided together",
+  });
 
 export async function GET(request: Request) {
   const session = await auth();

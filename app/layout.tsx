@@ -16,6 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  // Resolves relative Open Graph image URLs (share links) to absolute ones.
+  metadataBase: process.env.AUTH_URL ? new URL(process.env.AUTH_URL) : undefined,
   title: "Cat Diary",
   description: "Collect cats you've met all around the world. Connect to other cat lovers.",
   manifest: "/manifest.webmanifest",

@@ -1,22 +1,31 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { auth } from "@/lib/auth";
 import { requireUserId, UnauthorizedError } from "@/lib/auth-helpers";
 import {
   CatEntryForbiddenError,
   CatEntryNotFoundError,
   deleteCatEntry,
-  getOwnedCatEntry,
+  getCatEntryForViewer,
   updateCatEntry,
 } from "@/lib/catEntries";
 import { deleteObject } from "@/lib/storage";
 
-const updateSchema = z.object({
-  name: z.string().max(120).nullable().optional(),
-  breed: z.string().max(120).nullable().optional(),
-  notes: z.string().max(2000).nullable().optional(),
-  latitude: z.number().min(-90).max(90).optional(),
-  longitude: z.number().min(-180).max(180).optional(),
-});
+const updateSchema = z
+  .object({
+    name: z.string().max(120).nullable().optional(),
+    breed: z.string().max(120).nullable().optional(),
+    notes: z.string().max(2000).nullable().optional(),
+    locationName: z.string().max(200).nullable().optional(),
+    latitude: z.number().min(-90).max(90).nullable().optional(),
+    longitude: z.number().min(-180).max(180).nullable().optional(),
+  })
+  .refine(
+    (v) =>
+      (v.latitude === undefined && v.longitude === undefined) ||
+      (v.latitude !== undefined && v.longitude !== undefined && (v.latitude === null) === (v.longitude === null)),
+    { message: "latitude and longitude must be updated together" },
+  );
 
 async function withOwner<T>(fn: (userId: string) => Promise<T>) {
   try {
@@ -37,12 +46,10 @@ function mapCatEntryError(err: unknown) {
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const result = await withOwner(async (userId) => {
-    const entry = await getOwnedCatEntry(id, userId);
-    if (!entry) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
-    return NextResponse.json({ entry });
-  });
-  return result.ok ? result.value : result.response;
+  const session = await auth();
+  const entry = await getCatEntryForViewer(id, session?.user?.id ?? null);
+  if (!entry) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+  return NextResponse.json({ entry });
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {

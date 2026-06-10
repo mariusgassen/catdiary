@@ -9,8 +9,9 @@ export type CreateCatEntryInput = {
   name?: string | null;
   breed?: string | null;
   notes?: string | null;
-  latitude: number;
-  longitude: number;
+  locationName?: string | null;
+  latitude?: number | null; // null = user disabled geo data for this entry
+  longitude?: number | null;
 };
 
 export class CatEntryNotFoundError extends Error {}
@@ -20,8 +21,9 @@ export type UpdateCatEntryInput = {
   name?: string | null;
   breed?: string | null;
   notes?: string | null;
-  latitude?: number;
-  longitude?: number;
+  locationName?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 export async function createCatEntry(input: CreateCatEntryInput) {
@@ -33,8 +35,9 @@ export async function createCatEntry(input: CreateCatEntryInput) {
       name: input.name ?? null,
       breed: input.breed ?? null,
       notes: input.notes ?? null,
-      latitude: input.latitude,
-      longitude: input.longitude,
+      locationName: input.locationName ?? null,
+      latitude: input.latitude ?? null,
+      longitude: input.longitude ?? null,
     },
   });
 }
@@ -101,6 +104,30 @@ async function listVisibleOwnerIds(viewerId: string | null, ownerId?: string): P
   }
 
   return [...ids];
+}
+
+/** True if `viewerId` may see entries owned by `ownerId` (self, public, or approved follower). */
+export async function canViewCatEntry(viewerId: string | null, ownerId: string): Promise<boolean> {
+  const ids = await listVisibleOwnerIds(viewerId, ownerId);
+  return ids.length > 0;
+}
+
+/**
+ * Fetches a single entry for the detail page, enforcing visibility. Includes
+ * the owner, like/comment counts and whether the viewer has liked it.
+ */
+export async function getCatEntryForViewer(entryId: string, viewerId: string | null) {
+  const entry = await db.catEntry.findUnique({
+    where: { id: entryId },
+    include: {
+      owner: { select: { id: true, displayName: true, avatarKey: true, image: true } },
+      _count: { select: { likes: true, comments: true } },
+      likes: viewerId ? { where: { userId: viewerId }, select: { userId: true } } : false,
+    },
+  });
+  if (!entry) return null;
+  if (!(await canViewCatEntry(viewerId, entry.ownerId))) return null;
+  return entry;
 }
 
 export async function storeCatEntryEmbedding(entryId: string, embedding: number[]): Promise<void> {
@@ -185,6 +212,8 @@ export async function listCatEntriesForViewer(opts: {
     include: {
       owner: { select: { id: true, displayName: true, avatarKey: true, image: true } },
       _count: { select: { likes: true, comments: true } },
+      // Only the viewer's own like row — lets the UI render initial like state.
+      likes: opts.viewerId ? { where: { userId: opts.viewerId }, select: { userId: true } } : false,
     },
   });
 
