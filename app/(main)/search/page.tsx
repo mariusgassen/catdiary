@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { auth } from "@/lib/auth";
 import { listCatEntriesForViewer } from "@/lib/catEntries";
+import { searchUsers } from "@/lib/users";
 import { photoUrlsFor } from "@/lib/photo-urls";
 import { SearchResults } from "@/components/SearchView";
 
@@ -13,21 +14,21 @@ export default async function SearchPage({
   const session = await auth();
   const viewerId = session?.user?.id ?? null;
 
-  let results: Awaited<ReturnType<typeof listCatEntriesForViewer>> | null = null;
+  let initialResults = null;
   if (q) {
-    results = await listCatEntriesForViewer({ viewerId, query: q });
+    const [{ entries }, users] = await Promise.all([
+      listCatEntriesForViewer({ viewerId, query: q }),
+      q.startsWith("#") ? Promise.resolve([]) : searchUsers(q),
+    ]);
+    initialResults = {
+      entries: entries.map((entry) => ({ ...entry, photoUrls: photoUrlsFor(entry.photos) })),
+      users,
+    };
   }
-
-  const withPhotos = results
-    ? results.entries.map((entry) => ({
-        ...entry,
-        photoUrls: photoUrlsFor(entry.photos),
-      }))
-    : null;
 
   return (
     <Suspense>
-      <SearchResults initialQuery={q ?? ""} initialEntries={withPhotos} viewerId={viewerId} />
+      <SearchResults initialQuery={q ?? ""} initialResults={initialResults} viewerId={viewerId} />
     </Suspense>
   );
 }
