@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import { Loader2, Trash2, X } from "lucide-react";
 import { LocationPicker, type PickedLocation } from "@/components/LocationPicker";
 
 type CatEntryEditFormProps = {
@@ -16,6 +17,11 @@ type CatEntryEditFormProps = {
   };
 };
 
+/*
+ * Mobile-style edit screen: a top bar with Cancel on the left and Save on the
+ * right (like a native modal sheet), the fields below, and Delete demoted to
+ * a destructive action at the very bottom — backing out is always one tap.
+ */
 export function CatEntryEditForm({ entry }: CatEntryEditFormProps) {
   const router = useRouter();
   const [name, setName] = useState(entry.name ?? "");
@@ -31,6 +37,10 @@ export function CatEntryEditForm({ entry }: CatEntryEditFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  function handleCancel() {
+    router.back();
+  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -85,55 +95,79 @@ export function CatEntryEditForm({ entry }: CatEntryEditFormProps) {
     }
   }
 
+  const busy = submitting || deleting;
+
   return (
-    <form onSubmit={handleSubmit} className="mx-auto flex w-full max-w-md flex-col gap-3">
-      <input
-        placeholder="Name (optional)"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        maxLength={120}
-        className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:ring-1 focus:ring-accent placeholder:text-muted"
-      />
-      <input
-        placeholder="Breed / color (optional)"
-        value={breed}
-        onChange={(e) => setBreed(e.target.value)}
-        maxLength={120}
-        className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:ring-1 focus:ring-accent placeholder:text-muted"
-      />
-      <textarea
-        placeholder="Notes (optional)"
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-        rows={3}
-        maxLength={2000}
-        className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:ring-1 focus:ring-accent placeholder:text-muted"
-      />
-      <LocationPicker
-        location={location}
-        setLocation={setLocation}
-        geoDisabled={geoDisabled}
-        setGeoDisabled={setGeoDisabled}
-        isLocating={isLocating}
-        setIsLocating={setIsLocating}
-      />
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      <div className="flex gap-3">
-        <button
-          type="submit"
-          disabled={submitting || deleting}
-          className="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-accent/30 transition-transform active:scale-[0.98] disabled:opacity-50"
-        >
-          {submitting ? "Saving…" : "Save changes"}
-        </button>
-        <button
-          type="button"
-          onClick={handleDelete}
-          disabled={submitting || deleting}
-          className="rounded-xl border border-red-600 px-4 py-2.5 text-sm font-semibold text-red-600 disabled:opacity-50"
-        >
-          {deleting ? "Deleting…" : "Delete entry"}
-        </button>
+    <form onSubmit={handleSubmit} className="flex min-h-dvh flex-col">
+      {/* Top navigation: Cancel · title · Save */}
+      <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur-sm">
+        <div className="mx-auto flex h-12 max-w-[480px] items-center justify-between px-1">
+          <button
+            type="button"
+            onClick={handleCancel}
+            disabled={busy}
+            className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-muted transition-colors hover:text-foreground disabled:opacity-50"
+          >
+            <X size={16} aria-hidden />
+            Cancel
+          </button>
+          <h1 className="text-sm font-semibold">Edit entry</h1>
+          <button
+            type="submit"
+            disabled={busy}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-accent disabled:opacity-50"
+          >
+            {submitting && <Loader2 size={14} className="animate-spin" aria-hidden />}
+            {submitting ? "Saving…" : "Save"}
+          </button>
+        </div>
+      </header>
+
+      <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-3 px-4 py-4">
+        <input
+          placeholder="Name (optional)"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          maxLength={120}
+          className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:ring-1 focus:ring-accent placeholder:text-muted"
+        />
+        <input
+          placeholder="Breed / color (optional)"
+          value={breed}
+          onChange={(e) => setBreed(e.target.value)}
+          maxLength={120}
+          className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:ring-1 focus:ring-accent placeholder:text-muted"
+        />
+        <textarea
+          placeholder="Notes (optional)"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={3}
+          maxLength={2000}
+          className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:ring-1 focus:ring-accent placeholder:text-muted"
+        />
+        <LocationPicker
+          location={location}
+          setLocation={setLocation}
+          geoDisabled={geoDisabled}
+          setGeoDisabled={setGeoDisabled}
+          isLocating={isLocating}
+          setIsLocating={setIsLocating}
+        />
+        {error && <p className="text-sm text-red-600">{error}</p>}
+
+        {/* Destructive action, tucked at the bottom of the sheet */}
+        <div className="mt-auto flex justify-center border-t border-dashed border-border pt-4 pb-6">
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={busy}
+            className="flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-600/10 disabled:opacity-50"
+          >
+            {deleting ? <Loader2 size={14} className="animate-spin" aria-hidden /> : <Trash2 size={14} aria-hidden />}
+            {deleting ? "Deleting…" : "Delete this entry"}
+          </button>
+        </div>
       </div>
     </form>
   );

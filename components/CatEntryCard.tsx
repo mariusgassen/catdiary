@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import { PawPrint, MessageSquareText, Share2, MapPin, Pencil, Check } from "lucide-react";
+import { PawPrint, MessageSquareText, Share2, MapPin, SquarePen, Check } from "lucide-react";
 import { HashtagCaption } from "@/components/HashtagCaption";
 import { displayNameFor } from "@/lib/userDisplay";
 
@@ -130,10 +130,10 @@ export function CatEntryCard({ entry, viewerId }: CatEntryCardProps) {
           {isOwner && (
             <Link
               href={`/cat-entries/${entry.id}/edit`}
-              className="p-1 text-muted hover:text-foreground transition-colors"
+              className="p-1.5 -m-0.5 text-muted hover:text-foreground transition-colors"
               aria-label="Edit entry"
             >
-              <Pencil size={14} />
+              <SquarePen size={16} strokeWidth={1.75} />
             </Link>
           )}
           <time className="stamp px-1.5 py-0.5 text-[10px] font-semibold text-accent">

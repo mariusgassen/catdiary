@@ -16,10 +16,5 @@ export default async function EditCatEntryPage({ params }: { params: Promise<{ i
     notFound();
   }
 
-  return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-xl font-semibold">Edit cat entry</h1>
-      <CatEntryEditForm entry={entry} />
-    </div>
-  );
+  return <CatEntryEditForm entry={entry} />;
 }
