@@ -13,8 +13,8 @@ export default async function Home() {
     <main className="paper-grid flex flex-1 flex-col items-center justify-center gap-6 px-6 py-24 text-center">
       <div className="space-y-3">
         <PawPrint size={36} className="mx-auto text-accent" aria-hidden />
-        <h1 className="font-display text-4xl font-semibold tracking-tight">Cat Diary</h1>
-        <p className="font-display text-lg italic text-muted">A field journal for every cat you meet</p>
+        <h1 className="text-4xl font-bold tracking-tight">Cat Diary</h1>
+        <p className="text-lg text-muted">A field journal for every cat you meet</p>
       </div>
       <p className="max-w-md text-foreground/75">
         Snap a photo, pin the location, jot a note — and keep a diary of every

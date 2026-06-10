@@ -68,7 +68,7 @@ export function CatEntryCard({ entry, viewerId }: CatEntryCardProps) {
       <div className="flex items-center justify-between gap-3 pb-3">
         <Link href={`/profile/${entry.owner.id}`} className="flex min-w-0 items-center gap-2 group">
           <Avatar user={entry.owner} />
-          <span className="truncate font-display italic text-[15px] text-foreground group-hover:underline">
+          <span className="truncate text-sm font-semibold text-foreground group-hover:underline">
             {entry.owner.displayName}&rsquo;s diary
           </span>
         </Link>
@@ -104,15 +104,15 @@ export function CatEntryCard({ entry, viewerId }: CatEntryCardProps) {
             🐱
           </div>
         )}
-        <figcaption className="pt-1.5 text-center font-hand text-xl leading-none text-[#3a3128]">
-          {entry.name ?? "a cat I met"}
-          {entry.breed && <span className="text-[#8a7d6b]"> · {entry.breed}</span>}
+        <figcaption className="pt-1.5 text-center text-sm font-medium leading-none text-[#3a3128]">
+          {entry.name ?? "A cat I met"}
+          {entry.breed && <span className="font-normal text-[#8a7d6b]"> · {entry.breed}</span>}
         </figcaption>
       </figure>
 
       {/* Diary text */}
       {entry.notes && (
-        <p className="pb-2.5 font-display text-[15px] leading-relaxed text-foreground">
+        <p className="pb-2.5 text-[15px] leading-relaxed text-foreground">
           <HashtagCaption text={entry.notes} />
         </p>
       )}

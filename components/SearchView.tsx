@@ -89,7 +89,7 @@ export function SearchResults({ initialQuery, initialEntries, viewerId }: Props)
     <div className="paper-grid min-h-dvh">
       {/* Search bar */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border px-4 pt-3 pb-3">
-        <h1 className="font-display text-xl font-semibold tracking-tight pb-2.5">Discover</h1>
+        <h1 className="text-xl font-bold tracking-tight pb-2.5">Discover</h1>
         <div className="flex items-center gap-2.5 rounded-xl bg-surface border border-border px-4 py-2.5 focus-within:ring-1 focus-within:ring-accent transition-shadow">
           <Search size={16} className="text-muted shrink-0" />
           <input
@@ -116,12 +116,12 @@ export function SearchResults({ initialQuery, initialEntries, viewerId }: Props)
           {entries.length === 0 ? (
             <div className="flex flex-col items-center gap-2 px-6 py-16 text-center">
               <span className="text-4xl">🔍</span>
-              <p className="font-display font-semibold">Nothing in the journal for &ldquo;{query}&rdquo;</p>
+              <p className="font-semibold">Nothing in the journal for &ldquo;{query}&rdquo;</p>
               <p className="text-sm text-muted">Try a different tag or breed name</p>
             </div>
           ) : (
             <div className="space-y-4">
-              <p className="px-4 pt-3 font-display text-sm italic text-muted">
+              <p className="px-4 pt-3 text-xs font-semibold uppercase tracking-wide text-muted">
                 {entries.length} sighting{entries.length !== 1 ? "s" : ""} found
               </p>
               {entries.map((entry) => (
@@ -133,7 +133,7 @@ export function SearchResults({ initialQuery, initialEntries, viewerId }: Props)
       ) : (
         /* Empty state — explore */
         <div className="px-4 py-5">
-          <p className="font-display text-sm italic text-muted mb-3">Often spotted</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-3">Often spotted</p>
           <div className="flex flex-wrap gap-2">
             {TRENDING_TAGS.map((tag) => (
               <button

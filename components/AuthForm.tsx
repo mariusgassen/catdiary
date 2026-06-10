@@ -64,7 +64,7 @@ export function AuthForm({
 
   return (
     <div className="mx-auto flex w-full max-w-sm flex-col gap-6 rounded-xl border border-border bg-surface px-6 py-7 shadow-sm">
-      <h1 className="font-display text-2xl font-semibold tracking-tight">
+      <h1 className="text-2xl font-bold tracking-tight">
         {mode === "sign-in" ? "Open your diary" : "Start your diary"}
       </h1>
 

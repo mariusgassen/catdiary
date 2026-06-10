@@ -48,7 +48,7 @@ export default async function FeedPage() {
       <div className="paper-grid flex min-h-dvh flex-col items-center gap-4 px-6 py-24 text-center">
         <span className="text-5xl">🐱</span>
         <div className="space-y-1">
-          <p className="font-display text-lg font-semibold">This page is still blank</p>
+          <p className="text-lg font-semibold">This page is still blank</p>
           <p className="text-sm text-muted">Met a cat today? Write it down.</p>
         </div>
         <Link
@@ -69,11 +69,11 @@ export default async function FeedPage() {
       {/* Masthead */}
       <header className="sticky top-0 z-10 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
         <div className="flex items-baseline justify-between">
-          <h1 className="flex items-center gap-1.5 font-display text-xl font-semibold tracking-tight">
+          <h1 className="flex items-center gap-1.5 text-xl font-bold tracking-tight">
             <PawPrint size={18} className="text-accent" aria-hidden />
             Cat Diary
           </h1>
-          <p className="font-display text-xs italic text-muted">
+          <p className="text-xs text-muted">
             {new Date().toLocaleDateString("en", { weekday: "long", day: "numeric", month: "long" })}
           </p>
         </div>
@@ -85,7 +85,7 @@ export default async function FeedPage() {
           <section key={group.label} className="space-y-4">
             <div className="flex items-center gap-3 px-4">
               <span className="h-px flex-1 bg-border" aria-hidden />
-              <h2 className="font-display text-sm italic text-muted">{group.label}</h2>
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">{group.label}</h2>
               <span className="h-px flex-1 bg-border" aria-hidden />
             </div>
             {group.entries.map((entry) => (

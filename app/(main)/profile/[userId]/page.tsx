@@ -6,6 +6,7 @@ import { listPendingFollowRequests } from "@/lib/follows";
 import { CatEntryCard } from "@/components/CatEntryCard";
 import { FollowButton } from "@/components/FollowButton";
 import { FollowRequestRow } from "@/components/FollowRequestRow";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default async function ProfilePage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId } = await params;
@@ -43,10 +44,10 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
       <header className="mx-3 rounded-xl border border-border bg-surface px-5 py-5 shadow-sm">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <h1 className="font-display text-2xl font-semibold tracking-tight">
+            <h1 className="text-2xl font-bold tracking-tight">
               {profileUser.displayName}&rsquo;s Diary
             </h1>
-            <p className="pt-0.5 font-display text-sm italic text-muted">
+            <p className="pt-0.5 text-sm text-muted">
               {withPhotos.length} {withPhotos.length === 1 ? "entry" : "entries"}
               {profileUser.isPrivate && " · private diary"}
             </p>
@@ -56,11 +57,17 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
             <FollowButton followeeId={profileUser.id} initiallyFollowing={isFollowing} />
           )}
         </div>
+        {isOwnProfile && (
+          <div className="mt-4 flex items-center justify-between border-t border-dashed border-border pt-3">
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted">Appearance</span>
+            <ThemeToggle />
+          </div>
+        )}
       </header>
 
       {pendingRequests.length > 0 && (
         <section className="mx-3 flex flex-col gap-2 rounded-xl border border-border bg-surface p-4 text-sm shadow-sm">
-          <h2 className="font-display font-semibold">Waiting to read along</h2>
+          <h2 className="font-semibold">Waiting to read along</h2>
           {pendingRequests.map((request) => (
             <FollowRequestRow
               key={request.followerId}
@@ -72,7 +79,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
       )}
 
       {withPhotos.length === 0 ? (
-        <p className="px-6 py-10 text-center font-display italic text-muted">
+        <p className="px-6 py-10 text-center text-sm text-muted">
           These pages are still blank.
         </p>
       ) : (

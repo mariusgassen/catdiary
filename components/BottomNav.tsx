@@ -51,7 +51,7 @@ export function BottomNav() {
               }`}
             >
               <Icon size={21} strokeWidth={isActive(href) ? 2.25 : 1.75} />
-              <span className={`font-display text-[10px] leading-none ${isActive(href) ? "italic font-semibold" : ""}`}>
+              <span className={`text-[10px] leading-none ${isActive(href) ? "font-semibold" : "font-medium"}`}>
                 {label}
               </span>
             </Link>
@@ -66,7 +66,7 @@ export function BottomNav() {
           }`}
         >
           <User size={21} strokeWidth={pathname.startsWith("/profile") ? 2.25 : 1.75} />
-          <span className={`font-display text-[10px] leading-none ${pathname.startsWith("/profile") ? "italic font-semibold" : ""}`}>
+          <span className={`text-[10px] leading-none ${pathname.startsWith("/profile") ? "font-semibold" : "font-medium"}`}>
             My diary
           </span>
         </Link>

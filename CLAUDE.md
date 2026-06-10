@@ -11,18 +11,19 @@ thumbnailing, the core `CatEntry` create/list loop, Follow + a basic feed, and a
 docker-compose stack (`web`/`db`/`minio`).
 
 **Mobile design shipped — "field journal" design language:** the UI is styled
-as a naturalist's notebook, not a photo-sharing feed clone. Warm paper palette
-with a clay rubber-stamp accent, dot-grid page backgrounds (`.paper-grid`),
-Fraunces (serif display, `font-display`) and Caveat (handwritten, `font-hand`)
-via `next/font`. Entries render as journal-page cards: a taped-in, slightly
-tilted polaroid with a handwritten name/breed caption, a rubber-stamp date,
-serif diary notes, coordinates in the footer, and paw-print reactions. The feed
-is a date-grouped timeline ("Today", "Yesterday", …), profiles are diary covers
-("X's Diary", follow = "Read along"), and bottom tab navigation is Journal ·
-Discover · Log a cat (paw stamp) · Map · My diary. Full capture flow (native
-camera API, gallery fallback, GPS + OpenStreetMap Nominatim location, hashtag
-highlight overlay in caption) and a Discover page with tag/breed/name
-filtering.
+as a naturalist's notebook, not a photo-sharing feed clone. Sunny cream palette
+with a cheerful tangerine accent, dot-grid page backgrounds (`.paper-grid`),
+and Geist throughout for readability — the journal feel comes from layout, not
+decorative fonts. Entries render as journal-page cards: a taped-in, slightly
+tilted polaroid with a name/breed caption, a rubber-stamp date, diary notes,
+coordinates in the footer, and paw-print reactions. The feed is a date-grouped
+timeline ("Today", "Yesterday", …), profiles are diary covers ("X's Diary",
+follow = "Read along"), and bottom tab navigation is Journal · Discover · Log a
+cat (paw stamp) · Map · My diary. Theming is class-based via `next-themes`
+(Light / Dark / System setting on your own profile, System by default). Full
+capture flow (native camera API, gallery fallback, GPS + OpenStreetMap
+Nominatim location, hashtag highlight overlay in caption) and a Discover page
+with tag/breed/name filtering.
 
 Keep this document in sync with reality as the app evolves.
 
@@ -30,14 +31,16 @@ Keep this document in sync with reality as the app evolves.
 
 ### Done
 - Bottom tab nav with icons (Journal, Discover, Log a cat, Map, My diary)
-- Field-journal entry cards: taped polaroid photo, handwritten caption,
-  rubber-stamp date, serif notes with hashtags, coordinates, paw-print likes
-- Date-grouped feed timeline with day dividers and serif masthead
+- Field-journal entry cards: taped polaroid photo with name/breed caption,
+  rubber-stamp date, notes with hashtags, coordinates, paw-print likes
+- Date-grouped feed timeline with day dividers and masthead
 - Capture flow: camera viewfinder (front/back), gallery picker, GPS auto-location,
   Nominatim place search, hashtag highlighting in caption textarea
 - Discover page: tag/name/breed filter, "often spotted" tag chips, URL-driven (`?q=`)
-- Design system: paper/ink palette, clay accent, dot-grid texture, Fraunces +
-  Caveat fonts, dark "midnight desk" mode
+- Design system: sunny cream/ink palette, tangerine accent, dot-grid texture,
+  readable Geist typography
+- Theme setting: Light / Dark / System (default System) via next-themes,
+  toggle on own profile
 
 ### Core diary polish
 - Edit/delete entries with confirmation

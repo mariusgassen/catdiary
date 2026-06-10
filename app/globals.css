@@ -1,34 +1,37 @@
 @import "tailwindcss";
 
+/* Theme is class-based (next-themes sets .dark on <html>), so the dark:
+   variant must key off the class rather than prefers-color-scheme. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /*
  * Field-journal design language.
  *
- * Cat Diary is a naturalist's notebook, not a photo-sharing app: warm paper
- * surfaces, ink-coloured text, a clay "rubber stamp" accent, serif display
- * type (Fraunces) and a handwritten face (Caveat) for photo captions.
+ * Cat Diary is a naturalist's notebook, not a photo-sharing app: sunny paper
+ * surfaces, warm ink text, and a cheerful tangerine accent. Typography stays
+ * on Geist throughout for readability — the journal feel comes from layout
+ * (taped polaroids, stamps, day dividers), not decorative fonts.
  */
 :root {
-  --background: #f5efe3; /* aged paper */
-  --foreground: #2e2620; /* warm ink */
-  --surface: #fdfaf2; /* fresh page */
-  --accent: #b4451f; /* clay stamp */
-  --accent-soft: #f3e2d0;
-  --muted: #8a7d6b;
-  --border: #e2d8c3;
-  --tape: rgba(222, 205, 160, 0.55);
+  --background: #fffbf2; /* sunny cream */
+  --foreground: #292524; /* warm ink */
+  --surface: #ffffff; /* fresh page */
+  --accent: #f97316; /* tangerine */
+  --accent-soft: #ffedd5;
+  --muted: #79716b;
+  --border: #f0e7d8;
+  --tape: rgba(255, 214, 130, 0.55);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #16110d; /* midnight desk */
-    --foreground: #ece3d2;
-    --surface: #211a14;
-    --accent: #e07a45;
-    --accent-soft: #33231a;
-    --muted: #9b8e7c;
-    --border: #322a21;
-    --tape: rgba(120, 104, 70, 0.45);
-  }
+.dark {
+  --background: #1f1b16; /* evening desk */
+  --foreground: #f5f0e8;
+  --surface: #2a251f;
+  --accent: #fb923c;
+  --accent-soft: #3d2c1c;
+  --muted: #a89e92;
+  --border: #3a332b;
+  --tape: rgba(150, 125, 80, 0.5);
 }
 
 @theme inline {
@@ -41,8 +44,6 @@
   --color-border: var(--border);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-display: var(--font-fraunces, Georgia, "Times New Roman", serif);
-  --font-hand: var(--font-caveat, "Segoe Script", "Comic Sans MS", cursive);
 }
 
 html,
