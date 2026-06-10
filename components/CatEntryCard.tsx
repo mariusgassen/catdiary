@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { PawPrint, MessageSquareText, Share2, MapPin, Pencil, Check } from "lucide-react";
 import { HashtagCaption } from "@/components/HashtagCaption";
+import { displayNameFor } from "@/lib/userDisplay";
 
 type CatEntryCardProps = {
   entry: {
@@ -17,7 +18,13 @@ type CatEntryCardProps = {
     longitude: number | null;
     createdAt: string | Date;
     photoUrl?: string | null;
-    owner: { id: string; displayName: string; avatarKey?: string | null; image?: string | null };
+    owner: {
+      id: string;
+      displayName: string | null;
+      username?: string | null;
+      avatarKey?: string | null;
+      image?: string | null;
+    };
     _count?: { likes: number; comments: number };
     likes?: { userId: string }[]; // the viewer's own like row, if any
   };
@@ -35,14 +42,15 @@ function tiltFor(id: string): string {
   return tilts[Math.abs(hash) % tilts.length];
 }
 
-function Avatar({ user }: { user: { displayName: string; image?: string | null } }) {
+function Avatar({ user }: { user: { displayName: string | null; username?: string | null; image?: string | null } }) {
+  const name = displayNameFor(user);
   if (user.image) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={user.image} alt={user.displayName} className="w-6 h-6 rounded-full object-cover" />;
+    return <img src={user.image} alt={name} className="w-6 h-6 rounded-full object-cover" />;
   }
   return (
     <div className="w-6 h-6 rounded-full bg-accent-soft flex items-center justify-center text-accent text-[11px] font-semibold select-none">
-      {user.displayName[0]?.toUpperCase() ?? "?"}
+      {name[0]?.toUpperCase() ?? "?"}
     </div>
   );
 }
@@ -105,7 +113,7 @@ export function CatEntryCard({ entry, viewerId }: CatEntryCardProps) {
         <Link href={`/profile/${entry.owner.id}`} className="flex min-w-0 items-center gap-2 group">
           <Avatar user={entry.owner} />
           <span className="truncate text-sm font-semibold text-foreground group-hover:underline">
-            {entry.owner.displayName}&rsquo;s diary
+            {displayNameFor(entry.owner)}&rsquo;s diary
           </span>
         </Link>
         <div className="flex shrink-0 items-center gap-2">

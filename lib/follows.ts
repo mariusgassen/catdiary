@@ -27,7 +27,7 @@ export async function unfollowUser(followerId: string, followeeId: string) {
 export async function listFollowing(userId: string) {
   return db.follow.findMany({
     where: { followerId: userId, approved: true },
-    include: { followee: { select: { id: true, displayName: true, image: true, avatarKey: true } } },
+    include: { followee: { select: { id: true, username: true, displayName: true, image: true, avatarKey: true } } },
   });
 }
 
@@ -35,7 +35,7 @@ export async function listFollowing(userId: string) {
 export async function listPendingFollowRequests(userId: string) {
   return db.follow.findMany({
     where: { followeeId: userId, approved: false },
-    include: { follower: { select: { id: true, displayName: true, image: true, avatarKey: true } } },
+    include: { follower: { select: { id: true, username: true, displayName: true, image: true, avatarKey: true } } },
   });
 }
 

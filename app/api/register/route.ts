@@ -13,7 +13,13 @@ const registerSchema = z.object({
       message: "Use 3-30 lowercase letters, numbers, dots or underscores.",
     }),
   password: z.string().min(8),
-  displayName: z.string().min(1).max(80),
+  // Optional — the username is the display fallback when none is given.
+  displayName: z
+    .string()
+    .trim()
+    .max(80)
+    .optional()
+    .transform((v) => v || null),
 });
 
 const KNOWN_ERRORS = ["EMAIL_TAKEN", "USERNAME_TAKEN", "INVALID_USERNAME"] as const;

@@ -5,6 +5,7 @@ import { getCatEntryForViewer } from "@/lib/catEntries";
 import { listComments } from "@/lib/comments";
 import { CatEntryCard } from "@/components/CatEntryCard";
 import { CommentsSection } from "@/components/CommentsSection";
+import { displayNameFor } from "@/lib/userDisplay";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -14,8 +15,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const entry = await getCatEntryForViewer(id, session?.user?.id ?? null);
   if (!entry) return { title: "Cat Diary" };
 
-  const title = entry.name ? `${entry.name} — Cat Diary` : `A cat in ${entry.owner.displayName}'s diary`;
-  const description = entry.notes ?? `A cat ${entry.owner.displayName} met${entry.locationName ? ` in ${entry.locationName}` : ""}.`;
+  const ownerName = displayNameFor(entry.owner);
+  const title = entry.name ? `${entry.name} — Cat Diary` : `A cat in ${ownerName}'s diary`;
+  const description = entry.notes ?? `A cat ${ownerName} met${entry.locationName ? ` in ${entry.locationName}` : ""}.`;
   return {
     title,
     description,

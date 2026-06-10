@@ -120,7 +120,7 @@ export async function getCatEntryForViewer(entryId: string, viewerId: string | n
   const entry = await db.catEntry.findUnique({
     where: { id: entryId },
     include: {
-      owner: { select: { id: true, displayName: true, avatarKey: true, image: true } },
+      owner: { select: { id: true, username: true, displayName: true, avatarKey: true, image: true } },
       _count: { select: { likes: true, comments: true } },
       likes: viewerId ? { where: { userId: viewerId }, select: { userId: true } } : false,
     },
@@ -143,7 +143,8 @@ type SimilarEntry = {
   name: string | null;
   breed: string | null;
   createdAt: Date;
-  ownerDisplayName: string;
+  ownerDisplayName: string | null;
+  ownerUsername: string | null;
   ownerAvatarKey: string | null;
   ownerImage: string | null;
 };
@@ -171,6 +172,7 @@ export async function getSimilarCatEntries(
       ce.breed,
       ce."createdAt",
       u."displayName" AS "ownerDisplayName",
+      u.username      AS "ownerUsername",
       u."avatarKey"   AS "ownerAvatarKey",
       u.image         AS "ownerImage"
     FROM "CatEntry" ce
@@ -210,7 +212,7 @@ export async function listCatEntriesForViewer(opts: {
     take: PAGE_SIZE + 1,
     ...(opts.cursor ? { cursor: { id: opts.cursor }, skip: 1 } : {}),
     include: {
-      owner: { select: { id: true, displayName: true, avatarKey: true, image: true } },
+      owner: { select: { id: true, username: true, displayName: true, avatarKey: true, image: true } },
       _count: { select: { likes: true, comments: true } },
       // Only the viewer's own like row — lets the UI render initial like state.
       likes: opts.viewerId ? { where: { userId: opts.viewerId }, select: { userId: true } } : false,

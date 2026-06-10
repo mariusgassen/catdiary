@@ -13,7 +13,7 @@ model User {
   username      String?   @unique // nullable: OAuth-only users may not have picked one yet
   emailVerified DateTime?
   passwordHash  String? // nullable: OAuth-only users have no password
-  displayName   String
+  displayName   String? // nullable: the username is the display fallback
   bio           String?
   avatarKey     String? // MinIO object key
   image         String? // adapter convention: avatar URL from OAuth profile

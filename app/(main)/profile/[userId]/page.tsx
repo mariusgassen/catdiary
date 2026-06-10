@@ -8,6 +8,7 @@ import { listPendingFollowRequests } from "@/lib/follows";
 import { CatEntryCard } from "@/components/CatEntryCard";
 import { FollowButton } from "@/components/FollowButton";
 import { FollowRequestRow } from "@/components/FollowRequestRow";
+import { displayNameFor } from "@/lib/userDisplay";
 
 export default async function ProfilePage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId } = await params;
@@ -16,7 +17,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
 
   const profileUser = await db.user.findUnique({
     where: { id: userId },
-    select: { id: true, displayName: true, bio: true, isPrivate: true },
+    select: { id: true, username: true, displayName: true, bio: true, isPrivate: true },
   });
   if (!profileUser) {
     notFound();
@@ -46,7 +47,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <h1 className="text-2xl font-bold tracking-tight">
-              {profileUser.displayName}&rsquo;s Diary
+              {displayNameFor(profileUser)}&rsquo;s Diary
             </h1>
             <p className="pt-0.5 text-sm text-muted">
               {withPhotos.length} {withPhotos.length === 1 ? "entry" : "entries"}
@@ -76,7 +77,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
             <FollowRequestRow
               key={request.followerId}
               followerId={request.followerId}
-              displayName={request.follower.displayName}
+              displayName={displayNameFor(request.follower)}
             />
           ))}
         </section>

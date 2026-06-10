@@ -86,13 +86,6 @@ export function AuthForm({
           <>
             <input
               required
-              placeholder="Display name"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              className="rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none placeholder:text-muted focus:ring-1 focus:ring-accent"
-            />
-            <input
-              required
               placeholder="Username"
               value={username}
               minLength={3}
@@ -101,6 +94,13 @@ export function AuthForm({
               autoCapitalize="none"
               autoCorrect="off"
               onChange={(e) => setUsername(e.target.value.toLowerCase())}
+              className="rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none placeholder:text-muted focus:ring-1 focus:ring-accent"
+            />
+            <input
+              placeholder="Display name (optional)"
+              maxLength={80}
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
               className="rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none placeholder:text-muted focus:ring-1 focus:ring-accent"
             />
           </>

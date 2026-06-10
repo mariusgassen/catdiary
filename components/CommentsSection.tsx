@@ -3,24 +3,26 @@
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { Loader2, Send, Trash2 } from "lucide-react";
+import { displayNameFor } from "@/lib/userDisplay";
 
 export type CommentItem = {
   id: string;
   body: string;
   createdAt: string | Date;
-  user: { id: string; displayName: string; image?: string | null };
+  user: { id: string; displayName: string | null; username?: string | null; image?: string | null };
 };
 
 const COMMENT_DATE = new Intl.DateTimeFormat("en", { day: "2-digit", month: "short" });
 
-function Avatar({ user }: { user: { displayName: string; image?: string | null } }) {
+function Avatar({ user }: { user: { displayName: string | null; username?: string | null; image?: string | null } }) {
+  const name = displayNameFor(user);
   if (user.image) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={user.image} alt={user.displayName} className="w-7 h-7 rounded-full object-cover shrink-0" />;
+    return <img src={user.image} alt={name} className="w-7 h-7 rounded-full object-cover shrink-0" />;
   }
   return (
     <div className="w-7 h-7 rounded-full bg-accent-soft flex items-center justify-center text-accent text-xs font-semibold select-none shrink-0">
-      {user.displayName[0]?.toUpperCase() ?? "?"}
+      {name[0]?.toUpperCase() ?? "?"}
     </div>
   );
 }
@@ -89,7 +91,7 @@ export function CommentsSection({
                 <div className="min-w-0 flex-1">
                   <p className="text-xs text-muted">
                     <Link href={`/profile/${comment.user.id}`} className="font-semibold text-foreground hover:underline">
-                      {comment.user.displayName}
+                      {displayNameFor(comment.user)}
                     </Link>{" "}
                     · {COMMENT_DATE.format(new Date(comment.createdAt))}
                   </p>

@@ -53,6 +53,11 @@ Keep this document in sync with reality as the app evolves.
   private-diary toggle, theme, sign out (`GET`/`PATCH /api/me`)
 - **Username or email sign-in**: unique `username` column; registration requires
   one (both email and username unique), the sign-in form accepts either
+- **Username change + display-name fallback**: the handle is editable in
+  Settings (same rules/uniqueness as registration, `PATCH /api/me`);
+  `displayName` is optional (nullable column, optional at registration and
+  clearable in Settings) and every name render falls back to the username via
+  `displayNameFor` in `lib/userDisplay.ts`
 - Discover page: tag/name/breed filter, "often spotted" tag chips, URL-driven (`?q=`)
 - Design system: sunny cream/ink palette, fountain-pen blue accent, dot-grid
   texture, readable Geist typography
@@ -89,7 +94,7 @@ Keep this document in sync with reality as the app evolves.
 - Search: user search tab (currently only searches entries)
 
 ### Profile & settings
-- Account deletion, avatar upload, username change in Settings
+- Account deletion, avatar upload in Settings
 - Public profile URL (`/@username` or `/profile/[id]`) with Open Graph tags
 - Follow requests approval/rejection UI
 
@@ -192,7 +197,7 @@ model User {
   id          String   @id @default(cuid())
   email       String   @unique
   username    String?  @unique // required for credentials accounts, set at registration
-  displayName String
+  displayName String?  // optional — the UI falls back to username
   bio         String?
   avatarKey   String?  // MinIO object key
   isPrivate   Boolean  @default(false)
