@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import { LocationPicker, type PickedLocation } from "@/components/LocationPicker";
 
 type CatEntryEditFormProps = {
   entry: {
@@ -9,8 +10,9 @@ type CatEntryEditFormProps = {
     name: string | null;
     breed: string | null;
     notes: string | null;
-    latitude: number;
-    longitude: number;
+    locationName: string | null;
+    latitude: number | null;
+    longitude: number | null;
   };
 };
 
@@ -19,8 +21,13 @@ export function CatEntryEditForm({ entry }: CatEntryEditFormProps) {
   const [name, setName] = useState(entry.name ?? "");
   const [breed, setBreed] = useState(entry.breed ?? "");
   const [notes, setNotes] = useState(entry.notes ?? "");
-  const [latitude, setLatitude] = useState(String(entry.latitude));
-  const [longitude, setLongitude] = useState(String(entry.longitude));
+  const [location, setLocation] = useState<PickedLocation | null>(
+    entry.latitude != null && entry.longitude != null
+      ? { name: entry.locationName ?? "Pinned on the map", lat: entry.latitude, lng: entry.longitude }
+      : null
+  );
+  const [geoDisabled, setGeoDisabled] = useState(entry.latitude == null);
+  const [isLocating, setIsLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -29,10 +36,8 @@ export function CatEntryEditForm({ entry }: CatEntryEditFormProps) {
     event.preventDefault();
     setError(null);
 
-    const lat = Number(latitude);
-    const lng = Number(longitude);
-    if (Number.isNaN(lat) || Number.isNaN(lng)) {
-      setError("A valid location is required.");
+    if (!location && !geoDisabled) {
+      setError("Pick a location or switch location off.");
       return;
     }
 
@@ -42,11 +47,12 @@ export function CatEntryEditForm({ entry }: CatEntryEditFormProps) {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: name || null,
-          breed: breed || null,
-          notes: notes || null,
-          latitude: lat,
-          longitude: lng,
+          name: name.trim() || null,
+          breed: breed.trim() || null,
+          notes: notes.trim() || null,
+          locationName: location?.name ?? null,
+          latitude: location?.lat ?? null,
+          longitude: location?.lng ?? null,
         }),
       });
       if (!res.ok) {
@@ -85,45 +91,38 @@ export function CatEntryEditForm({ entry }: CatEntryEditFormProps) {
         placeholder="Name (optional)"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        className="rounded border border-black/15 px-3 py-2 dark:border-white/20"
+        maxLength={120}
+        className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:ring-1 focus:ring-accent placeholder:text-muted"
       />
       <input
         placeholder="Breed / color (optional)"
         value={breed}
         onChange={(e) => setBreed(e.target.value)}
-        className="rounded border border-black/15 px-3 py-2 dark:border-white/20"
+        maxLength={120}
+        className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:ring-1 focus:ring-accent placeholder:text-muted"
       />
       <textarea
         placeholder="Notes (optional)"
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
-        className="rounded border border-black/15 px-3 py-2 dark:border-white/20"
         rows={3}
+        maxLength={2000}
+        className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:ring-1 focus:ring-accent placeholder:text-muted"
       />
-      <div className="flex gap-3">
-        <input
-          required
-          placeholder="Latitude"
-          inputMode="decimal"
-          value={latitude}
-          onChange={(e) => setLatitude(e.target.value)}
-          className="w-1/2 rounded border border-black/15 px-3 py-2 dark:border-white/20"
-        />
-        <input
-          required
-          placeholder="Longitude"
-          inputMode="decimal"
-          value={longitude}
-          onChange={(e) => setLongitude(e.target.value)}
-          className="w-1/2 rounded border border-black/15 px-3 py-2 dark:border-white/20"
-        />
-      </div>
+      <LocationPicker
+        location={location}
+        setLocation={setLocation}
+        geoDisabled={geoDisabled}
+        setGeoDisabled={setGeoDisabled}
+        isLocating={isLocating}
+        setIsLocating={setIsLocating}
+      />
       {error && <p className="text-sm text-red-600">{error}</p>}
       <div className="flex gap-3">
         <button
           type="submit"
           disabled={submitting || deleting}
-          className="rounded bg-black px-3 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+          className="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-accent/30 transition-transform active:scale-[0.98] disabled:opacity-50"
         >
           {submitting ? "Saving…" : "Save changes"}
         </button>
@@ -131,7 +130,7 @@ export function CatEntryEditForm({ entry }: CatEntryEditFormProps) {
           type="button"
           onClick={handleDelete}
           disabled={submitting || deleting}
-          className="rounded border border-red-600 px-3 py-2 text-sm font-medium text-red-600 disabled:opacity-50"
+          className="rounded-xl border border-red-600 px-4 py-2.5 text-sm font-semibold text-red-600 disabled:opacity-50"
         >
           {deleting ? "Deleting…" : "Delete entry"}
         </button>

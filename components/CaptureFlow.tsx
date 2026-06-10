@@ -2,37 +2,20 @@
 
 import { useRef, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import exifr from "exifr";
 import {
   X,
   RotateCcw,
   Camera,
   ImageIcon,
-  MapPin,
-  Locate,
-  Search,
   ChevronLeft,
   Loader2,
 } from "lucide-react";
 import { parseCaption } from "@/components/HashtagCaption";
+import { LocationPicker, reverseGeocode, type PickedLocation } from "@/components/LocationPicker";
 
 type Step = "camera" | "details";
 type Facing = "environment" | "user";
-
-type NominatimResult = {
-  place_id: number;
-  display_name: string;
-  lat: string;
-  lon: string;
-  address?: Record<string, string>;
-};
-
-function shortLocationName(result: NominatimResult): string {
-  const a = result.address ?? {};
-  return (
-    a.city || a.town || a.village || a.suburb || a.county ||
-    result.display_name.split(",")[0]
-  );
-}
 
 // ── Caption textarea with live hashtag highlighting ──────────────────────────
 
@@ -97,139 +80,6 @@ function CaptionInput({
   );
 }
 
-// ── Location picker ───────────────────────────────────────────────────────────
-
-function LocationPicker({
-  locationName,
-  setLocationName,
-  setCoords,
-  isLocating,
-  setIsLocating,
-}: {
-  locationName: string;
-  setLocationName: (n: string) => void;
-  setCoords: (c: { lat: number; lng: number }) => void;
-  isLocating: boolean;
-  setIsLocating: (v: boolean) => void;
-}) {
-  const [showSearch, setShowSearch] = useState(false);
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<NominatimResult[]>([]);
-  const [searching, setSearching] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  async function doSearch(q: string) {
-    if (!q.trim()) { setResults([]); return; }
-    setSearching(true);
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&addressdetails=1`,
-        { headers: { "Accept-Language": "en" } }
-      );
-      setResults(await res.json());
-    } finally {
-      setSearching(false);
-    }
-  }
-
-  function onQueryChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setQuery(e.target.value);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => doSearch(e.target.value), 500);
-  }
-
-  function pick(result: NominatimResult) {
-    setLocationName(shortLocationName(result));
-    setCoords({ lat: parseFloat(result.lat), lng: parseFloat(result.lon) });
-    setShowSearch(false);
-    setQuery("");
-    setResults([]);
-  }
-
-  if (showSearch) {
-    return (
-      <div className="rounded-xl border border-border bg-surface overflow-hidden">
-        <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border">
-          <Search size={16} className="text-muted shrink-0" />
-          <input
-            autoFocus
-            type="text"
-            value={query}
-            onChange={onQueryChange}
-            placeholder="Search for a place…"
-            className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted"
-          />
-          {searching && <Loader2 size={14} className="animate-spin text-muted shrink-0" />}
-          <button onClick={() => setShowSearch(false)} className="p-1 -m-1 text-muted">
-            <X size={16} />
-          </button>
-        </div>
-        {results.length > 0 && (
-          <ul>
-            {results.map((r) => (
-              <li key={r.place_id}>
-                <button
-                  onClick={() => pick(r)}
-                  className="w-full text-left px-3 py-2.5 text-sm hover:bg-accent-soft active:bg-accent-soft transition-colors border-b border-border last:border-0"
-                >
-                  <span className="font-medium">{shortLocationName(r)}</span>
-                  <span className="block text-xs text-muted truncate">{r.display_name}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        {query && !searching && results.length === 0 && (
-          <p className="px-3 py-3 text-sm text-muted">No places found</p>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2.5">
-      <MapPin size={16} className="text-accent shrink-0" />
-      <span className="flex-1 text-sm truncate">{locationName || "No location set"}</span>
-      <button
-        onClick={() => setShowSearch(true)}
-        className="p-1.5 -mr-1 text-muted hover:text-foreground transition-colors"
-        aria-label="Search location"
-      >
-        <Search size={16} />
-      </button>
-      <button
-        onClick={() => {
-          setIsLocating(true);
-          navigator.geolocation.getCurrentPosition(
-            async (pos) => {
-              const { latitude, longitude } = pos.coords;
-              setCoords({ lat: latitude, lng: longitude });
-              try {
-                const res = await fetch(
-                  `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
-                  { headers: { "Accept-Language": "en" } }
-                );
-                const data: NominatimResult = await res.json();
-                setLocationName(shortLocationName(data));
-              } catch {
-                setLocationName(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
-              }
-              setIsLocating(false);
-            },
-            () => setIsLocating(false),
-            { timeout: 10000, maximumAge: 60000 }
-          );
-        }}
-        disabled={isLocating}
-        className="p-1.5 -mr-1 text-muted hover:text-foreground transition-colors disabled:opacity-50"
-        aria-label="Use my location"
-      >
-        {isLocating ? <Loader2 size={16} className="animate-spin" /> : <Locate size={16} />}
-      </button>
-    </div>
-  );
-}
-
 // ── Main capture flow ─────────────────────────────────────────────────────────
 
 export function CaptureFlow() {
@@ -252,8 +102,11 @@ export function CaptureFlow() {
   const [breed, setBreed] = useState("");
   const [showOptional, setShowOptional] = useState(false);
 
-  const [locationName, setLocationName] = useState("");
-  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  // Location defaults, in priority order: the photo's EXIF GPS data, then the
+  // device's location, then whatever place the user searches for — or nothing
+  // at all if they switch geo data off for this entry.
+  const [location, setLocation] = useState<PickedLocation | null>(null);
+  const [geoDisabled, setGeoDisabled] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
@@ -284,25 +137,17 @@ export function CaptureFlow() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, facing]);
 
-  // Auto-locate when entering details step
+  // Default to the device's location when entering the details step, unless a
+  // location is already known (photo EXIF) or the user turned geo data off.
   useEffect(() => {
-    if (step !== "details" || coords) return;
+    if (step !== "details" || location || geoDisabled) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const { latitude, longitude } = pos.coords;
-        setCoords({ lat: latitude, lng: longitude });
-        try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
-            { headers: { "Accept-Language": "en" } }
-          );
-          const data: NominatimResult = await res.json();
-          setLocationName(shortLocationName(data));
-        } catch {
-          setLocationName(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
-        }
+        const name = await reverseGeocode(latitude, longitude);
+        setLocation({ name, lat: latitude, lng: longitude });
         setIsLocating(false);
       },
       () => setIsLocating(false),
@@ -337,16 +182,26 @@ export function CaptureFlow() {
     );
   }
 
-  function handleGalleryFile(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleGalleryFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setCapturedFile(file);
     setPreviewUrl(URL.createObjectURL(file));
-    setStep("details");
+
+    // Prefer the location where the photo was actually taken (EXIF GPS).
+    const gps = await exifr.gps(file).catch(() => null);
+    if (gps && Number.isFinite(gps.latitude) && Number.isFinite(gps.longitude)) {
+      setLocation({ name: "Where the photo was taken", lat: gps.latitude, lng: gps.longitude });
+      setStep("details");
+      const name = await reverseGeocode(gps.latitude, gps.longitude);
+      setLocation({ name, lat: gps.latitude, lng: gps.longitude });
+    } else {
+      setStep("details");
+    }
   }
 
   async function handlePost() {
-    if (!capturedFile || !coords) return;
+    if (!capturedFile || (!location && !geoDisabled)) return;
     setSubmitting(true);
     setSubmitError(null);
     try {
@@ -365,8 +220,9 @@ export function CaptureFlow() {
           name: catName.trim() || undefined,
           breed: breed.trim() || undefined,
           notes: caption.trim() || undefined,
-          latitude: coords.lat,
-          longitude: coords.lng,
+          locationName: location?.name ?? null,
+          latitude: location?.lat ?? null,
+          longitude: location?.lng ?? null,
         }),
       });
       if (!create.ok) throw new Error("Could not save the entry");
@@ -488,7 +344,7 @@ export function CaptureFlow() {
         <span className="font-semibold text-sm">New post</span>
         <button
           onClick={handlePost}
-          disabled={!coords || submitting}
+          disabled={(!location && !geoDisabled) || submitting}
           className="text-sm font-bold text-accent disabled:opacity-40 transition-opacity"
         >
           {submitting ? <Loader2 size={18} className="animate-spin" /> : "Post"}
@@ -514,9 +370,10 @@ export function CaptureFlow() {
         {/* Location */}
         <div className="px-4 pt-3">
           <LocationPicker
-            locationName={locationName}
-            setLocationName={setLocationName}
-            setCoords={setCoords}
+            location={location}
+            setLocation={setLocation}
+            geoDisabled={geoDisabled}
+            setGeoDisabled={setGeoDisabled}
             isLocating={isLocating}
             setIsLocating={setIsLocating}
           />
@@ -556,9 +413,9 @@ export function CaptureFlow() {
           <p className="px-4 pt-3 text-sm text-red-500">{submitError}</p>
         )}
 
-        {!coords && !isLocating && (
+        {!location && !geoDisabled && !isLocating && (
           <p className="px-4 pt-2 text-xs text-muted">
-            A location is required. Search or tap the locate button above.
+            Pick a location — search, use your position, or switch location off.
           </p>
         )}
 

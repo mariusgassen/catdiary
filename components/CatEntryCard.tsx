@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { PawPrint, MessageSquareText, Share2, MapPin, Pencil } from "lucide-react";
+import { PawPrint, MessageSquareText, Share2, MapPin, Pencil, Check } from "lucide-react";
 import { HashtagCaption } from "@/components/HashtagCaption";
 
 type CatEntryCardProps = {
@@ -11,23 +12,19 @@ type CatEntryCardProps = {
     name: string | null;
     breed: string | null;
     notes: string | null;
-    latitude: number;
-    longitude: number;
+    locationName?: string | null;
+    latitude: number | null;
+    longitude: number | null;
     createdAt: string | Date;
     photoUrl?: string | null;
     owner: { id: string; displayName: string; avatarKey?: string | null; image?: string | null };
     _count?: { likes: number; comments: number };
+    likes?: { userId: string }[]; // the viewer's own like row, if any
   };
   viewerId?: string | null;
 };
 
 const STAMP_DATE = new Intl.DateTimeFormat("en", { day: "2-digit", month: "short" });
-
-function formatCoords(lat: number, lng: number): string {
-  const ns = lat >= 0 ? "N" : "S";
-  const ew = lng >= 0 ? "E" : "W";
-  return `${Math.abs(lat).toFixed(2)}° ${ns}, ${Math.abs(lng).toFixed(2)}° ${ew}`;
-}
 
 /* Each photo sits slightly crooked, like it was glued in by hand.
    Derive the tilt from the entry id so it's stable across renders. */
@@ -51,15 +48,54 @@ function Avatar({ user }: { user: { displayName: string; image?: string | null }
 }
 
 export function CatEntryCard({ entry, viewerId }: CatEntryCardProps) {
+  const router = useRouter();
   const date = new Date(entry.createdAt);
   const isOwner = viewerId != null && viewerId === entry.owner.id;
-  const [liked, setLiked] = useState(false);
+  const [liked, setLiked] = useState((entry.likes?.length ?? 0) > 0);
   const [likeCount, setLikeCount] = useState(entry._count?.likes ?? 0);
+  const [shared, setShared] = useState(false);
   const commentCount = entry._count?.comments ?? 0;
 
-  function handleLike() {
-    setLiked((prev) => !prev);
+  // Place name in the UI — never raw coordinates. Entries that have a pin but
+  // no resolved name (older entries) get a generic label; the map still has them.
+  const hasPin = entry.latitude != null && entry.longitude != null;
+  const placeLabel = entry.locationName ?? (hasPin ? "Pinned on the map" : null);
+
+  async function handleLike() {
+    if (!viewerId) {
+      router.push(`/sign-in?callbackUrl=/cat-entries/${entry.id}`);
+      return;
+    }
+    // Optimistic toggle; reconcile with (or revert to) the server's answer.
+    const prev = { liked, likeCount };
+    setLiked(!liked);
     setLikeCount((c) => (liked ? c - 1 : c + 1));
+    try {
+      const res = await fetch(`/api/cat-entries/${entry.id}/like`, { method: "POST" });
+      if (!res.ok) throw new Error();
+      const data: { liked: boolean; likeCount: number } = await res.json();
+      setLiked(data.liked);
+      setLikeCount(data.likeCount);
+    } catch {
+      setLiked(prev.liked);
+      setLikeCount(prev.likeCount);
+    }
+  }
+
+  async function handleShare() {
+    const url = `${window.location.origin}/cat-entries/${entry.id}`;
+    const title = entry.name ? `${entry.name} — Cat Diary` : "A cat diary entry";
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setShared(true);
+        setTimeout(() => setShared(false), 2000);
+      }
+    } catch {
+      // user dismissed the share sheet — nothing to do
+    }
   }
 
   return (
@@ -105,7 +141,9 @@ export function CatEntryCard({ entry, viewerId }: CatEntryCardProps) {
           </div>
         )}
         <figcaption className="pt-1.5 text-center text-sm font-medium leading-none text-[#3a3128]">
-          {entry.name ?? "A cat I met"}
+          <Link href={`/cat-entries/${entry.id}`} className="hover:underline">
+            {entry.name ?? "A cat I met"}
+          </Link>
           {entry.breed && <span className="font-normal text-[#8a7d6b]"> · {entry.breed}</span>}
         </figcaption>
       </figure>
@@ -119,10 +157,14 @@ export function CatEntryCard({ entry, viewerId }: CatEntryCardProps) {
 
       {/* Footer: where it happened + reactions */}
       <div className="flex items-center justify-between border-t border-dashed border-border pt-2 text-muted">
-        <p className="flex min-w-0 items-center gap-1 text-xs">
-          <MapPin size={12} className="shrink-0" />
-          <span className="truncate">{formatCoords(entry.latitude, entry.longitude)}</span>
-        </p>
+        {placeLabel ? (
+          <p className="flex min-w-0 items-center gap-1 text-xs">
+            <MapPin size={12} className="shrink-0" />
+            <span className="truncate">{placeLabel}</span>
+          </p>
+        ) : (
+          <span aria-hidden />
+        )}
         <div className="flex shrink-0 items-center gap-0.5">
           <button
             onClick={handleLike}
@@ -134,15 +176,21 @@ export function CatEntryCard({ entry, viewerId }: CatEntryCardProps) {
             <PawPrint size={16} strokeWidth={1.75} fill={liked ? "currentColor" : "none"} />
             {likeCount > 0 && <span>{likeCount}</span>}
           </button>
-          <button
+          <Link
+            href={`/cat-entries/${entry.id}`}
             className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium hover:text-foreground transition-colors"
             aria-label="Margin notes"
           >
             <MessageSquareText size={16} strokeWidth={1.75} />
             {commentCount > 0 && <span>{commentCount}</span>}
-          </button>
-          <button className="rounded-lg px-2 py-1 hover:text-foreground transition-colors" aria-label="Share">
-            <Share2 size={15} strokeWidth={1.75} />
+          </Link>
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium hover:text-foreground transition-colors"
+            aria-label="Share"
+          >
+            {shared ? <Check size={15} strokeWidth={2} className="text-accent" /> : <Share2 size={15} strokeWidth={1.75} />}
+            {shared && <span className="text-accent">Copied</span>}
           </button>
         </div>
       </div>

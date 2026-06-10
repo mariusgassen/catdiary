@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Settings } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { listCatEntriesForViewer } from "@/lib/catEntries";
@@ -6,7 +8,6 @@ import { listPendingFollowRequests } from "@/lib/follows";
 import { CatEntryCard } from "@/components/CatEntryCard";
 import { FollowButton } from "@/components/FollowButton";
 import { FollowRequestRow } from "@/components/FollowRequestRow";
-import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default async function ProfilePage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId } = await params;
@@ -56,13 +57,16 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
           {!isOwnProfile && viewerId && (
             <FollowButton followeeId={profileUser.id} initiallyFollowing={isFollowing} />
           )}
+          {isOwnProfile && (
+            <Link
+              href="/settings"
+              className="shrink-0 rounded-xl border border-border p-2 text-muted transition-colors hover:text-foreground"
+              aria-label="Settings"
+            >
+              <Settings size={18} />
+            </Link>
+          )}
         </div>
-        {isOwnProfile && (
-          <div className="mt-4 flex items-center justify-between border-t border-dashed border-border pt-3">
-            <span className="text-xs font-semibold uppercase tracking-wide text-muted">Appearance</span>
-            <ThemeToggle />
-          </div>
-        )}
       </header>
 
       {pendingRequests.length > 0 && (

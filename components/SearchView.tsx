@@ -10,12 +10,14 @@ type Entry = {
   name: string | null;
   breed: string | null;
   notes: string | null;
-  latitude: number;
-  longitude: number;
+  locationName?: string | null;
+  latitude: number | null;
+  longitude: number | null;
   createdAt: string | Date;
   photoUrl?: string | null;
   owner: { id: string; displayName: string; avatarKey?: string | null; image?: string | null };
   _count?: { likes: number; comments: number };
+  likes?: { userId: string }[];
 };
 
 const TRENDING_TAGS = ["#orange", "#kitten", "#stray", "#fluffy", "#tabby", "#blackcat", "#ginger"];

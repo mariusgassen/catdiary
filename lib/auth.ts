@@ -13,16 +13,16 @@ import { isOAuthProviderEnabled } from "@/lib/auth/providers";
 const providers: Provider[] = [
   Credentials({
     credentials: {
-      email: { label: "Email", type: "email" },
+      identifier: { label: "Email or username", type: "text" },
       password: { label: "Password", type: "password" },
     },
     authorize: async (credentials) => {
-      const email = credentials?.email;
+      const identifier = credentials?.identifier;
       const password = credentials?.password;
-      if (typeof email !== "string" || typeof password !== "string") {
+      if (typeof identifier !== "string" || typeof password !== "string") {
         return null;
       }
-      return verifyCredentials({ email, password });
+      return verifyCredentials({ identifier, password });
     },
   }),
 ];
