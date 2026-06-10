@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search, X, Loader2 } from "lucide-react";
 import { CatEntryCard } from "@/components/CatEntryCard";
+import { photoUrlsFor, type EntryPhoto } from "@/lib/photo-urls";
 
 type Entry = {
   id: string;
@@ -14,7 +15,7 @@ type Entry = {
   latitude: number | null;
   longitude: number | null;
   createdAt: string | Date;
-  photoUrl?: string | null;
+  photoUrls?: string[];
   owner: {
     id: string;
     displayName: string | null;
@@ -64,9 +65,9 @@ export function SearchResults({ initialQuery, initialEntries, viewerId }: Props)
     try {
       const res = await fetch(`/api/cat-entries?q=${encodeURIComponent(q)}`);
       const data = await res.json();
-      const withPhotos = data.entries.map((e: Entry & { thumbKey?: string; photoKey: string }) => ({
+      const withPhotos = data.entries.map((e: Entry & { photos: EntryPhoto[] }) => ({
         ...e,
-        photoUrl: `/api/photos/${e.thumbKey ?? e.photoKey}`,
+        photoUrls: photoUrlsFor(e.photos),
       }));
       setEntries(withPhotos);
     } finally {

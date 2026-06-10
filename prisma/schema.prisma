@@ -59,11 +59,9 @@ model VerificationToken {
 }
 
 model CatEntry {
-  id        String   @id @default(cuid())
-  ownerId   String
-  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  photoKey  String // MinIO object key (original)
-  thumbKey  String? // MinIO object key (sharp-generated thumbnail)
+  id           String   @id @default(cuid())
+  ownerId      String
+  owner        User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   name         String?
   breed        String?
   notes        String?
@@ -74,10 +72,25 @@ model CatEntry {
 
   embedding Unsupported("vector(512)")?
 
+  photos   CatEntryPhoto[]
   likes    Like[]
   comments Comment[]
 
   @@index([ownerId, createdAt])
+}
+
+// One photo of an entry (up to MAX_PHOTOS_PER_ENTRY, ordered by position;
+// position 0 is the cover used for thumbnails, OG images and embeddings).
+model CatEntryPhoto {
+  id         String  @id @default(cuid())
+  catEntryId String
+  photoKey   String // MinIO object key (original)
+  thumbKey   String? // MinIO object key (sharp-generated thumbnail)
+  position   Int     @default(0)
+
+  catEntry CatEntry @relation(fields: [catEntryId], references: [id], onDelete: Cascade)
+
+  @@index([catEntryId, position])
 }
 
 model Follow {

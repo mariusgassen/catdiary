@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { PawPrint, MessageSquareText, Share2, MapPin, Pencil, Check } from "lucide-react";
 import { HashtagCaption } from "@/components/HashtagCaption";
 import { displayNameFor } from "@/lib/userDisplay";
@@ -17,7 +17,7 @@ type CatEntryCardProps = {
     latitude: number | null;
     longitude: number | null;
     createdAt: string | Date;
-    photoUrl?: string | null;
+    photoUrls?: string[]; // in position order; first photo is the cover
     owner: {
       id: string;
       displayName: string | null;
@@ -63,6 +63,16 @@ export function CatEntryCard({ entry, viewerId }: CatEntryCardProps) {
   const [likeCount, setLikeCount] = useState(entry._count?.likes ?? 0);
   const [shared, setShared] = useState(false);
   const commentCount = entry._count?.comments ?? 0;
+
+  const photoUrls = entry.photoUrls ?? [];
+  const [photoIndex, setPhotoIndex] = useState(0);
+  const filmRef = useRef<HTMLDivElement>(null);
+
+  function handleFilmScroll() {
+    const el = filmRef.current;
+    if (!el) return;
+    setPhotoIndex(Math.round(el.scrollLeft / el.clientWidth));
+  }
 
   // Place name in the UI — never raw coordinates. Entries that have a pin but
   // no resolved name (older entries) get a generic label; the map still has them.
@@ -132,28 +142,64 @@ export function CatEntryCard({ entry, viewerId }: CatEntryCardProps) {
         </div>
       </div>
 
-      {/* Taped-in polaroid */}
-      <figure className={`relative mx-auto mb-3 mt-2 w-[88%] bg-white p-2 pb-2.5 shadow-md dark:bg-[#efe8da] ${tiltFor(entry.id)}`}>
-        <span className="tape-strip" aria-hidden />
-        {entry.photoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={entry.photoUrl}
-            alt={entry.name ?? "A cat"}
-            className="w-full aspect-square object-cover bg-accent-soft"
-            onDoubleClick={handleLike}
+      {/* Taped-in polaroid — with multiple photos it becomes a little stack
+          you can flip through, like prints glued on top of each other. */}
+      <figure className={`relative mx-auto mb-3 mt-2 w-[88%] ${tiltFor(entry.id)}`}>
+        {photoUrls.length > 1 && (
+          <span
+            className="absolute inset-0 translate-x-1.5 translate-y-1 rotate-1 bg-white shadow-sm dark:bg-[#e4dccb]"
+            aria-hidden
           />
-        ) : (
-          <div className="flex aspect-square w-full select-none items-center justify-center bg-accent-soft text-6xl">
-            🐱
-          </div>
         )}
-        <figcaption className="pt-1.5 text-center text-sm font-medium leading-none text-[#3a3128]">
-          <Link href={`/cat-entries/${entry.id}`} className="hover:underline">
-            {entry.name ?? "A cat I met"}
-          </Link>
-          {entry.breed && <span className="font-normal text-[#8a7d6b]"> · {entry.breed}</span>}
-        </figcaption>
+        <div className="relative bg-white p-2 pb-2.5 shadow-md dark:bg-[#efe8da]">
+          <span className="tape-strip" aria-hidden />
+          {photoUrls.length > 0 ? (
+            <div
+              ref={filmRef}
+              onScroll={handleFilmScroll}
+              className="flex aspect-square w-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
+              {photoUrls.map((url, i) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={url}
+                  src={url}
+                  alt={entry.name ? `${entry.name} — photo ${i + 1}` : `A cat — photo ${i + 1}`}
+                  loading={i === 0 ? undefined : "lazy"}
+                  className="h-full w-full shrink-0 snap-center object-cover bg-accent-soft"
+                  onDoubleClick={handleLike}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex aspect-square w-full select-none items-center justify-center bg-accent-soft text-6xl">
+              🐱
+            </div>
+          )}
+          {photoUrls.length > 1 && (
+            <span className="absolute right-3 top-3 rounded-md bg-black/45 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-white backdrop-blur-sm">
+              {photoIndex + 1}/{photoUrls.length}
+            </span>
+          )}
+          <figcaption className="pt-1.5 text-center text-sm font-medium leading-none text-[#3a3128]">
+            <Link href={`/cat-entries/${entry.id}`} className="hover:underline">
+              {entry.name ?? "A cat I met"}
+            </Link>
+            {entry.breed && <span className="font-normal text-[#8a7d6b]"> · {entry.breed}</span>}
+          </figcaption>
+          {photoUrls.length > 1 && (
+            <div className="flex items-center justify-center gap-1 pt-1.5" aria-hidden>
+              {photoUrls.map((url, i) => (
+                <span
+                  key={url}
+                  className={`h-1.5 w-1.5 rounded-full transition-colors ${
+                    i === photoIndex ? "bg-accent" : "bg-[#d8cfbe] dark:bg-[#bdb39e]"
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </figure>
 
       {/* Diary text */}

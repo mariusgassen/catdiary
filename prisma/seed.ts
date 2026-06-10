@@ -26,7 +26,7 @@ async function main() {
     create: {
       id: "seed-cat-entry-1",
       ownerId: demo.id,
-      photoKey: "seed/placeholder.jpg",
+      photos: { create: { photoKey: "seed/placeholder.jpg", position: 0 } },
       name: "Whiskers",
       breed: "Tabby",
       notes: "Found napping in a sunny doorway.",

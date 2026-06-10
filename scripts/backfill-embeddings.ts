@@ -12,8 +12,13 @@ import { getImageEmbedding } from "@/lib/embeddings";
 import { storeCatEntryEmbedding } from "@/lib/catEntries";
 
 async function main() {
+  // Embed the cover photo (lowest position) of each entry missing an embedding.
   const entries = await db.$queryRaw<Array<{ id: string; photoKey: string }>>`
-    SELECT id, "photoKey" FROM "CatEntry" WHERE embedding IS NULL
+    SELECT DISTINCT ON (ce.id) ce.id, p."photoKey"
+    FROM "CatEntry" ce
+    JOIN "CatEntryPhoto" p ON p."catEntryId" = ce.id
+    WHERE ce.embedding IS NULL
+    ORDER BY ce.id, p.position ASC
   `;
 
   console.log(`Found ${entries.length} entries without embeddings.`);

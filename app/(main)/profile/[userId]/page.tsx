@@ -4,6 +4,7 @@ import { Settings } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { listCatEntriesForViewer } from "@/lib/catEntries";
+import { photoUrlsFor } from "@/lib/photo-urls";
 import { listPendingFollowRequests } from "@/lib/follows";
 import { CatEntryCard } from "@/components/CatEntryCard";
 import { FollowButton } from "@/components/FollowButton";
@@ -37,7 +38,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
 
   const withPhotos = entries.map((entry) => ({
     ...entry,
-    photoUrl: `/api/photos/${entry.thumbKey ?? entry.photoKey}`,
+    photoUrls: photoUrlsFor(entry.photos),
   }));
 
   return (

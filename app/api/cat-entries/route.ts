@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
-import { createCatEntry, listCatEntriesForViewer, storeCatEntryEmbedding } from "@/lib/catEntries";
+import {
+  createCatEntry,
+  listCatEntriesForViewer,
+  storeCatEntryEmbedding,
+  MAX_PHOTOS_PER_ENTRY,
+} from "@/lib/catEntries";
 import { requireUserId, UnauthorizedError } from "@/lib/auth-helpers";
 import { getObject } from "@/lib/storage";
 
@@ -19,8 +24,15 @@ async function embedInBackground(entryId: string, photoKey: string) {
 
 const createSchema = z
   .object({
-    photoKey: z.string().min(1),
-    thumbKey: z.string().min(1).optional(),
+    photos: z
+      .array(
+        z.object({
+          photoKey: z.string().min(1),
+          thumbKey: z.string().min(1).optional(),
+        }),
+      )
+      .min(1)
+      .max(MAX_PHOTOS_PER_ENTRY),
     name: z.string().max(120).optional(),
     breed: z.string().max(120).optional(),
     notes: z.string().max(2000).optional(),
@@ -66,8 +78,9 @@ export async function POST(request: Request) {
 
   const entry = await createCatEntry({ ownerId, ...parsed.data });
 
-  // Generate and store embedding in background — does not block the response
-  embedInBackground(entry.id, parsed.data.photoKey);
+  // Generate and store embedding in background — does not block the response.
+  // The cover photo (first one) represents the entry.
+  embedInBackground(entry.id, parsed.data.photos[0].photoKey);
 
   return NextResponse.json({ entry }, { status: 201 });
 }

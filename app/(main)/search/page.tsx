@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { auth } from "@/lib/auth";
 import { listCatEntriesForViewer } from "@/lib/catEntries";
+import { photoUrlsFor } from "@/lib/photo-urls";
 import { SearchResults } from "@/components/SearchView";
 
 export default async function SearchPage({
@@ -20,7 +21,7 @@ export default async function SearchPage({
   const withPhotos = results
     ? results.entries.map((entry) => ({
         ...entry,
-        photoUrl: `/api/photos/${entry.thumbKey ?? entry.photoKey}`,
+        photoUrls: photoUrlsFor(entry.photos),
       }))
     : null;
 

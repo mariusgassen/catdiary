@@ -22,6 +22,8 @@
   --muted: #79716b;
   --border: #ebe5d6;
   --tape: rgba(233, 220, 185, 0.65);
+  --rule: #e7ecf6; /* faint blue ruling, like lined paper */
+  --margin-line: rgba(209, 109, 106, 0.45); /* the red margin rule */
 }
 
 .dark {
@@ -33,6 +35,8 @@
   --muted: #979ca8;
   --border: #30343d;
   --tape: rgba(110, 115, 135, 0.4);
+  --rule: #272c37;
+  --margin-line: rgba(209, 109, 106, 0.35);
 }
 
 @theme inline {
@@ -74,6 +78,30 @@ body {
   text-transform: uppercase;
   transform: rotate(2deg);
   opacity: 0.85;
+}
+
+/* Lined notebook page: horizontal ruling plus a red margin rule on the left.
+   Content written on it should use a line-height equal to --rule-h so the
+   text sits on the lines. The margin rule position is set by --margin-x. */
+.ruled-page {
+  --rule-h: 28px;
+  --margin-x: 2.75rem;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent calc(var(--rule-h) - 1px),
+    var(--rule) calc(var(--rule-h) - 1px),
+    var(--rule) var(--rule-h)
+  );
+}
+.ruled-page::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--margin-x);
+  width: 1px;
+  background: var(--margin-line);
 }
 
 /* Strip of washi tape holding a photo down. */

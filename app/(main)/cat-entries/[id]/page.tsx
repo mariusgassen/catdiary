@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { getCatEntryForViewer } from "@/lib/catEntries";
+import { photoUrlsFor } from "@/lib/photo-urls";
 import { listComments } from "@/lib/comments";
 import { CatEntryCard } from "@/components/CatEntryCard";
 import { CommentsSection } from "@/components/CommentsSection";
@@ -25,7 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title,
       description,
       type: "article",
-      images: [`/api/photos/${entry.photoKey}`],
+      images: photoUrlsFor(entry.photos, { full: true }),
     },
   };
 }
@@ -45,7 +46,7 @@ export default async function CatEntryPage({ params }: Props) {
   return (
     <div className="paper-grid min-h-dvh flex flex-col gap-4 py-4">
       <CatEntryCard
-        entry={{ ...entry, photoUrl: `/api/photos/${entry.photoKey}` }}
+        entry={{ ...entry, photoUrls: photoUrlsFor(entry.photos, { full: true }) }}
         viewerId={viewerId}
       />
       <CommentsSection
