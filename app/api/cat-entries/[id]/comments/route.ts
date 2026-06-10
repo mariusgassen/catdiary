@@ -3,14 +3,16 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { requireUserId, UnauthorizedError } from "@/lib/auth-helpers";
 import { CatEntryForbiddenError, CatEntryNotFoundError } from "@/lib/catEntries";
-import { addComment, listComments } from "@/lib/comments";
+import { addComment, CommentNotFoundError, listComments } from "@/lib/comments";
 
 const createSchema = z.object({
   body: z.string().trim().min(1).max(1000),
+  parentId: z.string().min(1).optional(),
 });
 
 function mapError(err: unknown) {
   if (err instanceof CatEntryNotFoundError) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+  if (err instanceof CommentNotFoundError) return NextResponse.json({ error: "PARENT_NOT_FOUND" }, { status: 404 });
   if (err instanceof CatEntryForbiddenError) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
   throw err;
 }
@@ -47,7 +49,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 
   try {
-    const comment = await addComment(userId, id, parsed.data.body);
+    const comment = await addComment(userId, id, parsed.data.body, parsed.data.parentId ?? null);
     return NextResponse.json({ comment }, { status: 201 });
   } catch (err) {
     return mapError(err);
