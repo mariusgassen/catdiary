@@ -103,6 +103,59 @@ async function listVisibleOwnerIds(viewerId: string | null, ownerId?: string): P
   return [...ids];
 }
 
+export async function storeCatEntryEmbedding(entryId: string, embedding: number[]): Promise<void> {
+  const vec = `[${embedding.join(",")}]`;
+  await db.$executeRaw`UPDATE "CatEntry" SET embedding = ${vec}::vector WHERE id = ${entryId}`;
+}
+
+type SimilarEntry = {
+  id: string;
+  ownerId: string;
+  photoKey: string;
+  thumbKey: string | null;
+  name: string | null;
+  breed: string | null;
+  createdAt: Date;
+  ownerDisplayName: string;
+  ownerAvatarKey: string | null;
+  ownerImage: string | null;
+};
+
+export async function getSimilarCatEntries(
+  entryId: string,
+  viewerId: string | null,
+): Promise<SimilarEntry[]> {
+  const source = await db.$queryRaw<Array<{ embedding: string | null }>>`
+    SELECT embedding::text FROM "CatEntry" WHERE id = ${entryId}
+  `;
+  const embeddingStr = source[0]?.embedding;
+  if (!embeddingStr) return [];
+
+  const ownerIds = await listVisibleOwnerIds(viewerId);
+  if (ownerIds.length === 0) return [];
+
+  return db.$queryRaw<SimilarEntry[]>`
+    SELECT
+      ce.id,
+      ce."ownerId",
+      ce."photoKey",
+      ce."thumbKey",
+      ce.name,
+      ce.breed,
+      ce."createdAt",
+      u."displayName" AS "ownerDisplayName",
+      u."avatarKey"   AS "ownerAvatarKey",
+      u.image         AS "ownerImage"
+    FROM "CatEntry" ce
+    JOIN "User" u ON u.id = ce."ownerId"
+    WHERE ce.id != ${entryId}
+      AND ce."ownerId" = ANY(${ownerIds}::text[])
+      AND ce.embedding IS NOT NULL
+    ORDER BY ce.embedding <-> ${embeddingStr}::vector
+    LIMIT 6
+  `;
+}
+
 export async function listCatEntriesForViewer(opts: {
   viewerId: string | null;
   ownerId?: string;
