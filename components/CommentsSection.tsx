@@ -18,15 +18,21 @@ function Avatar({ user }: { user: { displayName: string | null; username?: strin
   const name = displayNameFor(user);
   if (user.image) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={user.image} alt={name} className="w-7 h-7 rounded-full object-cover shrink-0" />;
+    return <img src={user.image} alt={name} className="w-6 h-6 rounded-full object-cover shrink-0" />;
   }
   return (
-    <div className="w-7 h-7 rounded-full bg-accent-soft flex items-center justify-center text-accent text-xs font-semibold select-none shrink-0">
+    <div className="w-6 h-6 rounded-full bg-accent-soft flex items-center justify-center text-accent text-[11px] font-semibold select-none shrink-0">
       {name[0]?.toUpperCase() ?? "?"}
     </div>
   );
 }
 
+/*
+ * Comments rendered as margin notes on a lined notebook page: a red margin
+ * rule separates the gutter (avatars) from the writing area, every line of
+ * text sits on the page's ruling (line-height = --rule-h = 28px), and each
+ * note is signed "— name · date" like an annotation left by another reader.
+ */
 export function CommentsSection({
   entryId,
   entryOwnerId,
@@ -74,72 +80,102 @@ export function CommentsSection({
   }
 
   return (
-    <section id="comments" className="mx-3 rounded-xl border border-border bg-surface px-4 py-4 shadow-sm">
-      <h2 className="pb-3 text-xs font-semibold uppercase tracking-wide text-muted">
-        Margin notes{comments.length > 0 && ` · ${comments.length}`}
-      </h2>
+    <section id="comments" className="mx-3 overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
+      <div className="ruled-page relative">
+        {/* Heading sits on the first ruled line, right of the margin rule */}
+        <h2 className="grid grid-cols-[2.75rem_1fr]">
+          <span aria-hidden />
+          <span className="pl-3 pr-4 text-xs font-semibold uppercase tracking-wide leading-[28px] text-muted">
+            Margin notes{comments.length > 0 && ` · ${comments.length}`}
+          </span>
+        </h2>
 
-      {comments.length === 0 ? (
-        <p className="pb-3 text-sm text-muted">No notes in the margins yet.</p>
-      ) : (
-        <ul className="flex flex-col gap-3 pb-3">
-          {comments.map((comment) => {
-            const canDelete = viewerId === comment.user.id || viewerId === entryOwnerId;
-            return (
-              <li key={comment.id} className="flex items-start gap-2.5">
-                <Avatar user={comment.user} />
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs text-muted">
-                    <Link href={`/profile/${comment.user.id}`} className="font-semibold text-foreground hover:underline">
-                      {displayNameFor(comment.user)}
-                    </Link>{" "}
-                    · {COMMENT_DATE.format(new Date(comment.createdAt))}
+        {comments.length === 0 ? (
+          <p className="grid grid-cols-[2.75rem_1fr]">
+            <span aria-hidden />
+            <span className="pl-3 pr-4 text-sm italic leading-[28px] text-muted">
+              No notes in the margins yet.
+            </span>
+          </p>
+        ) : (
+          <ul>
+            {comments.map((comment) => {
+              const canDelete = viewerId === comment.user.id || viewerId === entryOwnerId;
+              return (
+                <li key={comment.id} className="grid grid-cols-[2.75rem_1fr]">
+                  <div className="flex items-start justify-center pt-[2px]">
+                    <Avatar user={comment.user} />
+                  </div>
+                  <p className="break-words pl-3 pr-4 text-sm leading-[28px]">
+                    <span className="italic text-foreground/90">{comment.body}</span>
+                    <span className="whitespace-nowrap text-xs text-accent">
+                      {" "}
+                      —{" "}
+                      <Link href={`/profile/${comment.user.id}`} className="font-medium hover:underline">
+                        {displayNameFor(comment.user)}
+                      </Link>
+                      {" · "}
+                      {COMMENT_DATE.format(new Date(comment.createdAt))}
+                    </span>
+                    {canDelete && (
+                      <button
+                        onClick={() => handleDelete(comment.id)}
+                        className="ml-1.5 inline-flex translate-y-[1px] text-muted hover:text-red-500 transition-colors"
+                        aria-label="Delete note"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    )}
                   </p>
-                  <p className="break-words text-sm leading-relaxed text-foreground">{comment.body}</p>
-                </div>
-                {canDelete && (
-                  <button
-                    onClick={() => handleDelete(comment.id)}
-                    className="p-1 text-muted hover:text-red-500 transition-colors"
-                    aria-label="Delete note"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
 
-      {viewerId ? (
-        <form onSubmit={handleSubmit} className="flex items-end gap-2 border-t border-dashed border-border pt-3">
-          <textarea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder="Add a note in the margin…"
-            rows={1}
-            maxLength={1000}
-            className="flex-1 resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none placeholder:text-muted focus:ring-1 focus:ring-accent"
-          />
-          <button
-            type="submit"
-            disabled={submitting || !draft.trim()}
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent text-white shadow-sm shadow-accent/30 transition-transform active:scale-95 disabled:opacity-40"
-            aria-label="Post note"
-          >
-            {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-          </button>
-        </form>
-      ) : (
-        <p className="border-t border-dashed border-border pt-3 text-sm text-muted">
-          <Link href={`/sign-in?callbackUrl=/cat-entries/${entryId}`} className="text-accent hover:underline">
-            Sign in
-          </Link>{" "}
-          to leave a note.
-        </p>
-      )}
-      {error && <p className="pt-2 text-sm text-red-500">{error}</p>}
+        {viewerId ? (
+          <form onSubmit={handleSubmit} className="grid grid-cols-[2.75rem_1fr]">
+            <span aria-hidden />
+            <div className="flex items-start gap-2 pl-3 pr-3">
+              <textarea
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                placeholder="Scribble a note in the margin…"
+                rows={1}
+                maxLength={1000}
+                className="min-h-[28px] flex-1 resize-none bg-transparent text-sm italic leading-[28px] outline-none placeholder:italic placeholder:text-muted/80"
+              />
+              <button
+                type="submit"
+                disabled={submitting || !draft.trim()}
+                className="flex h-7 w-7 items-center justify-center self-start rounded-full text-accent transition-transform active:scale-95 hover:bg-accent-soft disabled:opacity-40"
+                aria-label="Post note"
+              >
+                {submitting ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <p className="grid grid-cols-[2.75rem_1fr]">
+            <span aria-hidden />
+            <span className="pl-3 pr-4 text-sm italic leading-[28px] text-muted">
+              <Link href={`/sign-in?callbackUrl=/cat-entries/${entryId}`} className="not-italic text-accent hover:underline">
+                Sign in
+              </Link>{" "}
+              to leave a note.
+            </span>
+          </p>
+        )}
+        {error && (
+          <p className="grid grid-cols-[2.75rem_1fr]">
+            <span aria-hidden />
+            <span className="pl-3 pr-4 text-xs leading-[28px] text-red-500">{error}</span>
+          </p>
+        )}
+
+        {/* one empty ruled line at the bottom of the page */}
+        <div className="h-[28px]" aria-hidden />
+      </div>
     </section>
   );
 }

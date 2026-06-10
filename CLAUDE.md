@@ -43,8 +43,14 @@ Keep this document in sync with reality as the app evolves.
   what gets displayed
 - **Likes (paws)**: `POST /api/cat-entries/[id]/like` toggle with optimistic UI,
   viewer's own like state in feed/detail queries, double-tap on the photo
-- **Comments**: thread + compose on the detail page; delete by comment author
+- **Comments as margin notes**: the detail page renders comments on a lined
+  notebook page (`.ruled-page`: horizontal ruling + red margin rule, avatars in
+  the gutter) with each note signed "— name · date"; delete by comment author
   or entry owner (`/api/cat-entries/[id]/comments`, `DELETE /api/comments/[id]`)
+- **Multiple photos per entry (up to 10)**: `CatEntryPhoto` model (ordered by
+  `position`, photo 0 is the cover used for thumbnails/OG/embeddings); capture
+  flow takes several shots or a multi-select from the gallery; cards show a
+  swipeable polaroid stack with a counter and dots
 - **Entry detail page** `/cat-entries/[id]` with comments and Open Graph meta;
   shareable while signed out (middleware lets these URLs through, the page
   404s anything the viewer isn't allowed to see)
@@ -81,7 +87,7 @@ Keep this document in sync with reality as the app evolves.
 
 ### Capture flow improvements
 - **Photo editing** — crop, basic brightness/contrast before upload
-- **Multiple photos** per entry (carousel), stored as an array of keys
+- **Reorder photos** in the capture flow (order is currently capture/pick order)
 - **Draft recovery** — `localStorage` draft so back-navigation doesn't lose form
 - Gallery sheet polished for iOS (vs. browser file picker as fallback)
 
@@ -209,7 +215,7 @@ model CatEntry {
   id        String   @id @default(cuid())
   ownerId   String
   owner     User     @relation(fields: [ownerId], references: [id])
-  photoKey  String   // MinIO object key
+  photos    CatEntryPhoto[] // 1..10 in display order; photo 0 is the cover
   name      String?
   breed     String?
   notes        String?
@@ -217,6 +223,14 @@ model CatEntry {
   latitude     Float?  // null = geo data disabled for this entry
   longitude    Float?
   createdAt    DateTime @default(now())
+}
+
+model CatEntryPhoto {
+  id         String  @id @default(cuid())
+  catEntryId String
+  photoKey   String  // MinIO object key (original)
+  thumbKey   String? // MinIO object key (thumbnail)
+  position   Int     @default(0)
 }
 
 model Follow {
