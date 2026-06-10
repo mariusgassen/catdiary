@@ -85,6 +85,15 @@ Keep this document in sync with reality as the app evolves.
   `displayName` is optional (nullable column, optional at registration and
   clearable in Settings) and every name render falls back to the username via
   `displayNameFor` in `lib/userDisplay.ts`
+- **Invite links**: every user has a personal `/invite/[code]` link ("Invite
+  friends" section in Settings — Web Share API with clipboard fallback,
+  `POST /api/me/invite`, code generated on first share); the landing page is
+  public (proxy lets it through) with OG tags, showing the inviter's name and
+  entry count; registering through the link records `User.invitedById` and
+  auto-follows the inviter — approved even for private diaries, since an
+  invitation implies approval — so new users start with a non-empty feed
+  (`lib/invites.ts`; credentials registration only, OAuth signups don't carry
+  the code yet)
 - Discover page: tag/name/breed filter, "often spotted" tag chips, URL-driven (`?q=`)
 - Design system: sunny cream/ink palette, fountain-pen blue accent, dot-grid
   texture, readable Geist typography
