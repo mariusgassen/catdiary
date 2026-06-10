@@ -18,7 +18,12 @@ model User {
   avatarKey     String? // MinIO object key
   image         String? // adapter convention: avatar URL from OAuth profile
   isPrivate     Boolean   @default(false)
+  inviteCode    String?   @unique // personal invite-link code, generated on first share
+  invitedById   String? // who invited this user, set once at registration
   createdAt     DateTime  @default(now())
+
+  invitedBy User?  @relation("Invitations", fields: [invitedById], references: [id], onDelete: SetNull)
+  invitees  User[] @relation("Invitations")
 
   accounts   Account[]
   catEntries CatEntry[]

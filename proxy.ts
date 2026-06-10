@@ -9,9 +9,11 @@ export default auth((req) => {
 
   const isAuthPage = pathname.startsWith("/sign-in") || pathname.startsWith("/register");
 
-  // Entry detail pages are shareable links: leave them open to signed-out
-  // visitors (the page itself 404s anything the viewer isn't allowed to see).
-  const isShareablePage = /^\/cat-entries\/(?!new$)[^/]+$/.test(pathname);
+  // Entry detail pages and invite landing pages are shareable links: leave
+  // them open to signed-out visitors (the entry page 404s anything the viewer
+  // isn't allowed to see; the invite page only shows public profile bits).
+  const isShareablePage =
+    /^\/cat-entries\/(?!new$)[^/]+$/.test(pathname) || /^\/invite\/[^/]+$/.test(pathname);
 
   if (!isSignedIn && !isAuthPage && !isShareablePage) {
     const signInUrl = new URL("/sign-in", req.nextUrl.origin);

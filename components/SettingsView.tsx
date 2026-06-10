@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { signOut } from "next-auth/react";
 import { ChevronLeft, Loader2, LogOut } from "lucide-react";
+import { InviteFriends } from "@/components/InviteFriends";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 type SettingsUser = {
@@ -184,6 +185,10 @@ export function SettingsView({ user }: { user: SettingsUser }) {
             />
           </span>
         </button>
+      </Section>
+
+      <Section title="Invite friends">
+        <InviteFriends />
       </Section>
 
       <Section title="Appearance">

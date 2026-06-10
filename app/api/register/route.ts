@@ -20,6 +20,13 @@ const registerSchema = z.object({
     .max(80)
     .optional()
     .transform((v) => v || null),
+  // Optional invite-link code; stale/invalid codes are silently ignored.
+  inviteCode: z
+    .string()
+    .trim()
+    .max(64)
+    .optional()
+    .transform((v) => v || null),
 });
 
 const KNOWN_ERRORS = ["EMAIL_TAKEN", "USERNAME_TAKEN", "INVALID_USERNAME"] as const;

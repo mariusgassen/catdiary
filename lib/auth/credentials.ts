@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
+import { redeemInviteCode } from "@/lib/invites";
 
 const SALT_ROUNDS = 12;
 
@@ -23,6 +24,7 @@ export async function createUserWithPassword(input: {
   username: string;
   password: string;
   displayName: string | null;
+  inviteCode?: string | null;
 }) {
   const username = normalizeUsername(input.username);
   if (!USERNAME_PATTERN.test(username)) {
@@ -45,6 +47,10 @@ export async function createUserWithPassword(input: {
       displayName: input.displayName,
     },
   });
+
+  if (input.inviteCode) {
+    await redeemInviteCode(input.inviteCode, user.id);
+  }
 
   return { id: user.id, email: user.email, username: user.username, displayName: user.displayName };
 }

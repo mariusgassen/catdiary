@@ -22,6 +22,8 @@ export function AuthForm({
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/feed";
+  // Carried over from an /invite/[code] landing page link.
+  const inviteCode = searchParams.get("invite");
 
   const [identifier, setIdentifier] = useState(""); // sign-in: email or username
   const [email, setEmail] = useState("");
@@ -47,7 +49,13 @@ export function AuthForm({
         const res = await fetch("/api/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, username, password, displayName }),
+          body: JSON.stringify({
+            email,
+            username,
+            password,
+            displayName,
+            inviteCode: inviteCode ?? undefined,
+          }),
         });
 
         if (!res.ok) {
