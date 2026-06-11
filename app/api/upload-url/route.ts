@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import sharp from "sharp";
 import { requireUserId, UnauthorizedError } from "@/lib/auth-helpers";
 import { generateObjectKey, processAndStoreThumbnail, uploadObject } from "@/lib/storage";
 
@@ -30,7 +31,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "UNSUPPORTED_TYPE" }, { status: 400 });
   }
 
-  const buffer = Buffer.from(await file.arrayBuffer());
+  const rawBuffer = Buffer.from(await file.arrayBuffer());
+  // Apply EXIF orientation so stored originals have correct pixel orientation.
+  const buffer = await sharp(rawBuffer).rotate().toBuffer();
   const key = generateObjectKey(userId, extension);
 
   const [thumbKey] = await Promise.all([
