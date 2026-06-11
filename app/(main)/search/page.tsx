@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { auth } from "@/lib/auth";
-import { listCatEntriesForViewer } from "@/lib/catEntries";
+import { listCatEntriesForViewer, listRandomCatEntries } from "@/lib/catEntries";
 import { searchUsers } from "@/lib/users";
 import { photoUrlsFor } from "@/lib/photo-urls";
 import { SearchResults } from "@/components/SearchView";
@@ -15,20 +15,39 @@ export default async function SearchPage({
   const viewerId = session?.user?.id ?? null;
 
   let initialResults = null;
-  if (q) {
-    const [{ entries }, users] = await Promise.all([
-      listCatEntriesForViewer({ viewerId, query: q }),
-      q.startsWith("#") ? Promise.resolve([]) : searchUsers(q),
-    ]);
+  const [randomEntries, searchData] = await Promise.all([
+    q ? Promise.resolve([]) : listRandomCatEntries(viewerId),
+    q
+      ? Promise.all([
+          listCatEntriesForViewer({ viewerId, query: q }),
+          q.startsWith("#") ? Promise.resolve([]) : searchUsers(q),
+        ])
+      : Promise.resolve(null),
+  ]);
+
+  if (searchData) {
+    const [{ entries }, users] = searchData;
     initialResults = {
       entries: entries.map((entry) => ({ ...entry, photoUrls: photoUrlsFor(entry.photos) })),
       users,
     };
   }
 
+  const randomForGrid = randomEntries.map((e) => ({
+    id: e.id,
+    name: e.name,
+    breed: e.breed,
+    createdAt: e.createdAt,
+    photoUrls: photoUrlsFor(e.photos),
+  }));
+
   return (
     <Suspense>
-      <SearchResults initialQuery={q ?? ""} initialResults={initialResults} />
+      <SearchResults
+        initialQuery={q ?? ""}
+        initialResults={initialResults}
+        randomEntries={randomForGrid}
+      />
     </Suspense>
   );
 }
