@@ -27,9 +27,12 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 inset-x-0 z-50 bg-surface/95 backdrop-blur-sm border-t border-border"
+      className="fixed bottom-0 inset-x-0 z-50 border-t border-border"
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
+      {/* backdrop-blur lives on a child, not on the fixed element — keeps position:fixed
+          reliable on Safari/iOS where backdrop-filter on a fixed ancestor can break it */}
+      <div className="bg-surface/95 backdrop-blur-sm">
       <div className="mx-auto max-w-[480px] h-14 flex items-center justify-around px-1">
         {NAV_ITEMS.map(({ href, Icon, label, isCapture }) =>
           isCapture ? (
@@ -86,6 +89,7 @@ export function BottomNav() {
             My diary
           </span>
         </Link>
+      </div>
       </div>
     </nav>
   );
