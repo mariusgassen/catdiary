@@ -11,6 +11,8 @@ export async function getUserSettings(userId: string) {
       displayName: true,
       bio: true,
       isPrivate: true,
+      avatarKey: true,
+      image: true,
     },
   });
 }

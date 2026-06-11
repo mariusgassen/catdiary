@@ -53,3 +53,16 @@ export async function processAndStoreThumbnail(originalBuffer: Buffer, photoKey:
   await uploadObject(thumbKey, thumbnail, "image/jpeg");
   return thumbKey;
 }
+
+export function generateAvatarKey(userId: string): string {
+  return `avatars/${userId}/${randomUUID()}.jpg`;
+}
+
+export async function processAndStoreAvatar(originalBuffer: Buffer, avatarKey: string): Promise<void> {
+  const processed = await sharp(originalBuffer)
+    .rotate()
+    .resize({ width: 256, height: 256, fit: "cover", position: "centre" })
+    .jpeg({ quality: 85 })
+    .toBuffer();
+  await uploadObject(avatarKey, processed, "image/jpeg");
+}

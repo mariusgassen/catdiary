@@ -46,11 +46,12 @@ function tiltFor(id: string): string {
   return tilts[Math.abs(hash) % tilts.length];
 }
 
-function Avatar({ user }: { user: { displayName: string | null; username?: string | null; image?: string | null } }) {
+function Avatar({ user }: { user: { displayName: string | null; username?: string | null; avatarKey?: string | null; image?: string | null } }) {
   const name = displayNameFor(user);
-  if (user.image) {
+  const src = user.avatarKey ? `/api/photos/${user.avatarKey}` : (user.image ?? null);
+  if (src) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={user.image} alt={name} className="w-6 h-6 rounded-full object-cover" />;
+    return <img src={src} alt={name} className="w-6 h-6 rounded-full object-cover" />;
   }
   return (
     <div className="w-6 h-6 rounded-full bg-accent-soft flex items-center justify-center text-accent text-[11px] font-semibold select-none">

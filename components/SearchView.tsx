@@ -33,6 +33,7 @@ export type UserResult = {
   id: string;
   username: string | null;
   displayName: string | null;
+  avatarKey: string | null;
   image: string | null;
   isPrivate: boolean;
   _count: { catEntries: number };
@@ -54,14 +55,17 @@ function UserRow({ user }: { user: UserResult }) {
       href={`/profile/${user.id}`}
       className="mx-3 flex items-center gap-3 rounded-xl border border-border bg-surface px-3.5 py-2.5 shadow-sm transition-transform active:scale-[0.99]"
     >
-      {user.image ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={user.image} alt={name} className="h-10 w-10 rounded-full object-cover" />
-      ) : (
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent-soft text-sm font-semibold text-accent select-none">
-          {name[0]?.toUpperCase() ?? "?"}
-        </div>
-      )}
+      {(() => {
+        const src = user.avatarKey ? `/api/photos/${user.avatarKey}` : (user.image ?? null);
+        return src ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={src} alt={name} className="h-10 w-10 rounded-full object-cover" />
+        ) : (
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent-soft text-sm font-semibold text-accent select-none">
+            {name[0]?.toUpperCase() ?? "?"}
+          </div>
+        );
+      })()}
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold">{name}&rsquo;s diary</p>
         <p className="truncate text-xs text-muted">
