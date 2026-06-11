@@ -1,6 +1,4 @@
-import dynamic from "next/dynamic";
-
-const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
+import { MapClient } from "@/components/MapClient";
 
 export default async function MapPage({
   searchParams,
@@ -16,7 +14,7 @@ export default async function MapPage({
       className="w-full"
       style={{ height: "calc(100dvh - 3.5rem - env(safe-area-inset-bottom, 0px))" }}
     >
-      <MapView initialLat={initialLat} initialLng={initialLng} />
+      <MapClient initialLat={initialLat} initialLng={initialLng} />
     </main>
   );
 }

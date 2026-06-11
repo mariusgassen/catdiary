@@ -110,6 +110,9 @@ export default function MapView({
         mapRef.current = null;
       }
     };
+    // Initial props are captured in the closure on mount; re-running would
+    // destroy and recreate the map which is not desirable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
