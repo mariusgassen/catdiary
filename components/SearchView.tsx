@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search, X, Loader2, Cat, Users, Lock, ChevronRight } from "lucide-react";
-import { CatEntryCard } from "@/components/CatEntryCard";
+import { PolaroidGrid } from "@/components/PolaroidGrid";
 import { photoUrlsFor, type EntryPhoto } from "@/lib/photo-urls";
 import { displayNameFor } from "@/lib/userDisplay";
 
@@ -98,11 +98,9 @@ function GroupHeader({ icon: Icon, label }: { icon: typeof Cat; label: string })
 export function SearchResults({
   initialQuery,
   initialResults,
-  viewerId,
 }: {
   initialQuery: string;
   initialResults: Results | null;
-  viewerId: string | null;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -213,14 +211,12 @@ export function SearchResults({
                 </section>
               )}
               {results.entries.length > 0 && (
-                <section className="space-y-4">
+                <section>
                   <GroupHeader
                     icon={Cat}
                     label={`Cats · ${results.entries.length} sighting${results.entries.length !== 1 ? "s" : ""}`}
                   />
-                  {results.entries.map((entry) => (
-                    <CatEntryCard key={entry.id} entry={entry} viewerId={viewerId} />
-                  ))}
+                  <PolaroidGrid entries={results.entries} />
                 </section>
               )}
             </div>
