@@ -22,6 +22,8 @@ type Facing = "environment" | "user";
 
 type Shot = { file: File; previewUrl: string };
 
+const DRAFT_KEY = "catdiary_capture_draft";
+
 // ── Main capture flow ─────────────────────────────────────────────────────────
 
 export function CaptureFlow() {
@@ -38,10 +40,34 @@ export function CaptureFlow() {
 
   const [shots, setShots] = useState<Shot[]>([]);
 
-  const [caption, setCaption] = useState("");
-  const [catName, setCatName] = useState("");
-  const [breed, setBreed] = useState("");
-  const [showOptional, setShowOptional] = useState(false);
+  function loadDraft(): { caption: string; catName: string; breed: string } {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return { caption: "", catName: "", breed: "" };
+      const d = JSON.parse(raw) as unknown;
+      if (typeof d !== "object" || d === null) return { caption: "", catName: "", breed: "" };
+      const draft = d as Record<string, unknown>;
+      return {
+        caption: typeof draft.caption === "string" ? draft.caption : "",
+        catName: typeof draft.catName === "string" ? draft.catName : "",
+        breed: typeof draft.breed === "string" ? draft.breed : "",
+      };
+    } catch {
+      return { caption: "", catName: "", breed: "" };
+    }
+  }
+
+  const initialDraft = (() => {
+    if (typeof window === "undefined") return { caption: "", catName: "", breed: "" };
+    return loadDraft();
+  })();
+
+  const [caption, setCaption] = useState(initialDraft.caption);
+  const [catName, setCatName] = useState(initialDraft.catName);
+  const [breed, setBreed] = useState(initialDraft.breed);
+  const [showOptional, setShowOptional] = useState(
+    !!(initialDraft.catName || initialDraft.breed)
+  );
 
   // Location defaults, in priority order: the photo's EXIF GPS data, then the
   // device's location, then whatever place the user searches for — or nothing
@@ -49,6 +75,16 @@ export function CaptureFlow() {
   const [location, setLocation] = useState<PickedLocation | null>(null);
   const [geoDisabled, setGeoDisabled] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
+
+  // Persist text fields to localStorage so back-navigation doesn't lose them.
+  useEffect(() => {
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ caption, catName, breed }));
+    } catch {
+      // storage unavailable — ignore
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [caption, catName, breed]);
 
   // Tracks whether EXIF GPS was already found so device-location doesn't overwrite it.
   const exifFoundLocationRef = useRef(false);
@@ -204,6 +240,7 @@ export function CaptureFlow() {
       if (!create.ok) throw new Error("Could not save the entry");
 
       shots.forEach((shot) => URL.revokeObjectURL(shot.previewUrl));
+      try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
       router.push("/feed");
       router.refresh();
     } catch (err) {

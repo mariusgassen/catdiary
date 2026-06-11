@@ -109,6 +109,7 @@ export function CatEntryCard({ entry, viewerId, linkToDetail = true }: CatEntryC
       router.push(`/sign-in?callbackUrl=/cat-entries/${entry.id}`);
       return;
     }
+    navigator.vibrate?.([10]);
     // Optimistic toggle; reconcile with (or revert to) the server's answer.
     const prev = { liked, likeCount };
     setLiked(!liked);

@@ -14,6 +14,7 @@ export function FollowButton({
   const [busy, setBusy] = useState(false);
 
   async function toggle() {
+    navigator.vibrate?.([10]);
     setBusy(true);
     try {
       if (status === "not-tracking") {
