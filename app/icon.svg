@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Cat Diary">
+  <defs>
+    <linearGradient id="cover" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4f80ec"/>
+      <stop offset="1" stop-color="#3b6fe0"/>
+    </linearGradient></defs>
+  <rect x="32" y="32" width="448" height="448" rx="104" fill="url(#cover)"/>
+       <rect x="66" y="66" width="380" height="380" rx="80" fill="none" stroke="#ffffff" stroke-opacity="0.16" stroke-width="6"/>
+  <g><rect x="143" y="22" width="14" height="60" rx="7" fill="#fbf6e9"/><circle cx="150" cy="96" r="6" fill="#2b54b4"/><rect x="185" y="22" width="14" height="60" rx="7" fill="#fbf6e9"/><circle cx="192" cy="96" r="6" fill="#2b54b4"/><rect x="227" y="22" width="14" height="60" rx="7" fill="#fbf6e9"/><circle cx="234" cy="96" r="6" fill="#2b54b4"/><rect x="269" y="22" width="14" height="60" rx="7" fill="#fbf6e9"/><circle cx="276" cy="96" r="6" fill="#2b54b4"/><rect x="311" y="22" width="14" height="60" rx="7" fill="#fbf6e9"/><circle cx="318" cy="96" r="6" fill="#2b54b4"/><rect x="353" y="22" width="14" height="60" rx="7" fill="#fbf6e9"/><circle cx="360" cy="96" r="6" fill="#2b54b4"/></g>
+  <g fill="#fbf6e9">
+    <ellipse cx="256" cy="324" rx="93" ry="73"/>
+    <ellipse cx="160" cy="252" rx="28" ry="39" transform="rotate(-22 160 252)"/>
+    <ellipse cx="214" cy="214" rx="29" ry="41" transform="rotate(-8 214 214)"/>
+    <ellipse cx="298" cy="214" rx="29" ry="41" transform="rotate(8 298 214)"/>
+    <ellipse cx="352" cy="252" rx="28" ry="39" transform="rotate(22 352 252)"/>
+  </g>
+</svg>
