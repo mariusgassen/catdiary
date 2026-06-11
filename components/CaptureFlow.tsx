@@ -393,7 +393,7 @@ export function CaptureFlow() {
 
   // ── Details step ────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col min-h-dvh bg-background">
+    <div className="min-h-dvh bg-background">
       {/* Top bar */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border sticky top-0 bg-background/95 backdrop-blur-sm z-10"
            style={{ paddingTop: "calc(0.75rem + env(safe-area-inset-top, 0px))" }}>
@@ -425,7 +425,7 @@ export function CaptureFlow() {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div>
         {/* Photo strip — up to MAX_PHOTOS_PER_ENTRY shots, in the order they'll appear */}
         <div className="flex gap-2 overflow-x-auto px-4 pt-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {shots.map((shot, i) => (
