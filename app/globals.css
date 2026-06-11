@@ -107,6 +107,66 @@ body {
   background: var(--margin-line);
 }
 
+/* Instant-film "developing" effect for photos that are still loading.
+   The frame shows an undeveloped emulsion tone (with a faint chemical
+   shimmer) until the image arrives, then the picture blooms into colour. */
+.developing-frame {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  background-color: #b8ae98; /* undeveloped warm-grey emulsion */
+}
+.dark .developing-frame {
+  background-color: #3b3a32;
+}
+.developing-frame::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.22) 50%,
+    transparent 70%
+  );
+  background-size: 250% 100%;
+  animation: develop-shimmer 1.8s ease-in-out infinite;
+  opacity: 1;
+  transition: opacity 0.6s ease-out;
+  pointer-events: none;
+}
+.developing-frame[data-developed="true"]::before {
+  opacity: 0;
+  animation: none;
+}
+.developing-img {
+  opacity: 0;
+  filter: sepia(0.7) brightness(0.55) contrast(1.05);
+  transition: opacity 1.4s ease-out, filter 1.6s ease-out;
+}
+.developing-frame[data-developed="true"] .developing-img {
+  opacity: 1;
+  filter: none;
+}
+@keyframes develop-shimmer {
+  0% {
+    background-position: 130% 0;
+  }
+  100% {
+    background-position: -130% 0;
+  }
+}
+/* Honour reduced-motion: skip the shimmer and the slow bloom, just fade. */
+@media (prefers-reduced-motion: reduce) {
+  .developing-frame::before {
+    animation: none;
+  }
+  .developing-img {
+    filter: none;
+    transition: opacity 0.4s ease-out;
+  }
+}
+
 /* Strip of washi tape holding a photo down. */
 .tape-strip {
   position: absolute;
