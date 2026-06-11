@@ -12,13 +12,23 @@ import {
   getFollowStatus,
 } from "@/lib/follows";
 import { CatEntryCard } from "@/components/CatEntryCard";
+import { CatEntryGridCard } from "@/components/CatEntryGridCard";
+import { ProfileViewToggle } from "@/components/ProfileViewToggle";
 import { FollowButton } from "@/components/FollowButton";
 import { FollowRequestRow } from "@/components/FollowRequestRow";
 import { PendingOutgoingRow } from "@/components/PendingOutgoingRow";
 import { displayNameFor } from "@/lib/userDisplay";
 
-export default async function ProfilePage({ params }: { params: Promise<{ userId: string }> }) {
+export default async function ProfilePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ userId: string }>;
+  searchParams: Promise<{ view?: string }>;
+}) {
   const { userId } = await params;
+  const { view: rawView } = await searchParams;
+  const view: "list" | "grid" = rawView === "grid" ? "grid" : "list";
   const session = await auth();
   const viewerId = session?.user?.id ?? null;
 
@@ -146,11 +156,24 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
           These pages are still blank.
         </p>
       ) : (
-        <div className="flex flex-col gap-4">
-          {withPhotos.map((entry) => (
-            <CatEntryCard key={entry.id} entry={entry} viewerId={viewerId} />
-          ))}
-        </div>
+        <>
+          <div className="flex justify-end px-3">
+            <ProfileViewToggle view={view} />
+          </div>
+          {view === "grid" ? (
+            <div className="grid grid-cols-3 gap-2 px-3">
+              {withPhotos.map((entry) => (
+                <CatEntryGridCard key={entry.id} entry={entry} />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {withPhotos.map((entry) => (
+                <CatEntryCard key={entry.id} entry={entry} viewerId={viewerId} />
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
