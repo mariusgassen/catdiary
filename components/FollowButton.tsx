@@ -1,44 +1,61 @@
 "use client";
 
 import { useState } from "react";
+import type { FollowStatus } from "@/lib/follows";
 
 export function FollowButton({
   followeeId,
-  initiallyFollowing,
+  initialStatus,
 }: {
   followeeId: string;
-  initiallyFollowing: boolean;
+  initialStatus: FollowStatus;
 }) {
-  const [following, setFollowing] = useState(initiallyFollowing);
-  const [pending, setPending] = useState(false);
+  const [status, setStatus] = useState<FollowStatus>(initialStatus);
+  const [busy, setBusy] = useState(false);
 
   async function toggle() {
-    setPending(true);
+    setBusy(true);
     try {
-      const res = await fetch("/api/follows", {
-        method: following ? "DELETE" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ followeeId }),
-      });
-      if (res.ok) {
-        setFollowing(!following);
+      if (status === "not-tracking") {
+        const res = await fetch("/api/follows", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ followeeId }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setStatus(data.follow.approved ? "tracking" : "pending");
+        }
+      } else {
+        const res = await fetch("/api/follows", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ followeeId }),
+        });
+        if (res.ok) setStatus("not-tracking");
       }
     } finally {
-      setPending(false);
+      setBusy(false);
     }
   }
+
+  const label =
+    status === "tracking" ? "Tracking" : status === "pending" ? "Pending…" : "Track";
+
+  const className =
+    status === "not-tracking"
+      ? "bg-accent text-white shadow-sm shadow-accent/30"
+      : status === "pending"
+        ? "border border-dashed border-border bg-surface text-muted hover:text-foreground"
+        : "border border-border bg-surface text-muted hover:text-foreground";
 
   return (
     <button
       onClick={toggle}
-      disabled={pending}
-      className={`shrink-0 rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${
-        following
-          ? "border border-border bg-surface text-muted hover:text-foreground"
-          : "bg-accent text-white shadow-sm shadow-accent/30"
-      }`}
+      disabled={busy}
+      className={`shrink-0 rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${className}`}
     >
-      {following ? "Reading" : "Read along"}
+      {label}
     </button>
   );
 }

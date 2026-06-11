@@ -18,7 +18,7 @@ const PERKS = [
   },
   {
     icon: Users,
-    text: "Follow other cat spotters and read their diaries in a daily feed",
+    text: "Track other cat spotters and read their diaries in a daily feed",
   },
   {
     icon: BookLock,
