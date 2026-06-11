@@ -19,7 +19,7 @@ tilted polaroid with a name/breed caption, a rubber-stamp date, diary notes,
 coordinates in the footer, and paw-print reactions. The feed is a date-grouped
 timeline ("Today", "Yesterday", …), profiles are diary covers ("X's Diary",
 follow = "Read along"), and bottom tab navigation is Journal · Discover · Log a
-cat (paw stamp) · Map · My diary. Theming is class-based via `next-themes`
+cat (paw stamp) · Alerts (notifications) · My diary. Theming is class-based via `next-themes`
 (Light / Dark / System setting on your own profile, System by default). Full
 capture flow (native camera API, gallery fallback, GPS + OpenStreetMap
 Nominatim location, hashtag highlight overlay in caption) and a Discover page
@@ -85,6 +85,25 @@ Keep this document in sync with reality as the app evolves.
   `displayName` is optional (nullable column, optional at registration and
   clearable in Settings) and every name render falls back to the username via
   `displayNameFor` in `lib/userDisplay.ts`
+- **In-app notifications**: `Notification` model (LIKE, COMMENT, REPLY, FOLLOW,
+  MENTION types); created in `lib/notifications.ts` and wired into `lib/likes.ts`,
+  `lib/comments.ts`, `lib/follows.ts`, and `lib/catEntries.ts`; polled every
+  30 s in the nav with an unread badge; `/notifications` page marks all read on
+  view; `GET/PATCH /api/notifications`, `GET /api/notifications?unread=1`
+- **@username mentions**: search-as-you-type autocomplete in the caption
+  textarea of the capture flow; typing `@` shows a user dropdown backed by
+  `GET /api/users?q=`; selecting a suggestion inserts `@username ` and fires a
+  MENTION notification when the entry or comment is saved
+- **Web push notifications** (PWA): service worker handles `push` +
+  `notificationclick` events; VAPID keys in env (`VAPID_PUBLIC_KEY`,
+  `VAPID_PRIVATE_KEY`, `VAPID_CONTACT`); `POST/DELETE /api/push-subscriptions`
+  to register/unregister devices; `lib/webpush.ts` sends to all registered
+  devices for a user on each notification event; stale subscriptions (410/404)
+  are auto-cleaned
+- **Notification settings**: per-type in-app toggles (paws, notes/replies, new
+  readers, mentions) stored as `User.notifyLikes/notifyComments/notifyFollows/
+  notifyMentions`; per-device push toggle in Settings → Notifications via the
+  Web Push Notifications Permission API; `PATCH /api/me` accepts all four prefs
 - **Invite links**: every user has a personal `/invite/[code]` link ("Invite
   friends" section in Settings — Web Share API with clipboard fallback,
   `POST /api/me/invite`, code generated on first share); the landing page is
@@ -106,10 +125,9 @@ Keep this document in sync with reality as the app evolves.
 - Edit profile: display name, bio, avatar upload, private toggle
 
 ### Social / engagement
-- **In-app notifications** — new follower, like, comment; notification tab in nav
-  (Bell icon placeholder); needs a `Notification` model and polling/push
-- **Mentions** (`@username`) in captions — parser already handles `@`, needs
-  search-as-you-type autocomplete in the capture form
+- Notification grouping / summary ("X and 3 others pawed your entry")
+- Mention autocomplete in the **comment** textarea (currently only in capture/edit captions)
+- Mark individual notifications as read (currently all marked on page open)
 
 ### Cat entry detail page
 - Map pin on the detail page once the map view exists
@@ -133,8 +151,7 @@ Keep this document in sync with reality as the app evolves.
 - Follow requests approval/rejection UI
 
 ### PWA / mobile hardening
-- Service worker caching strategy (currently minimal `public/sw.js`)
-- Web push notifications (VAPID keys, `PushSubscription` model)
+- Service worker caching strategy (currently handles push + notificationclick only)
 - Haptic feedback on like/follow (`navigator.vibrate`)
 - Offline-capable read view (cache feed in SW)
 - Add-to-home-screen prompt

@@ -13,6 +13,10 @@ export async function getUserSettings(userId: string) {
       isPrivate: true,
       avatarKey: true,
       image: true,
+      notifyLikes: true,
+      notifyComments: true,
+      notifyFollows: true,
+      notifyMentions: true,
     },
   });
 }
@@ -52,6 +56,10 @@ export type UpdateUserSettingsInput = {
   username?: string;
   bio?: string | null;
   isPrivate?: boolean;
+  notifyLikes?: boolean;
+  notifyComments?: boolean;
+  notifyFollows?: boolean;
+  notifyMentions?: boolean;
 };
 
 export async function updateUserSettings(userId: string, input: UpdateUserSettingsInput) {

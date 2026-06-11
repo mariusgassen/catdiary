@@ -1,5 +1,12 @@
 import { db } from "@/lib/db";
 import { canViewCatEntry, CatEntryForbiddenError, CatEntryNotFoundError } from "@/lib/catEntries";
+import { createNotification } from "@/lib/notifications";
+
+/** Parse @username mentions from text, returning the usernames. */
+function parseMentions(text: string): string[] {
+  const matches = text.match(/@([\w.]+)/g) ?? [];
+  return [...new Set(matches.map((m) => m.slice(1)))];
+}
 
 export class CommentNotFoundError extends Error {}
 
@@ -61,10 +68,62 @@ export async function addComment(
     rootId = parent.parentId ?? parent.id;
   }
 
-  return db.comment.create({
+  const comment = await db.comment.create({
     data: { userId, catEntryId, body, parentId: rootId },
     include: commentInclude,
   });
+
+  // Notify entry owner of comment (or parent comment author of reply)
+  if (rootId) {
+    const parent = await db.comment.findUnique({ where: { id: rootId }, select: { userId: true } });
+    if (parent) {
+      void createNotification({
+        userId: parent.userId,
+        actorId: userId,
+        type: "REPLY",
+        catEntryId,
+        commentId: comment.id,
+      });
+    }
+    // Also notify entry owner if different from the parent commenter
+    if (entry.ownerId !== parent?.userId) {
+      void createNotification({
+        userId: entry.ownerId,
+        actorId: userId,
+        type: "COMMENT",
+        catEntryId,
+        commentId: comment.id,
+      });
+    }
+  } else {
+    void createNotification({
+      userId: entry.ownerId,
+      actorId: userId,
+      type: "COMMENT",
+      catEntryId,
+      commentId: comment.id,
+    });
+  }
+
+  // Notify mentioned users
+  const mentionedUsernames = parseMentions(body);
+  if (mentionedUsernames.length > 0) {
+    const mentionedUsers = await db.user.findMany({
+      where: { username: { in: mentionedUsernames } },
+      select: { id: true },
+    });
+    for (const mentioned of mentionedUsers) {
+      void createNotification({
+        userId: mentioned.id,
+        actorId: userId,
+        type: "MENTION",
+        catEntryId,
+        commentId: comment.id,
+      });
+    }
+  }
+
+  return comment;
 }
 
 /** A comment can be removed by its author or by the owner of the diary entry.

@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { canViewCatEntry, CatEntryForbiddenError, CatEntryNotFoundError } from "@/lib/catEntries";
+import { createNotification } from "@/lib/notifications";
 
 /**
  * Toggles `userId`'s paw on an entry. The viewer must be allowed to see the
@@ -18,6 +19,7 @@ export async function toggleLike(userId: string, catEntryId: string) {
     await db.like.delete({ where: { userId_catEntryId: { userId, catEntryId } } });
   } else {
     await db.like.create({ data: { userId, catEntryId } });
+    void createNotification({ userId: entry.ownerId, actorId: userId, type: "LIKE", catEntryId });
   }
 
   const likeCount = await db.like.count({ where: { catEntryId } });

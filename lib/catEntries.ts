@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { MAX_PHOTOS_PER_ENTRY } from "@/lib/photo-urls";
+import { createNotification } from "@/lib/notifications";
 
 const PAGE_SIZE = 20;
 
@@ -40,7 +41,7 @@ export async function createCatEntry(input: CreateCatEntryInput) {
     throw new CatEntryPhotoCountError(`an entry needs 1–${MAX_PHOTOS_PER_ENTRY} photos`);
   }
 
-  return db.catEntry.create({
+  const entry = await db.catEntry.create({
     data: {
       ownerId: input.ownerId,
       name: input.name ?? null,
@@ -59,6 +60,27 @@ export async function createCatEntry(input: CreateCatEntryInput) {
     },
     include: { photos: { orderBy: { position: "asc" } } },
   });
+
+  // Notify @mentioned users in the caption
+  if (input.notes) {
+    const mentionedUsernames = (input.notes.match(/@([\w.]+)/g) ?? []).map((m) => m.slice(1));
+    if (mentionedUsernames.length > 0) {
+      const mentionedUsers = await db.user.findMany({
+        where: { username: { in: [...new Set(mentionedUsernames)] } },
+        select: { id: true },
+      });
+      for (const mentioned of mentionedUsers) {
+        void createNotification({
+          userId: mentioned.id,
+          actorId: input.ownerId,
+          type: "MENTION",
+          catEntryId: entry.id,
+        });
+      }
+    }
+  }
+
+  return entry;
 }
 
 /** Fetches a CatEntry only if `ownerId` owns it — used for edit/delete flows. */

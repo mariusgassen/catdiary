@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useRef, type FormEvent } from "react";
+import { useState, useRef, useEffect, type FormEvent } from "react";
 import { signOut, useSession } from "next-auth/react";
-import { Camera, ChevronLeft, Loader2, LogOut } from "lucide-react";
+import { Camera, ChevronLeft, Loader2, LogOut, Bell, BellOff } from "lucide-react";
 import { InviteFriends } from "@/components/InviteFriends";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { displayNameFor } from "@/lib/userDisplay";
@@ -18,6 +18,10 @@ type SettingsUser = {
   isPrivate: boolean;
   avatarKey: string | null;
   image: string | null;
+  notifyLikes: boolean;
+  notifyComments: boolean;
+  notifyFollows: boolean;
+  notifyMentions: boolean;
 };
 
 const PROFILE_ERRORS: Record<string, string> = {
@@ -48,6 +52,36 @@ export function SettingsView({ user }: { user: SettingsUser }) {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  // Notification prefs
+  const [notifyLikes, setNotifyLikes] = useState(user.notifyLikes);
+  const [notifyComments, setNotifyComments] = useState(user.notifyComments);
+  const [notifyFollows, setNotifyFollows] = useState(user.notifyFollows);
+  const [notifyMentions, setNotifyMentions] = useState(user.notifyMentions);
+
+  // Web push subscription state
+  const [pushSupported, setPushSupported] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushLoading, setPushLoading] = useState(false);
+  const [vapidKey, setVapidKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPushSupported(true);
+    // Check if already subscribed
+    navigator.serviceWorker.ready.then(async (reg) => {
+      const sub = await reg.pushManager.getSubscription();
+      setPushEnabled(!!sub);
+    });
+    // Fetch VAPID public key
+    fetch("/api/push-subscriptions").then(async (res) => {
+      if (res.ok) {
+        const data = (await res.json()) as { vapidPublicKey: string | null };
+        setVapidKey(data.vapidPublicKey);
+      }
+    });
+  }, []);
 
   const avatarSrc = avatarKey
     ? `/api/photos/${avatarKey}`
@@ -144,6 +178,59 @@ export function SettingsView({ user }: { user: SettingsUser }) {
       setError("Could not update your privacy setting.");
     } else {
       router.refresh();
+    }
+  }
+
+  async function toggleNotifPref(
+    key: "notifyLikes" | "notifyComments" | "notifyFollows" | "notifyMentions",
+    current: boolean,
+    setter: (v: boolean) => void,
+  ) {
+    const next = !current;
+    setter(next);
+    const res = await fetch("/api/me", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ [key]: next }),
+    });
+    if (!res.ok) setter(current);
+  }
+
+  async function togglePush() {
+    if (!pushSupported || !vapidKey) return;
+    setPushLoading(true);
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      if (pushEnabled) {
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) {
+          await fetch("/api/push-subscriptions", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ endpoint: sub.endpoint }),
+          });
+          await sub.unsubscribe();
+        }
+        setPushEnabled(false);
+      } else {
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") return;
+        const sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: vapidKey,
+        });
+        const raw = sub.toJSON() as { endpoint: string; keys?: { p256dh: string; auth: string } };
+        await fetch("/api/push-subscriptions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ endpoint: raw.endpoint, keys: raw.keys }),
+        });
+        setPushEnabled(true);
+      }
+    } catch {
+      // permission denied or push registration failed — swallow silently
+    } finally {
+      setPushLoading(false);
     }
   }
 
@@ -299,6 +386,78 @@ export function SettingsView({ user }: { user: SettingsUser }) {
 
       <Section title="Invite friends">
         <InviteFriends />
+      </Section>
+
+      <Section title="Notifications">
+        <div className="flex flex-col gap-3">
+          {(
+            [
+              { key: "notifyLikes", label: "Paws (likes)", desc: "When someone paws your entry", value: notifyLikes, setter: setNotifyLikes },
+              { key: "notifyComments", label: "Notes & replies", desc: "When someone comments or replies", value: notifyComments, setter: setNotifyComments },
+              { key: "notifyFollows", label: "New readers", desc: "When someone starts following you", value: notifyFollows, setter: setNotifyFollows },
+              { key: "notifyMentions", label: "Mentions", desc: "When someone @mentions you", value: notifyMentions, setter: setNotifyMentions },
+            ] as const
+          ).map(({ key, label, desc, value, setter }) => (
+            <button
+              key={key}
+              onClick={() => void toggleNotifPref(key, value, setter as (v: boolean) => void)}
+              role="switch"
+              aria-checked={value}
+              className="flex w-full items-center justify-between gap-3 text-left"
+            >
+              <span className="min-w-0">
+                <span className="block text-sm font-medium">{label}</span>
+                <span className="block text-xs text-muted">{desc}</span>
+              </span>
+              <span
+                aria-hidden
+                className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+                  value ? "bg-accent" : "bg-border"
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-all ${
+                    value ? "left-[22px]" : "left-0.5"
+                  }`}
+                />
+              </span>
+            </button>
+          ))}
+
+          {pushSupported && vapidKey && (
+            <button
+              onClick={() => void togglePush()}
+              disabled={pushLoading}
+              className="flex w-full items-center justify-between gap-3 text-left disabled:opacity-50"
+            >
+              <span className="min-w-0 flex items-center gap-2">
+                {pushEnabled ? <Bell size={16} className="text-accent shrink-0" /> : <BellOff size={16} className="text-muted shrink-0" />}
+                <span>
+                  <span className="block text-sm font-medium">Push notifications</span>
+                  <span className="block text-xs text-muted">
+                    {pushEnabled ? "Enabled on this device" : "Get alerts even when the app is closed"}
+                  </span>
+                </span>
+              </span>
+              {pushLoading ? (
+                <Loader2 size={16} className="animate-spin text-muted shrink-0" />
+              ) : (
+                <span
+                  aria-hidden
+                  className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+                    pushEnabled ? "bg-accent" : "bg-border"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-all ${
+                      pushEnabled ? "left-[22px]" : "left-0.5"
+                    }`}
+                  />
+                </span>
+              )}
+            </button>
+          )}
+        </div>
       </Section>
 
       <Section title="Appearance">
