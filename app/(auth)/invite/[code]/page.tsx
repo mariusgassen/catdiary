@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const name = displayNameFor(inviter);
   const title = `${name} invited you to Cat Diary`;
-  const description = `Join Cat Diary, a field journal for the cats you meet, and read along with ${name}'s diary.`;
+  const description = `Join Cat Diary, a field journal for the cats you meet, and track ${name}'s diary.`;
   return {
     title,
     description,
@@ -72,7 +72,7 @@ export default async function InvitePage({ params }: Props) {
         <h1 className="text-2xl font-bold tracking-tight">{name} invited you to Cat Diary</h1>
         <p className="pt-2 text-sm text-muted">
           A field journal for the cats you meet — photograph them, note where they crossed your
-          path, and read along with friends.
+          path, and track other cat spotters.
         </p>
       </div>
 
@@ -110,7 +110,7 @@ export default async function InvitePage({ params }: Props) {
       </div>
 
       <p className="text-xs text-muted">
-        Join with this link and you&rsquo;ll follow {name}&rsquo;s diary from day one.
+        Join with this link and you&rsquo;ll track {name}&rsquo;s diary from day one.
       </p>
     </div>
   );

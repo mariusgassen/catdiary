@@ -18,8 +18,8 @@ const STEPS = [
   },
   {
     icon: Users,
-    title: "Read along",
-    text: "Follow other cat spotters, leave paw prints and margin notes, and browse their diaries in a day-by-day feed.",
+    title: "Track",
+    text: "Track other cat spotters, leave paw prints and margin notes, and browse their diaries in a day-by-day feed.",
   },
 ];
 
@@ -93,7 +93,7 @@ export default async function Home() {
         <div className="flex flex-col items-center gap-5 text-center">
           <p className="max-w-md text-foreground/75">
             Snap a photo, pin the place, jot a note — and keep a diary of every
-            cat that&apos;s crossed your path. Follow other cat lovers and read
+            cat that&apos;s crossed your path. Track other cat spotters and read
             their diaries too.
           </p>
           <div className="flex gap-3">

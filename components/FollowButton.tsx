@@ -38,7 +38,7 @@ export function FollowButton({
           : "bg-accent text-white shadow-sm shadow-accent/30"
       }`}
     >
-      {following ? "Reading" : "Read along"}
+      {following ? "Tracking" : "Track"}
     </button>
   );
 }

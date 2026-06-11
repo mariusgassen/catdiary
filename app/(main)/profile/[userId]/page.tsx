@@ -73,7 +73,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
 
       {pendingRequests.length > 0 && (
         <section className="mx-3 flex flex-col gap-2 rounded-xl border border-border bg-surface p-4 text-sm shadow-sm">
-          <h2 className="font-semibold">Waiting to read along</h2>
+          <h2 className="font-semibold">Waiting to track</h2>
           {pendingRequests.map((request) => (
             <FollowRequestRow
               key={request.followerId}
