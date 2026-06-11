@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { PawPrint, MessageSquareText, Share2, MapPin, SquarePen, Check } from "lucide-react";
 import { HashtagCaption } from "@/components/HashtagCaption";
+import { DevelopingPhoto } from "@/components/DevelopingPhoto";
 import { displayNameFor } from "@/lib/userDisplay";
 
 type CatEntryCardProps = {
@@ -160,13 +161,13 @@ export function CatEntryCard({ entry, viewerId }: CatEntryCardProps) {
               className="flex aspect-square w-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
               {photoUrls.map((url, i) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <DevelopingPhoto
                   key={url}
                   src={url}
                   alt={entry.name ? `${entry.name} — photo ${i + 1}` : `A cat — photo ${i + 1}`}
-                  loading={i === 0 ? undefined : "lazy"}
-                  className="h-full w-full shrink-0 snap-center object-cover bg-accent-soft"
+                  loading={i === 0 ? "eager" : "lazy"}
+                  frameClassName="h-full w-full shrink-0 snap-center"
+                  imgClassName="h-full w-full object-cover"
                   onDoubleClick={handleLike}
                 />
               ))}

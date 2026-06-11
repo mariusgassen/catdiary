@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { displayNameFor } from "@/lib/userDisplay";
+import { DevelopingPhoto } from "@/components/DevelopingPhoto";
 
 type SimilarEntry = {
   id: string;
@@ -62,12 +63,12 @@ export function SimilarCats({ entryId }: { entryId: string }) {
               } transition-transform active:scale-95`}
             >
               {photoKey ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <DevelopingPhoto
                   src={`/api/photos/${photoKey}`}
                   alt={entry.name ?? "A similar-looking cat"}
                   loading="lazy"
-                  className="aspect-square w-full bg-accent-soft object-cover"
+                  frameClassName="aspect-square w-full"
+                  imgClassName="h-full w-full object-cover"
                 />
               ) : (
                 <div className="flex aspect-square w-full select-none items-center justify-center bg-accent-soft text-3xl">
