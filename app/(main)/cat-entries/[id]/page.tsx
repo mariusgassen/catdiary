@@ -5,6 +5,7 @@ import { getCatEntryForViewer } from "@/lib/catEntries";
 import { photoUrlsFor } from "@/lib/photo-urls";
 import { listComments } from "@/lib/comments";
 import { CatEntryCard } from "@/components/CatEntryCard";
+import { BackLink } from "@/components/BackLink";
 import { CommentsSection } from "@/components/CommentsSection";
 import { SimilarCats } from "@/components/SimilarCats";
 import { displayNameFor } from "@/lib/userDisplay";
@@ -46,9 +47,11 @@ export default async function CatEntryPage({ params }: Props) {
 
   return (
     <div className="paper-grid min-h-dvh flex flex-col gap-4 py-4">
+      <BackLink label="Back to the journal" />
       <CatEntryCard
         entry={{ ...entry, photoUrls: photoUrlsFor(entry.photos, { full: true }) }}
         viewerId={viewerId}
+        linkToDetail={false}
       />
       <CommentsSection
         entryId={entry.id}

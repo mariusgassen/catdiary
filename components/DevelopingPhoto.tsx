@@ -10,6 +10,7 @@ type DevelopingPhotoProps = {
   /** Visual classes for the image itself (object-fit, sizing). */
   imgClassName?: string;
   loading?: "lazy" | "eager";
+  onClick?: () => void;
   onDoubleClick?: () => void;
 };
 
@@ -24,6 +25,7 @@ export function DevelopingPhoto({
   frameClassName = "",
   imgClassName = "",
   loading,
+  onClick,
   onDoubleClick,
 }: DevelopingPhotoProps) {
   const [developed, setDeveloped] = useState(false);
@@ -41,6 +43,7 @@ export function DevelopingPhoto({
         ref={(el) => {
           if (el?.complete && el.naturalWidth > 0) setDeveloped(true);
         }}
+        onClick={onClick}
         onDoubleClick={onDoubleClick}
         className={`developing-img ${imgClassName}`}
       />

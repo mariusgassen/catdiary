@@ -30,6 +30,9 @@ type CatEntryCardProps = {
     likes?: { userId: string }[]; // the viewer's own like row, if any
   };
   viewerId?: string | null;
+  /** In the feed the card opens the entry on tap; on the detail page itself it
+      is already the full view, so self-navigation is disabled. */
+  linkToDetail?: boolean;
 };
 
 const STAMP_DATE = new Intl.DateTimeFormat("en", { day: "2-digit", month: "short" });
@@ -56,7 +59,7 @@ function Avatar({ user }: { user: { displayName: string | null; username?: strin
   );
 }
 
-export function CatEntryCard({ entry, viewerId }: CatEntryCardProps) {
+export function CatEntryCard({ entry, viewerId, linkToDetail = true }: CatEntryCardProps) {
   const router = useRouter();
   const date = new Date(entry.createdAt);
   const isOwner = viewerId != null && viewerId === entry.owner.id;
@@ -68,11 +71,31 @@ export function CatEntryCard({ entry, viewerId }: CatEntryCardProps) {
   const photoUrls = entry.photoUrls ?? [];
   const [photoIndex, setPhotoIndex] = useState(0);
   const filmRef = useRef<HTMLDivElement>(null);
+  // Single tap on the photo opens the entry; a double tap leaves a paw instead.
+  // Delay the open just long enough to tell the two gestures apart.
+  const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function handleFilmScroll() {
     const el = filmRef.current;
     if (!el) return;
     setPhotoIndex(Math.round(el.scrollLeft / el.clientWidth));
+  }
+
+  function handlePhotoClick() {
+    if (!linkToDetail) return;
+    if (openTimer.current) clearTimeout(openTimer.current);
+    openTimer.current = setTimeout(() => {
+      openTimer.current = null;
+      router.push(`/cat-entries/${entry.id}`);
+    }, 250);
+  }
+
+  function handlePhotoDoubleClick() {
+    if (openTimer.current) {
+      clearTimeout(openTimer.current);
+      openTimer.current = null;
+    }
+    handleLike();
   }
 
   // Place name in the UI — never raw coordinates. Entries that have a pin but
@@ -166,9 +189,10 @@ export function CatEntryCard({ entry, viewerId }: CatEntryCardProps) {
                   src={url}
                   alt={entry.name ? `${entry.name} — photo ${i + 1}` : `A cat — photo ${i + 1}`}
                   loading={i === 0 ? "eager" : "lazy"}
-                  frameClassName="h-full w-full shrink-0 snap-center"
+                  frameClassName={`h-full w-full shrink-0 snap-center ${linkToDetail ? "cursor-pointer" : ""}`}
                   imgClassName="h-full w-full object-cover"
-                  onDoubleClick={handleLike}
+                  onClick={handlePhotoClick}
+                  onDoubleClick={handlePhotoDoubleClick}
                 />
               ))}
             </div>
@@ -183,9 +207,13 @@ export function CatEntryCard({ entry, viewerId }: CatEntryCardProps) {
             </span>
           )}
           <figcaption className="pt-1.5 text-center text-sm font-medium leading-none text-[#3a3128]">
-            <Link href={`/cat-entries/${entry.id}`} className="hover:underline">
-              {entry.name ?? "A cat I met"}
-            </Link>
+            {linkToDetail ? (
+              <Link href={`/cat-entries/${entry.id}`} className="hover:underline">
+                {entry.name ?? "A cat I met"}
+              </Link>
+            ) : (
+              <span>{entry.name ?? "A cat I met"}</span>
+            )}
             {entry.breed && <span className="font-normal text-[#8a7d6b]"> · {entry.breed}</span>}
           </figcaption>
           {photoUrls.length > 1 && (
@@ -231,14 +259,24 @@ export function CatEntryCard({ entry, viewerId }: CatEntryCardProps) {
             <PawPrint size={16} strokeWidth={1.75} fill={liked ? "currentColor" : "none"} />
             {likeCount > 0 && <span>{likeCount}</span>}
           </button>
-          <Link
-            href={`/cat-entries/${entry.id}`}
-            className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium hover:text-foreground transition-colors"
-            aria-label="Margin notes"
-          >
-            <MessageSquareText size={16} strokeWidth={1.75} />
-            {commentCount > 0 && <span>{commentCount}</span>}
-          </Link>
+          {linkToDetail ? (
+            <Link
+              href={`/cat-entries/${entry.id}`}
+              className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium hover:text-foreground transition-colors"
+              aria-label="Margin notes"
+            >
+              <MessageSquareText size={16} strokeWidth={1.75} />
+              {commentCount > 0 && <span>{commentCount}</span>}
+            </Link>
+          ) : (
+            <span
+              className="flex items-center gap-1 px-2 py-1 text-xs font-medium"
+              aria-label="Margin notes"
+            >
+              <MessageSquareText size={16} strokeWidth={1.75} />
+              {commentCount > 0 && <span>{commentCount}</span>}
+            </span>
+          )}
           <button
             onClick={handleShare}
             className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium hover:text-foreground transition-colors"
