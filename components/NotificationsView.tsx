@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Bell, Heart, MessageCircle, UserPlus, AtSign, ArrowLeft } from "lucide-react";
+import { Bell, Heart, MessageCircle, UserPlus, AtSign, ArrowLeft, CheckCheck } from "lucide-react";
 import type { NotificationWithDetails } from "@/lib/notifications";
 import { displayNameFor } from "@/lib/userDisplay";
 
@@ -86,7 +87,13 @@ function CoverThumb({ n }: { n: NotificationWithDetails }) {
   );
 }
 
-function NotificationRow({ n }: { n: NotificationWithDetails }) {
+function NotificationRow({
+  n,
+  onRead,
+}: {
+  n: NotificationWithDetails;
+  onRead: (id: string) => void;
+}) {
   const type = n.type as keyof typeof TYPE_ICON;
   const Icon = TYPE_ICON[type] ?? Bell;
   const iconColor = (TYPE_COLOR as Record<string, string>)[type] ?? "text-muted";
@@ -94,6 +101,7 @@ function NotificationRow({ n }: { n: NotificationWithDetails }) {
   return (
     <Link
       href={notificationHref(n)}
+      onClick={() => { if (!n.read) onRead(n.id); }}
       className={`flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface ${!n.read ? "bg-accent-soft/30" : ""}`}
     >
       <div className="relative shrink-0">
@@ -125,7 +133,37 @@ export function NotificationsView({
 }: {
   initialNotifications: NotificationWithDetails[];
 }) {
-  const [notifications] = useState(initialNotifications);
+  const router = useRouter();
+  const [notifications, setNotifications] = useState(initialNotifications);
+  const [markingAll, setMarkingAll] = useState(false);
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  function markOneRead(id: string) {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
+    );
+    void fetch("/api/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: [id] }),
+    });
+  }
+
+  async function markAllRead() {
+    setMarkingAll(true);
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    try {
+      await fetch("/api/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      router.refresh();
+    } finally {
+      setMarkingAll(false);
+    }
+  }
 
   return (
     <div className="flex flex-col min-h-0">
@@ -139,6 +177,17 @@ export function NotificationsView({
             <ArrowLeft size={20} />
           </Link>
           <h1 className="text-lg font-bold tracking-tight flex-1">Notifications</h1>
+          {unreadCount > 0 && (
+            <button
+              onClick={() => void markAllRead()}
+              disabled={markingAll}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent-soft disabled:opacity-50"
+              aria-label="Mark all as read"
+            >
+              <CheckCheck size={14} />
+              Mark all read
+            </button>
+          )}
         </div>
       </header>
 
@@ -149,7 +198,9 @@ export function NotificationsView({
             <p className="text-sm">No notifications yet</p>
           </div>
         ) : (
-          notifications.map((n) => <NotificationRow key={n.id} n={n} />)
+          notifications.map((n) => (
+            <NotificationRow key={n.id} n={n} onRead={markOneRead} />
+          ))
         )}
       </div>
     </div>

@@ -1,51 +1,35 @@
 import Link from "next/link";
 import { PawPrint } from "lucide-react";
 import { auth } from "@/lib/auth";
-import { listCatEntriesForViewer } from "@/lib/catEntries";
+import { listCatEntriesForViewer, listOnThisDayEntries } from "@/lib/catEntries";
 import { photoUrlsFor } from "@/lib/photo-urls";
-import { CatEntryCard } from "@/components/CatEntryCard";
 import { NotificationBell } from "@/components/NotificationBell";
-
-type FeedEntry = Awaited<ReturnType<typeof listCatEntriesForViewer>>["entries"][number] & {
-  photoUrls: string[];
-};
-
-function dayLabel(date: Date, now: Date): string {
-  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-  const dayDiff = Math.round((startOfDay(now) - startOfDay(date)) / 86400000);
-  if (dayDiff === 0) return "Today";
-  if (dayDiff === 1) return "Yesterday";
-  return date.toLocaleDateString("en", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    ...(date.getFullYear() !== now.getFullYear() ? { year: "numeric" } : {}),
-  });
-}
-
-function groupByDay(entries: FeedEntry[]): { label: string; entries: FeedEntry[] }[] {
-  const now = new Date();
-  const groups: { label: string; entries: FeedEntry[] }[] = [];
-  for (const entry of entries) {
-    const label = dayLabel(new Date(entry.createdAt), now);
-    const last = groups[groups.length - 1];
-    if (last?.label === label) last.entries.push(entry);
-    else groups.push({ label, entries: [entry] });
-  }
-  return groups;
-}
+import { OnThisDayStrip } from "@/components/OnThisDayStrip";
+import { FeedInfiniteScroll } from "@/components/FeedInfiniteScroll";
+import type { FeedEntry } from "@/components/FeedInfiniteScroll";
 
 export default async function FeedPage() {
   const session = await auth();
   const viewerId = session?.user?.id ?? null;
-  const { entries } = await listCatEntriesForViewer({ viewerId });
+
+  const [{ entries, nextCursor }, onThisDay] = await Promise.all([
+    listCatEntriesForViewer({ viewerId }),
+    listOnThisDayEntries(viewerId),
+  ]);
 
   const withPhotos: FeedEntry[] = entries.map((entry) => ({
     ...entry,
     photoUrls: photoUrlsFor(entry.photos),
   }));
 
-  if (withPhotos.length === 0) {
+  const onThisDayEntries = onThisDay.map((e) => ({
+    id: e.id,
+    name: e.name,
+    createdAt: e.createdAt,
+    photos: e.photos.map((p) => ({ photoKey: p.photoKey, thumbKey: p.thumbKey })),
+  }));
+
+  if (withPhotos.length === 0 && onThisDayEntries.length === 0) {
     return (
       <div className="paper-grid flex min-h-dvh flex-col items-center gap-4 px-6 py-24 text-center">
         <span className="text-5xl">🐱</span>
@@ -63,8 +47,6 @@ export default async function FeedPage() {
       </div>
     );
   }
-
-  const groups = groupByDay(withPhotos);
 
   return (
     <div className="paper-grid min-h-dvh">
@@ -84,21 +66,13 @@ export default async function FeedPage() {
         </div>
       </header>
 
-      {/* Journal timeline */}
-      <div className="space-y-5 py-4">
-        {groups.map((group) => (
-          <section key={group.label} className="space-y-4">
-            <div className="flex items-center gap-3 px-4">
-              <span className="h-px flex-1 bg-border" aria-hidden />
-              <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">{group.label}</h2>
-              <span className="h-px flex-1 bg-border" aria-hidden />
-            </div>
-            {group.entries.map((entry) => (
-              <CatEntryCard key={entry.id} entry={entry} viewerId={viewerId} />
-            ))}
-          </section>
-        ))}
-      </div>
+      {onThisDayEntries.length > 0 && <OnThisDayStrip entries={onThisDayEntries} />}
+
+      <FeedInfiniteScroll
+        initialEntries={withPhotos}
+        initialNextCursor={nextCursor}
+        viewerId={viewerId}
+      />
     </div>
   );
 }

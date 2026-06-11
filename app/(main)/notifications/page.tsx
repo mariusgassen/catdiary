@@ -1,5 +1,5 @@
 import { requireUserId } from "@/lib/auth-helpers";
-import { listNotifications, markNotificationsRead } from "@/lib/notifications";
+import { listNotifications } from "@/lib/notifications";
 import { NotificationsView } from "@/components/NotificationsView";
 import { redirect } from "next/navigation";
 import { UnauthorizedError } from "@/lib/auth-helpers";
@@ -16,9 +16,5 @@ export default async function NotificationsPage() {
   }
 
   const notifications = await listNotifications(userId, 30);
-
-  // Mark all as read after fetching
-  void markNotificationsRead(userId);
-
   return <NotificationsView initialNotifications={notifications} />;
 }
