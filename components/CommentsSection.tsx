@@ -5,6 +5,14 @@ import { useRef, useState, type FormEvent } from "react";
 import { CornerDownRight, Loader2, Reply, Send, Trash2, X } from "lucide-react";
 import { displayNameFor } from "@/lib/userDisplay";
 
+type UserSuggestion = {
+  id: string;
+  username: string | null;
+  displayName: string | null;
+  avatarKey: string | null;
+  image: string | null;
+};
+
 export type CommentItem = {
   id: string;
   body: string;
@@ -67,6 +75,55 @@ export function CommentsSection({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const draftRef = useRef<HTMLTextAreaElement>(null);
+
+  // @mention autocomplete
+  const [suggestions, setSuggestions] = useState<UserSuggestion[]>([]);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const mentionStartRef = useRef<number>(-1);
+  const fetchCtrlRef = useRef<AbortController | null>(null);
+
+  function detectMention(text: string, cursor: number): string | null {
+    const match = text.slice(0, cursor).match(/@([\w.]*)$/);
+    if (match) {
+      mentionStartRef.current = cursor - match[0].length;
+      return match[1];
+    }
+    mentionStartRef.current = -1;
+    return null;
+  }
+
+  async function fetchSuggestions(q: string) {
+    fetchCtrlRef.current?.abort();
+    const ctrl = new AbortController();
+    fetchCtrlRef.current = ctrl;
+    try {
+      const res = await fetch(`/api/users?q=${encodeURIComponent(q)}`, { signal: ctrl.signal });
+      if (res.ok) {
+        const data = (await res.json()) as { users: UserSuggestion[] };
+        setSuggestions(data.users.slice(0, 5));
+      }
+    } catch {
+      // aborted or network error
+    }
+  }
+
+  function insertMention(username: string) {
+    const el = draftRef.current;
+    if (!el || mentionStartRef.current < 0) return;
+    const before = draft.slice(0, mentionStartRef.current);
+    const after = draft.slice(el.selectionStart ?? draft.length);
+    const inserted = `@${username} `;
+    setDraft(before + inserted + after);
+    setSuggestions([]);
+    setMentionQuery(null);
+    mentionStartRef.current = -1;
+    requestAnimationFrame(() => {
+      if (!el) return;
+      el.focus();
+      const pos = before.length + inserted.length;
+      el.setSelectionRange(pos, pos);
+    });
+  }
 
   const commentCount = threads.reduce((n, t) => n + 1 + t.replies.length, 0);
 
@@ -207,7 +264,7 @@ export function CommentsSection({
         {viewerId ? (
           <form onSubmit={handleSubmit} className="grid grid-cols-[2.75rem_1fr]">
             <span aria-hidden />
-            <div className="pl-3 pr-3">
+            <div className="relative pl-3 pr-3">
               {replyTo && (
                 <p className="flex items-center gap-1 text-xs leading-[28px] text-muted">
                   <CornerDownRight size={11} aria-hidden />
@@ -226,7 +283,27 @@ export function CommentsSection({
                 <textarea
                   ref={draftRef}
                   value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setDraft(val);
+                    const q = detectMention(val, e.target.selectionStart ?? val.length);
+                    setMentionQuery(q);
+                    if (q !== null) void fetchSuggestions(q);
+                    else setSuggestions([]);
+                  }}
+                  onKeyUp={(e) => {
+                    if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) {
+                      const el = e.currentTarget;
+                      const q = detectMention(el.value, el.selectionStart ?? el.value.length);
+                      setMentionQuery(q);
+                      if (q !== null) void fetchSuggestions(q);
+                      else setSuggestions([]);
+                    }
+                    if (e.key === "Escape") {
+                      setSuggestions([]);
+                      setMentionQuery(null);
+                    }
+                  }}
                   placeholder={replyTo ? "Scribble a reply…" : "Scribble a note in the margin…"}
                   rows={1}
                   maxLength={1000}
@@ -241,6 +318,44 @@ export function CommentsSection({
                   {submitting ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
                 </button>
               </div>
+
+              {/* @mention autocomplete — floats above the textarea */}
+              {mentionQuery !== null && suggestions.length > 0 && (
+                <ul className="absolute bottom-full left-0 right-0 z-50 mb-1 overflow-hidden rounded-xl border border-border bg-surface shadow-lg">
+                  {suggestions.map((user) => {
+                    const src = user.avatarKey
+                      ? `/api/photos/${user.avatarKey}`
+                      : user.image ?? null;
+                    return (
+                      <li key={user.id}>
+                        <button
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            insertMention(user.username ?? user.id);
+                          }}
+                          className="flex w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-accent-soft"
+                        >
+                          {src ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={src} alt="" className="h-7 w-7 rounded-full object-cover shrink-0" />
+                          ) : (
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent text-xs font-semibold">
+                              {(displayNameFor(user)[0] ?? "?").toUpperCase()}
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium">{displayNameFor(user)}</p>
+                            {user.username && (
+                              <p className="truncate text-xs text-muted">@{user.username}</p>
+                            )}
+                          </div>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </div>
           </form>
         ) : (

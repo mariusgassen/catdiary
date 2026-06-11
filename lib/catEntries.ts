@@ -357,6 +357,45 @@ export async function getTrendingHashtags(viewerId: string | null, limit = 8): P
 }
 
 /**
+ * Returns up to `limit` visible entries logged on the same month/day in any
+ * previous year — used for the "On This Day" feed strip.
+ */
+export async function listOnThisDayEntries(viewerId: string | null, limit = 6) {
+  const ownerIds = await listVisibleOwnerIds(viewerId);
+  if (ownerIds.length === 0) return [];
+
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const day = now.getDate();
+  const currentYear = now.getFullYear();
+
+  const rows = await db.$queryRaw<{ id: string }[]>`
+    SELECT id FROM "CatEntry"
+    WHERE "ownerId" = ANY(${ownerIds}::text[])
+      AND EXTRACT(MONTH FROM "createdAt")::int = ${month}
+      AND EXTRACT(DAY FROM "createdAt")::int = ${day}
+      AND EXTRACT(YEAR FROM "createdAt")::int < ${currentYear}
+    ORDER BY "createdAt" DESC
+    LIMIT 6
+  `;
+
+  if (rows.length === 0) return [];
+
+  const entries = await db.catEntry.findMany({
+    where: { id: { in: rows.map((r) => r.id) } },
+    include: {
+      photos: { orderBy: { position: "asc" } },
+      owner: { select: { id: true, username: true, displayName: true, avatarKey: true, image: true } },
+      _count: { select: { likes: true, comments: true } },
+      likes: viewerId ? { where: { userId: viewerId }, select: { userId: true } } : false,
+    },
+  });
+
+  const idOrder = new Map(rows.map((r, i) => [r.id, i]));
+  return entries.sort((a, b) => (idOrder.get(a.id) ?? 0) - (idOrder.get(b.id) ?? 0));
+}
+
+/**
  * Returns `limit` random public cat entries — used for the Discover page
  * empty state. Uses ORDER BY RANDOM() so every load shows a different set.
  */
