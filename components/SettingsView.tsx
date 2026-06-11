@@ -67,6 +67,7 @@ export function SettingsView({ user }: { user: SettingsUser }) {
 
   useEffect(() => {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPushSupported(true);
     // Check if already subscribed
     navigator.serviceWorker.ready.then(async (reg) => {

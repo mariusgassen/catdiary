@@ -33,6 +33,7 @@ function useUnreadCount(enabled: boolean) {
 
   useEffect(() => {
     if (!enabled) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh();
     const id = setInterval(refresh, 30_000);
     return () => clearInterval(id);

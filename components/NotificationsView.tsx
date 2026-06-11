@@ -109,7 +109,7 @@ function NotificationRow({ n }: { n: NotificationWithDetails }) {
         </p>
         {n.comment && (
           <p className="truncate text-xs text-muted italic">
-            "{n.comment.body.slice(0, 60)}{n.comment.body.length > 60 ? "…" : ""}"
+            &ldquo;{n.comment.body.slice(0, 60)}{n.comment.body.length > 60 ? "…" : ""}&rdquo;
           </p>
         )}
         <span className="text-xs text-muted">{relativeTime(n.createdAt)}</span>
