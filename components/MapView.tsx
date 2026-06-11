@@ -5,7 +5,13 @@ import "leaflet/dist/leaflet.css";
 import type LType from "leaflet";
 import type { MapEntry } from "@/lib/catEntries";
 
-export default function MapView() {
+export default function MapView({
+  initialLat,
+  initialLng,
+}: {
+  initialLat?: number;
+  initialLng?: number;
+} = {}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LType.Map | null>(null);
   const [loading, setLoading] = useState(true);
@@ -15,15 +21,21 @@ export default function MapView() {
     if (!containerRef.current) return;
 
     let map: LType.Map | null = null;
+    const focusLat = initialLat;
+    const focusLng = initialLng;
 
     async function init() {
       const L = (await import("leaflet")).default;
       if (!containerRef.current || mapRef.current) return;
 
+      const initialView: [number, number] =
+        focusLat !== undefined && focusLng !== undefined ? [focusLat, focusLng] : [20, 0];
+      const initialZoom = focusLat !== undefined ? 14 : 2;
+
       map = L.map(containerRef.current, {
         zoomControl: true,
         attributionControl: true,
-      }).setView([20, 0], 2);
+      }).setView(initialView, initialZoom);
       mapRef.current = map;
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -80,7 +92,8 @@ export default function MapView() {
         bounds.push([entry.latitude, entry.longitude]);
       });
 
-      if (map && bounds.length > 0) {
+      // Only auto-fit when there's no specific focus location from the URL
+      if (map && bounds.length > 0 && focusLat === undefined) {
         if (bounds.length === 1) {
           map.setView(bounds[0], 13);
         } else {

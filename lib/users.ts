@@ -28,15 +28,16 @@ export async function getUserSettings(userId: string) {
  */
 export async function searchUsers(query: string, limit = 12) {
   const q = query.trim().replace(/^@/, "");
-  if (!q) return [];
 
   return db.user.findMany({
-    where: {
-      OR: [
-        { username: { contains: q, mode: "insensitive" } },
-        { displayName: { contains: q, mode: "insensitive" } },
-      ],
-    },
+    where: q
+      ? {
+          OR: [
+            { username: { contains: q, mode: "insensitive" } },
+            { displayName: { contains: q, mode: "insensitive" } },
+          ],
+        }
+      : { username: { not: null } }, // bare @ → top users with a handle
     select: {
       id: true,
       username: true,
@@ -46,8 +47,8 @@ export async function searchUsers(query: string, limit = 12) {
       isPrivate: true,
       _count: { select: { catEntries: true } },
     },
-    orderBy: { createdAt: "asc" },
-    take: limit,
+    orderBy: q ? { createdAt: "asc" } : { createdAt: "desc" },
+    take: q ? limit : 5,
   });
 }
 

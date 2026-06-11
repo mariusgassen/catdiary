@@ -242,10 +242,20 @@ export function CatEntryCard({ entry, viewerId, linkToDetail = true }: CatEntryC
       {/* Footer: where it happened + reactions */}
       <div className="flex items-center justify-between border-t border-dashed border-border pt-2 text-muted">
         {placeLabel ? (
-          <p className="flex min-w-0 items-center gap-1 text-xs">
-            <MapPin size={12} className="shrink-0" />
-            <span className="truncate">{placeLabel}</span>
-          </p>
+          entry.latitude != null ? (
+            <Link
+              href={`/map?lat=${entry.latitude}&lng=${entry.longitude}`}
+              className="flex min-w-0 items-center gap-1 text-xs hover:text-foreground transition-colors"
+            >
+              <MapPin size={12} className="shrink-0" />
+              <span className="truncate">{placeLabel}</span>
+            </Link>
+          ) : (
+            <p className="flex min-w-0 items-center gap-1 text-xs">
+              <MapPin size={12} className="shrink-0" />
+              <span className="truncate">{placeLabel}</span>
+            </p>
+          )
         ) : (
           <span aria-hidden />
         )}

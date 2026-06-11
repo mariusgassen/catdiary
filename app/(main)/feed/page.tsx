@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { listCatEntriesForViewer } from "@/lib/catEntries";
 import { photoUrlsFor } from "@/lib/photo-urls";
 import { CatEntryCard } from "@/components/CatEntryCard";
+import { NotificationBell } from "@/components/NotificationBell";
 
 type FeedEntry = Awaited<ReturnType<typeof listCatEntriesForViewer>>["entries"][number] & {
   photoUrls: string[];
@@ -69,14 +70,17 @@ export default async function FeedPage() {
     <div className="paper-grid min-h-dvh">
       {/* Masthead */}
       <header className="sticky top-0 z-10 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
-        <div className="flex items-baseline justify-between">
+        <div className="flex items-center justify-between gap-3">
           <h1 className="flex items-center gap-1.5 text-xl font-bold tracking-tight">
             <PawPrint size={18} className="text-accent" aria-hidden />
             Cat Diary
           </h1>
-          <p className="text-xs text-muted">
-            {new Date().toLocaleDateString("en", { weekday: "long", day: "numeric", month: "long" })}
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="text-xs text-muted">
+              {new Date().toLocaleDateString("en", { weekday: "long", day: "numeric", month: "long" })}
+            </p>
+            <NotificationBell />
+          </div>
         </div>
       </header>
 

@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { auth } from "@/lib/auth";
-import { listCatEntriesForViewer, listRandomCatEntries } from "@/lib/catEntries";
+import { listCatEntriesForViewer, listRandomCatEntries, getTrendingHashtags } from "@/lib/catEntries";
 import { searchUsers } from "@/lib/users";
 import { photoUrlsFor } from "@/lib/photo-urls";
 import { SearchResults } from "@/components/SearchView";
@@ -15,7 +15,7 @@ export default async function SearchPage({
   const viewerId = session?.user?.id ?? null;
 
   let initialResults = null;
-  const [randomEntries, searchData] = await Promise.all([
+  const [randomEntries, searchData, trendingTags] = await Promise.all([
     q ? Promise.resolve([]) : listRandomCatEntries(viewerId),
     q
       ? Promise.all([
@@ -23,6 +23,7 @@ export default async function SearchPage({
           q.startsWith("#") ? Promise.resolve([]) : searchUsers(q),
         ])
       : Promise.resolve(null),
+    q ? Promise.resolve([] as string[]) : getTrendingHashtags(viewerId),
   ]);
 
   if (searchData) {
@@ -47,6 +48,7 @@ export default async function SearchPage({
         initialQuery={q ?? ""}
         initialResults={initialResults}
         randomEntries={randomForGrid}
+        trendingTags={trendingTags}
       />
     </Suspense>
   );
