@@ -65,7 +65,7 @@ export default async function ProfilePage({
       {/* Diary cover */}
       <header className="mx-3 rounded-xl border border-border bg-surface px-5 py-5 shadow-sm">
         <div className="flex items-start justify-between gap-4">
-          <div className="flex min-w-0 items-center gap-3">
+          <div className="flex flex-1 min-w-0 items-center gap-3">
             {(() => {
               const src = profileUser.avatarKey
                 ? `/api/photos/${profileUser.avatarKey}`
@@ -80,7 +80,7 @@ export default async function ProfilePage({
               );
             })()}
           <div className="min-w-0">
-            <h1 className="text-2xl font-bold tracking-tight">{name}&rsquo;s Diary</h1>
+            <h1 className="text-2xl font-bold tracking-tight break-words">{name}&rsquo;s Diary</h1>
             <p className="pt-0.5 text-sm text-muted">
               {withPhotos.length} {withPhotos.length === 1 ? "entry" : "entries"}
               {" · "}

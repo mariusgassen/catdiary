@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Loader2, Trash2, X } from "lucide-react";
 import { LocationPicker, type PickedLocation } from "@/components/LocationPicker";
+import { CaptionInput } from "@/components/CaptionInput";
 
 type CatEntryEditFormProps = {
   entry: {
@@ -138,13 +139,11 @@ export function CatEntryEditForm({ entry }: CatEntryEditFormProps) {
           maxLength={120}
           className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:ring-1 focus:ring-accent placeholder:text-muted"
         />
-        <textarea
-          placeholder="Notes (optional)"
+        <CaptionInput
           value={notes}
-          onChange={(e) => setNotes(e.target.value)}
+          onChange={setNotes}
+          placeholder="Notes (optional) — #tags and @mentions"
           rows={3}
-          maxLength={2000}
-          className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:ring-1 focus:ring-accent placeholder:text-muted"
         />
         <LocationPicker
           location={location}

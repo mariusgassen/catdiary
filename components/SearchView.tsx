@@ -41,7 +41,7 @@ export type UserResult = {
 
 type Results = { entries: Entry[]; users: UserResult[] };
 
-const TRENDING_TAGS = ["#orange", "#kitten", "#stray", "#fluffy", "#tabby", "#blackcat", "#ginger"];
+const FALLBACK_TAGS = ["#orange", "#kitten", "#stray", "#fluffy", "#tabby", "#blackcat", "#ginger"];
 
 /** Tag searches (#…) are about cats only — no point matching people on them. */
 function isTagQuery(q: string) {
@@ -107,10 +107,12 @@ export function SearchResults({
   initialQuery,
   initialResults,
   randomEntries = [],
+  trendingTags = [],
 }: {
   initialQuery: string;
   initialResults: Results | null;
   randomEntries?: RandomEntry[];
+  trendingTags?: string[];
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -238,7 +240,7 @@ export function SearchResults({
           <div className="px-4 pt-5 pb-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-3">Often spotted</p>
             <div className="flex flex-wrap gap-2">
-              {TRENDING_TAGS.map((tag) => (
+              {(trendingTags.length > 0 ? trendingTags : FALLBACK_TAGS).map((tag) => (
                 <button
                   key={tag}
                   onClick={() => {

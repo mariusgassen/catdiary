@@ -326,6 +326,37 @@ export async function listCatEntriesForMap(viewerId: string | null): Promise<Map
 }
 
 /**
+ * Counts hashtag usage across recent visible entries and returns the top ones.
+ * Scans the last 500 entries so fresh trends surface quickly without a full-table scan.
+ */
+export async function getTrendingHashtags(viewerId: string | null, limit = 8): Promise<string[]> {
+  const ownerIds = await listVisibleOwnerIds(viewerId);
+  if (ownerIds.length === 0) return [];
+
+  const entries = await db.catEntry.findMany({
+    where: { ownerId: { in: ownerIds }, notes: { not: null } },
+    select: { notes: true },
+    orderBy: { createdAt: "desc" },
+    take: 500,
+  });
+
+  const counts = new Map<string, number>();
+  for (const { notes } of entries) {
+    if (!notes) continue;
+    const tags = notes.match(/#[\wÀ-ɏ]+/g) ?? [];
+    for (const tag of tags) {
+      const lower = tag.toLowerCase();
+      counts.set(lower, (counts.get(lower) ?? 0) + 1);
+    }
+  }
+
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([tag]) => tag);
+}
+
+/**
  * Returns `limit` random public cat entries — used for the Discover page
  * empty state. Uses ORDER BY RANDOM() so every load shows a different set.
  */
