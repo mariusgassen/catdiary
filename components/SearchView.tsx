@@ -95,12 +95,22 @@ function GroupHeader({ icon: Icon, label }: { icon: typeof Cat; label: string })
   );
 }
 
+type RandomEntry = {
+  id: string;
+  name: string | null;
+  breed: string | null;
+  createdAt: string | Date;
+  photoUrls?: string[];
+};
+
 export function SearchResults({
   initialQuery,
   initialResults,
+  randomEntries = [],
 }: {
   initialQuery: string;
   initialResults: Results | null;
+  randomEntries?: RandomEntry[];
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -224,23 +234,33 @@ export function SearchResults({
         </div>
       ) : (
         /* Empty state — explore */
-        <div className="px-4 py-5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-3">Often spotted</p>
-          <div className="flex flex-wrap gap-2">
-            {TRENDING_TAGS.map((tag) => (
-              <button
-                key={tag}
-                onClick={() => {
-                  setQuery(tag);
-                  router.replace(`/search?q=${encodeURIComponent(tag)}`, { scroll: false });
-                  doSearch(tag);
-                }}
-                className="rounded-lg border border-dashed border-accent/50 bg-surface text-accent text-sm font-medium px-3.5 py-1.5 hover:bg-accent hover:border-accent hover:text-white transition-colors"
-              >
-                {tag}
-              </button>
-            ))}
+        <div>
+          <div className="px-4 pt-5 pb-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-3">Often spotted</p>
+            <div className="flex flex-wrap gap-2">
+              {TRENDING_TAGS.map((tag) => (
+                <button
+                  key={tag}
+                  onClick={() => {
+                    setQuery(tag);
+                    router.replace(`/search?q=${encodeURIComponent(tag)}`, { scroll: false });
+                    doSearch(tag);
+                  }}
+                  className="rounded-lg border border-dashed border-accent/50 bg-surface text-accent text-sm font-medium px-3.5 py-1.5 hover:bg-accent hover:border-accent hover:text-white transition-colors"
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
           </div>
+          {randomEntries.length > 0 && (
+            <div>
+              <p className="px-4 pt-1 pb-0 text-xs font-semibold uppercase tracking-wide text-muted">
+                Cats around the world
+              </p>
+              <PolaroidGrid entries={randomEntries} />
+            </div>
+          )}
         </div>
       )}
     </div>

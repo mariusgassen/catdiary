@@ -255,3 +255,33 @@ export async function listCatEntriesForViewer(opts: {
 
   return { entries, nextCursor };
 }
+
+/**
+ * Returns `limit` random public cat entries — used for the Discover page
+ * empty state. Uses ORDER BY RANDOM() so every load shows a different set.
+ */
+export async function listRandomCatEntries(viewerId: string | null, limit = 24) {
+  const ownerIds = await listVisibleOwnerIds(viewerId);
+  if (ownerIds.length === 0) return [];
+
+  const rows = await db.$queryRaw<{ id: string }[]>`
+    SELECT id FROM "CatEntry"
+    WHERE "ownerId" = ANY(${ownerIds}::text[])
+    ORDER BY RANDOM()
+    LIMIT ${limit}
+  `;
+
+  if (rows.length === 0) return [];
+
+  const entries = await db.catEntry.findMany({
+    where: { id: { in: rows.map((r) => r.id) } },
+    include: {
+      photos: { orderBy: { position: "asc" }, take: 1 },
+      owner: { select: { id: true } },
+    },
+  });
+
+  // Restore random order (findMany doesn't preserve IN order)
+  const idOrder = new Map(rows.map((r, i) => [r.id, i]));
+  return entries.sort((a, b) => (idOrder.get(a.id) ?? 0) - (idOrder.get(b.id) ?? 0));
+}
