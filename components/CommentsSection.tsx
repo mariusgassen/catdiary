@@ -10,7 +10,7 @@ export type CommentItem = {
   body: string;
   parentId?: string | null;
   createdAt: string | Date;
-  user: { id: string; displayName: string | null; username?: string | null; image?: string | null };
+  user: { id: string; displayName: string | null; username?: string | null; avatarKey?: string | null; image?: string | null };
 };
 
 export type CommentThread = CommentItem & { replies: CommentItem[] };
@@ -21,14 +21,15 @@ function Avatar({
   user,
   size = 6,
 }: {
-  user: { displayName: string | null; username?: string | null; image?: string | null };
+  user: { displayName: string | null; username?: string | null; avatarKey?: string | null; image?: string | null };
   size?: 5 | 6;
 }) {
   const name = displayNameFor(user);
   const sizeClass = size === 5 ? "w-5 h-5 text-[10px]" : "w-6 h-6 text-[11px]";
-  if (user.image) {
+  const src = user.avatarKey ? `/api/photos/${user.avatarKey}` : (user.image ?? null);
+  if (src) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={user.image} alt={name} className={`${sizeClass} rounded-full object-cover shrink-0`} />;
+    return <img src={src} alt={name} className={`${sizeClass} rounded-full object-cover shrink-0`} />;
   }
   return (
     <div

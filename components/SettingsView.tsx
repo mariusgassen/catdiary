@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
-import { signOut } from "next-auth/react";
-import { ChevronLeft, Loader2, LogOut } from "lucide-react";
+import { useState, useRef, type FormEvent } from "react";
+import { signOut, useSession } from "next-auth/react";
+import { Camera, ChevronLeft, Loader2, LogOut } from "lucide-react";
 import { InviteFriends } from "@/components/InviteFriends";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { displayNameFor } from "@/lib/userDisplay";
 
 type SettingsUser = {
   id: string;
@@ -15,6 +16,8 @@ type SettingsUser = {
   displayName: string | null;
   bio: string | null;
   isPrivate: boolean;
+  avatarKey: string | null;
+  image: string | null;
 };
 
 const PROFILE_ERRORS: Record<string, string> = {
@@ -33,6 +36,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export function SettingsView({ user }: { user: SettingsUser }) {
   const router = useRouter();
+  const { update: updateSession } = useSession();
   const [displayName, setDisplayName] = useState(user.displayName ?? "");
   const [username, setUsername] = useState(user.username ?? "");
   const [bio, setBio] = useState(user.bio ?? "");
@@ -40,6 +44,60 @@ export function SettingsView({ user }: { user: SettingsUser }) {
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [avatarKey, setAvatarKey] = useState(user.avatarKey);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const avatarSrc = avatarKey
+    ? `/api/photos/${avatarKey}`
+    : user.image ?? null;
+
+  const initials = (displayNameFor(user)[0] ?? "?").toUpperCase();
+
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarUploading(true);
+    setAvatarError(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/avatar", { method: "POST", body: formData });
+      if (!res.ok) {
+        setAvatarError("Could not upload photo.");
+        return;
+      }
+      const { avatarKey: newKey } = await res.json() as { avatarKey: string };
+      setAvatarKey(newKey);
+      await updateSession({ avatarKey: newKey });
+      router.refresh();
+    } catch {
+      setAvatarError("Could not upload photo.");
+    } finally {
+      setAvatarUploading(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
+    }
+  }
+
+  async function removeAvatar() {
+    setAvatarUploading(true);
+    setAvatarError(null);
+    try {
+      const res = await fetch("/api/avatar", { method: "DELETE" });
+      if (!res.ok) {
+        setAvatarError("Could not remove photo.");
+        return;
+      }
+      setAvatarKey(null);
+      await updateSession({ avatarKey: null });
+      router.refresh();
+    } catch {
+      setAvatarError("Could not remove photo.");
+    } finally {
+      setAvatarUploading(false);
+    }
+  }
 
   async function saveProfile(event: FormEvent) {
     event.preventDefault();
@@ -104,6 +162,58 @@ export function SettingsView({ user }: { user: SettingsUser }) {
       </header>
 
       <Section title="Profile">
+        {/* Avatar upload */}
+        <div className="flex items-center gap-3 pb-4">
+          <div className="relative">
+            <label htmlFor="avatar-input" className="cursor-pointer block">
+              {avatarSrc ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={avatarSrc}
+                  alt="Your avatar"
+                  className="w-16 h-16 rounded-full object-cover ring-2 ring-border"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-accent-soft flex items-center justify-center text-accent text-2xl font-semibold ring-2 ring-border select-none">
+                  {initials}
+                </div>
+              )}
+              <span className="absolute bottom-0 right-0 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-white shadow-sm pointer-events-none">
+                <Camera size={11} />
+              </span>
+            </label>
+            <input
+              ref={avatarInputRef}
+              id="avatar-input"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="sr-only"
+              onChange={handleAvatarChange}
+              disabled={avatarUploading}
+            />
+          </div>
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span className="text-sm font-medium">Profile photo</span>
+            {avatarUploading ? (
+              <span className="flex items-center gap-1 text-xs text-muted">
+                <Loader2 size={11} className="animate-spin" /> Uploading…
+              </span>
+            ) : avatarError ? (
+              <span className="text-xs text-red-500">{avatarError}</span>
+            ) : (
+              <span className="text-xs text-muted">Tap to change</span>
+            )}
+          </div>
+          {avatarKey && !avatarUploading && (
+            <button
+              type="button"
+              onClick={removeAvatar}
+              className="shrink-0 text-xs text-muted transition-colors hover:text-red-500"
+            >
+              Remove
+            </button>
+          )}
+        </div>
         <form onSubmit={saveProfile} className="flex flex-col gap-3">
           <label className="flex flex-col gap-1 text-sm">
             <span className="text-xs font-medium text-muted">Username</span>

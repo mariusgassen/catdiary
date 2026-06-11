@@ -24,7 +24,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
 
   const profileUser = await db.user.findUnique({
     where: { id: userId },
-    select: { id: true, username: true, displayName: true, bio: true, isPrivate: true },
+    select: { id: true, username: true, displayName: true, bio: true, isPrivate: true, avatarKey: true, image: true },
   });
   if (!profileUser) {
     notFound();
@@ -55,6 +55,20 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
       {/* Diary cover */}
       <header className="mx-3 rounded-xl border border-border bg-surface px-5 py-5 shadow-sm">
         <div className="flex items-start justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-3">
+            {(() => {
+              const src = profileUser.avatarKey
+                ? `/api/photos/${profileUser.avatarKey}`
+                : (profileUser.image ?? null);
+              return src ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={src} alt={name} className="h-14 w-14 shrink-0 rounded-full object-cover ring-2 ring-border" />
+              ) : (
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-accent-soft text-xl font-semibold text-accent ring-2 ring-border select-none">
+                  {name[0]?.toUpperCase() ?? "?"}
+                </div>
+              );
+            })()}
           <div className="min-w-0">
             <h1 className="text-2xl font-bold tracking-tight">{name}&rsquo;s Diary</h1>
             <p className="pt-0.5 text-sm text-muted">
@@ -76,6 +90,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
               {profileUser.isPrivate && " · private diary"}
             </p>
             {profileUser.bio && <p className="pt-2 text-sm text-foreground/80">{profileUser.bio}</p>}
+          </div>
           </div>
           {!isOwnProfile && viewerId && (
             <FollowButton followeeId={profileUser.id} initialStatus={followStatus} />

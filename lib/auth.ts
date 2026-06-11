@@ -63,15 +63,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: { signIn: "/sign-in" },
   providers,
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user?.id) {
         token.userId = user.id;
+        const dbUser = await db.user.findUnique({ where: { id: user.id }, select: { avatarKey: true } });
+        token.avatarKey = dbUser?.avatarKey ?? null;
+      }
+      if (trigger === "update" && session?.avatarKey !== undefined) {
+        token.avatarKey = session.avatarKey as string | null;
       }
       return token;
     },
     async session({ session, token }) {
       if (token.userId && session.user) {
         session.user.id = token.userId as string;
+      }
+      if (session.user) {
+        session.user.avatarKey = (token.avatarKey as string | null | undefined) ?? null;
       }
       return session;
     },

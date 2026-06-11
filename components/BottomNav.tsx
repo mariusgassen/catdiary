@@ -65,7 +65,23 @@ export function BottomNav() {
             pathname.startsWith("/profile") ? "text-accent" : "text-muted hover:text-foreground"
           }`}
         >
-          <User size={21} strokeWidth={pathname.startsWith("/profile") ? 2.25 : 1.75} />
+          {(() => {
+            const avatarKey = session?.user?.avatarKey;
+            const avatarImage = session?.user?.image;
+            const src = avatarKey ? `/api/photos/${avatarKey}` : (avatarImage ?? null);
+            const active = pathname.startsWith("/profile");
+            if (src) {
+              return (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={src}
+                  alt="My diary"
+                  className={`w-[21px] h-[21px] rounded-full object-cover ${active ? "ring-2 ring-accent" : "opacity-70"}`}
+                />
+              );
+            }
+            return <User size={21} strokeWidth={active ? 2.25 : 1.75} />;
+          })()}
           <span className={`text-[10px] leading-none ${pathname.startsWith("/profile") ? "font-semibold" : "font-medium"}`}>
             My diary
           </span>
