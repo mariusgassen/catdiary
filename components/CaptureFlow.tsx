@@ -113,6 +113,9 @@ export function CaptureFlow() {
   const [geoDisabled, setGeoDisabled] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
 
+  // Tracks whether EXIF GPS was already found so device-location doesn't overwrite it.
+  const exifFoundLocationRef = useRef(false);
+
   const [submitting, setSubmitting] = useState(false);
   const [uploadedCount, setUploadedCount] = useState(0);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -167,9 +170,15 @@ export function CaptureFlow() {
     setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
+        if (exifFoundLocationRef.current) {
+          setIsLocating(false);
+          return;
+        }
         const { latitude, longitude } = pos.coords;
         const name = await reverseGeocode(latitude, longitude);
-        setLocation({ name, lat: latitude, lng: longitude });
+        if (!exifFoundLocationRef.current) {
+          setLocation({ name, lat: latitude, lng: longitude });
+        }
         setIsLocating(false);
       },
       () => setIsLocating(false),
@@ -215,6 +224,7 @@ export function CaptureFlow() {
     for (const file of files) {
       const gps = await exifr.gps(file).catch(() => null);
       if (gps && Number.isFinite(gps.latitude) && Number.isFinite(gps.longitude)) {
+        exifFoundLocationRef.current = true;
         setLocation({ name: "Where the photo was taken", lat: gps.latitude, lng: gps.longitude });
         const name = await reverseGeocode(gps.latitude, gps.longitude);
         setLocation({ name, lat: gps.latitude, lng: gps.longitude });

@@ -45,6 +45,7 @@ export async function deleteObject(key: string): Promise<void> {
 export async function processAndStoreThumbnail(originalBuffer: Buffer, photoKey: string): Promise<string> {
   const thumbKey = thumbnailKeyFor(photoKey);
   const thumbnail = await sharp(originalBuffer)
+    .rotate()
     .resize({ width: THUMBNAIL_WIDTH, withoutEnlargement: true })
     .jpeg({ quality: 80 })
     .toBuffer();
