@@ -28,7 +28,7 @@ export default async function SearchPage({
 
   return (
     <Suspense>
-      <SearchResults initialQuery={q ?? ""} initialResults={initialResults} viewerId={viewerId} />
+      <SearchResults initialQuery={q ?? ""} initialResults={initialResults} />
     </Suspense>
   );
 }
