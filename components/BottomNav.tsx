@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useEffect, useState, useCallback } from "react";
 import type { LucideIcon } from "lucide-react";
-import { BookOpen, Compass, PawPrint, Map, User } from "lucide-react";
+import { BookOpen, Compass, PawPrint, Bell, User } from "lucide-react";
 
 type NavItem = { href: string; Icon: LucideIcon; label: string; isCapture?: boolean };
 
@@ -12,13 +13,39 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/feed", Icon: BookOpen, label: "Journal" },
   { href: "/search", Icon: Compass, label: "Discover" },
   { href: "/capture", Icon: PawPrint, label: "Log a cat", isCapture: true },
-  { href: "/map", Icon: Map, label: "Map" },
+  { href: "/notifications", Icon: Bell, label: "Alerts" },
 ];
+
+function useUnreadCount(enabled: boolean) {
+  const [count, setCount] = useState(0);
+
+  const refresh = useCallback(async () => {
+    try {
+      const res = await fetch("/api/notifications?unread=1", { cache: "no-store" });
+      if (res.ok) {
+        const data = (await res.json()) as { count: number };
+        setCount(data.count);
+      }
+    } catch {
+      // ignore network errors
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!enabled) return;
+    refresh();
+    const id = setInterval(refresh, 30_000);
+    return () => clearInterval(id);
+  }, [enabled, refresh]);
+
+  return { count, refresh };
+}
 
 export function BottomNav() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const profileHref = session?.user?.id ? `/profile/${session.user.id}` : "/sign-in";
+  const { count: unreadCount } = useUnreadCount(!!session?.user?.id);
 
   function isActive(href: string) {
     if (href === profileHref || (href === "/profile" && pathname.startsWith("/profile"))) return true;
@@ -43,6 +70,27 @@ export function BottomNav() {
               className="flex h-11 w-11 -rotate-3 items-center justify-center rounded-xl bg-accent text-white shadow-md shadow-accent/40 transition-transform active:scale-95 active:rotate-0"
             >
               <Icon size={22} strokeWidth={2} />
+            </Link>
+          ) : href === "/notifications" ? (
+            <Link
+              key={href}
+              href={href}
+              aria-label={label}
+              className={`relative flex flex-col items-center gap-0.5 px-3 py-1.5 transition-colors ${
+                isActive(href) ? "text-accent" : "text-muted hover:text-foreground"
+              }`}
+            >
+              <div className="relative">
+                <Icon size={21} strokeWidth={isActive(href) ? 2.25 : 1.75} />
+                {unreadCount > 0 && !isActive(href) && (
+                  <span className="absolute -top-1 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-0.5 text-[9px] font-bold text-white leading-none">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
+              </div>
+              <span className={`text-[10px] leading-none ${isActive(href) ? "font-semibold" : "font-medium"}`}>
+                {label}
+              </span>
             </Link>
           ) : (
             <Link

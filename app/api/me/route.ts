@@ -12,6 +12,10 @@ const updateSchema = z.object({
   username: z.string().min(1).optional(), // format/uniqueness enforced in lib/users
   bio: z.string().trim().max(500).nullable().optional(),
   isPrivate: z.boolean().optional(),
+  notifyLikes: z.boolean().optional(),
+  notifyComments: z.boolean().optional(),
+  notifyFollows: z.boolean().optional(),
+  notifyMentions: z.boolean().optional(),
 });
 
 async function withUser<T>(fn: (userId: string) => Promise<T>) {

@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { createNotification } from "@/lib/notifications";
 
 export async function followUser(followerId: string, followeeId: string) {
   if (followerId === followeeId) {
@@ -13,11 +14,15 @@ export async function followUser(followerId: string, followeeId: string) {
     throw new Error("USER_NOT_FOUND");
   }
 
-  return db.follow.upsert({
+  const follow = await db.follow.upsert({
     where: { followerId_followeeId: { followerId, followeeId } },
     update: {},
     create: { followerId, followeeId, approved: !followee.isPrivate },
   });
+
+  void createNotification({ userId: followeeId, actorId: followerId, type: "FOLLOW" });
+
+  return follow;
 }
 
 export async function unfollowUser(followerId: string, followeeId: string) {

@@ -22,15 +22,23 @@ model User {
   invitedById   String? // who invited this user, set once at registration
   createdAt     DateTime  @default(now())
 
+  notifyLikes    Boolean @default(true)
+  notifyComments Boolean @default(true)
+  notifyFollows  Boolean @default(true)
+  notifyMentions Boolean @default(true)
+
   invitedBy User?  @relation("Invitations", fields: [invitedById], references: [id], onDelete: SetNull)
   invitees  User[] @relation("Invitations")
 
-  accounts   Account[]
-  catEntries CatEntry[]
-  following  Follow[]   @relation("Follower")
-  followers  Follow[]   @relation("Followee")
-  likes      Like[]
-  comments   Comment[]
+  accounts          Account[]
+  catEntries        CatEntry[]
+  following         Follow[]         @relation("Follower")
+  followers         Follow[]         @relation("Followee")
+  likes             Like[]
+  comments          Comment[]
+  notifications     Notification[]   @relation("NotificationsReceived")
+  sentNotifications Notification[]   @relation("NotificationsSent")
+  pushSubscriptions PushSubscription[]
 }
 
 // Auth.js (next-auth) adapter models. `Session` is intentionally omitted:
@@ -77,9 +85,10 @@ model CatEntry {
 
   embedding Unsupported("vector(512)")?
 
-  photos   CatEntryPhoto[]
-  likes    Like[]
-  comments Comment[]
+  photos        CatEntryPhoto[]
+  likes         Like[]
+  comments      Comment[]
+  notifications Notification[]
 
   @@index([ownerId, createdAt])
 }
@@ -129,11 +138,52 @@ model Comment {
   body       String
   createdAt  DateTime @default(now())
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  catEntry CatEntry  @relation(fields: [catEntryId], references: [id], onDelete: Cascade)
-  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies  Comment[] @relation("CommentReplies")
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  catEntry      CatEntry       @relation(fields: [catEntryId], references: [id], onDelete: Cascade)
+  parent        Comment?       @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies       Comment[]      @relation("CommentReplies")
+  notifications Notification[]
 
   @@index([catEntryId, createdAt])
   @@index([parentId])
+}
+
+enum NotificationType {
+  LIKE
+  COMMENT
+  REPLY
+  FOLLOW
+  MENTION
+}
+
+model Notification {
+  id         String           @id @default(cuid())
+  userId     String
+  actorId    String
+  type       NotificationType
+  catEntryId String?
+  commentId  String?
+  read       Boolean          @default(false)
+  createdAt  DateTime         @default(now())
+
+  user     User      @relation("NotificationsReceived", fields: [userId], references: [id], onDelete: Cascade)
+  actor    User      @relation("NotificationsSent", fields: [actorId], references: [id], onDelete: Cascade)
+  catEntry CatEntry? @relation(fields: [catEntryId], references: [id], onDelete: Cascade)
+  comment  Comment?  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read, createdAt])
+  @@index([userId, createdAt])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
