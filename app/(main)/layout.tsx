@@ -10,18 +10,20 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   // The edit screen is a focused, full-height dialog with its own top bar.
   const isEditDialog = /^\/cat-entries\/[^/]+\/edit$/.test(pathname);
   const isFullScreen = isCapture || isEditDialog;
+  // Map gets the full viewport with no width cap — the page handles its own height.
+  const isMap = pathname === "/map";
 
   return (
     <>
       <div
-        className="mx-auto w-full max-w-[480px]"
+        className={isMap ? "w-full" : "mx-auto w-full max-w-[480px]"}
         style={
-          isFullScreen
+          isFullScreen || isMap
             ? undefined
             : { paddingBottom: "calc(3.5rem + env(safe-area-inset-bottom, 0px))" }
         }
       >
-        {isFullScreen ? children : <PullToRefresh>{children}</PullToRefresh>}
+        {isFullScreen || isMap ? children : <PullToRefresh>{children}</PullToRefresh>}
       </div>
       {!isFullScreen && <BottomNav />}
     </>

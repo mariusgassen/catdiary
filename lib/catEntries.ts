@@ -256,6 +256,53 @@ export async function listCatEntriesForViewer(opts: {
   return { entries, nextCursor };
 }
 
+export type MapEntry = {
+  id: string;
+  latitude: number;
+  longitude: number;
+  locationName: string | null;
+  name: string | null;
+  breed: string | null;
+  thumbKey: string | null;
+};
+
+/** Returns all visible entries that have coordinates, for the map tab. */
+export async function listCatEntriesForMap(viewerId: string | null): Promise<MapEntry[]> {
+  const ownerIds = await listVisibleOwnerIds(viewerId);
+  if (ownerIds.length === 0) return [];
+
+  const entries = await db.catEntry.findMany({
+    where: {
+      ownerId: { in: ownerIds },
+      latitude: { not: null },
+      longitude: { not: null },
+    },
+    select: {
+      id: true,
+      latitude: true,
+      longitude: true,
+      locationName: true,
+      name: true,
+      breed: true,
+      photos: {
+        orderBy: { position: "asc" },
+        take: 1,
+        select: { thumbKey: true, photoKey: true },
+      },
+    },
+  });
+
+  return entries.map((e) => ({
+    id: e.id,
+    latitude: e.latitude!,
+    longitude: e.longitude!,
+    locationName: e.locationName,
+    name: e.name,
+    breed: e.breed,
+    thumbKey: e.photos[0]?.thumbKey ?? e.photos[0]?.photoKey ?? null,
+  }));
+}
+
 /**
  * Returns `limit` random public cat entries — used for the Discover page
  * empty state. Uses ORDER BY RANDOM() so every load shows a different set.
