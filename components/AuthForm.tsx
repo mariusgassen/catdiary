@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
+import { useTranslations } from "next-intl";
 
 type OAuthProvider = { id: string; label: string };
 
@@ -21,6 +22,10 @@ export function AuthForm({
   oauthProviders: OAuthProvider[];
   intro?: React.ReactNode;
 }) {
+  const t = useTranslations("authForm");
+  const tSignIn = useTranslations("signIn");
+  const tRegister = useTranslations("register");
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/feed";
@@ -34,12 +39,6 @@ export function AuthForm({
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-
-  const REGISTER_ERRORS: Record<string, string> = {
-    EMAIL_TAKEN: "That email is already registered.",
-    USERNAME_TAKEN: "That username is taken.",
-    INVALID_USERNAME: "Usernames are 3-30 lowercase letters, numbers, dots or underscores.",
-  };
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -62,7 +61,13 @@ export function AuthForm({
 
         if (!res.ok) {
           const data = await res.json().catch(() => null);
-          setError(REGISTER_ERRORS[data?.error as string] ?? "Registration failed.");
+          const errorKey = data?.error as string | undefined;
+          const errorMap: Record<string, string> = {
+            EMAIL_TAKEN: t("errors.emailTaken"),
+            USERNAME_TAKEN: t("errors.usernameTaken"),
+            INVALID_USERNAME: t("errors.invalidUsername"),
+          };
+          setError(errorMap[errorKey ?? ""] ?? t("errors.registrationFailed"));
           return;
         }
       }
@@ -74,7 +79,7 @@ export function AuthForm({
         callbackUrl,
       });
       if (result?.error) {
-        setError("Invalid credentials.");
+        setError(t("errors.invalidCredentials"));
         return;
       }
 
@@ -89,7 +94,7 @@ export function AuthForm({
     <div className="mx-auto flex w-full max-w-sm flex-col gap-6 rounded-xl border border-border bg-surface px-6 py-7 shadow-sm">
       <div className="flex flex-col gap-3">
         <h1 className="text-2xl font-bold tracking-tight">
-          {mode === "sign-in" ? "Open your diary" : "Start your diary"}
+          {mode === "sign-in" ? tSignIn("title") : tRegister("title")}
         </h1>
         {intro}
       </div>
@@ -99,7 +104,7 @@ export function AuthForm({
           <>
             <input
               required
-              placeholder="Username"
+              placeholder={t("username")}
               value={username}
               minLength={3}
               maxLength={30}
@@ -110,7 +115,7 @@ export function AuthForm({
               className="rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none placeholder:text-muted focus:ring-1 focus:ring-accent"
             />
             <input
-              placeholder="Display name (optional)"
+              placeholder={t("displayName")}
               maxLength={80}
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
@@ -122,7 +127,7 @@ export function AuthForm({
           <input
             required
             type="email"
-            placeholder="Email"
+            placeholder={t("email")}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none placeholder:text-muted focus:ring-1 focus:ring-accent"
@@ -131,7 +136,7 @@ export function AuthForm({
           <input
             required
             type="text"
-            placeholder="Email or username"
+            placeholder={t("emailOrUsername")}
             value={identifier}
             autoCapitalize="none"
             autoCorrect="off"
@@ -143,7 +148,7 @@ export function AuthForm({
           required
           type="password"
           minLength={8}
-          placeholder="Password"
+          placeholder={t("password")}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className="rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none placeholder:text-muted focus:ring-1 focus:ring-accent"
@@ -154,7 +159,7 @@ export function AuthForm({
           disabled={submitting}
           className="rounded-xl bg-accent px-3 py-2.5 text-sm font-semibold text-white shadow-sm shadow-accent/30 transition-transform active:scale-[0.98] disabled:opacity-50"
         >
-          {mode === "sign-in" ? "Sign in" : "Register"}
+          {mode === "sign-in" ? t("signIn") : t("register")}
         </button>
       </form>
 
@@ -162,7 +167,7 @@ export function AuthForm({
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2 text-xs text-muted">
             <span className="h-px flex-1 bg-border" />
-            or continue with
+            {t("orContinueWith")}
             <span className="h-px flex-1 bg-border" />
           </div>
           {oauthProviders.map((provider) => (
@@ -173,7 +178,7 @@ export function AuthForm({
               className="flex items-center justify-center gap-2 rounded-xl border border-border bg-background px-3 py-2.5 text-sm transition-colors hover:border-accent/40"
             >
               <span aria-hidden>{OAUTH_ICONS[provider.id] ?? "→"}</span>
-              Continue with {provider.label}
+              {t("continueWith", { provider: provider.label })}
             </button>
           ))}
         </div>

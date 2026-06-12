@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Settings } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { listCatEntriesForViewer } from "@/lib/catEntries";
@@ -70,6 +71,7 @@ export default async function ProfilePage({
   const view: "list" | "grid" = rawView === "grid" ? "grid" : "list";
   const session = await auth();
   const viewerId = session?.user?.id ?? null;
+  const t = await getTranslations("profile");
 
   const profileUser = await db.user.findUnique({
     where: { id: userId },
@@ -119,24 +121,24 @@ export default async function ProfilePage({
               );
             })()}
           <div className="min-w-0">
-            <h1 className="text-2xl font-bold tracking-tight break-words">{name}&rsquo;s Diary</h1>
+            <h1 className="text-2xl font-bold tracking-tight break-words">{t("diary", { name })}</h1>
             <p className="pt-0.5 text-sm text-muted">
-              {withPhotos.length} {withPhotos.length === 1 ? "entry" : "entries"}
+              {t("entries", { count: withPhotos.length })}
               {" · "}
               <Link
                 href={`/profile/${profileUser.id}/trackers`}
                 className="transition-colors hover:text-foreground"
               >
-                {followCounts.trackers} {followCounts.trackers === 1 ? "tracker" : "trackers"}
+                {t("trackers", { count: followCounts.trackers })}
               </Link>
               {" · "}
               <Link
                 href={`/profile/${profileUser.id}/tracking`}
                 className="transition-colors hover:text-foreground"
               >
-                tracking {followCounts.tracking}
+                {t("tracking", { count: followCounts.tracking })}
               </Link>
-              {profileUser.isPrivate && " · private diary"}
+              {profileUser.isPrivate && ` · ${t("privateDiary")}`}
             </p>
             {profileUser.bio && <p className="pt-2 text-sm text-foreground/80">{profileUser.bio}</p>}
           </div>
@@ -160,7 +162,7 @@ export default async function ProfilePage({
       {incomingRequests.length > 0 && (
         <section className="mx-3 flex flex-col gap-2 rounded-xl border border-border bg-surface p-4 text-sm shadow-sm">
           <h2 className="font-semibold">
-            Track requests{" "}
+            {t("trackRequests")}{" "}
             <span className="text-muted font-normal">({incomingRequests.length})</span>
           </h2>
           {incomingRequests.map((request) => (
@@ -177,7 +179,7 @@ export default async function ProfilePage({
       {outgoingRequests.length > 0 && (
         <section className="mx-3 flex flex-col gap-2 rounded-xl border border-border bg-surface p-4 text-sm shadow-sm">
           <h2 className="font-semibold">
-            Pending requests{" "}
+            {t("pendingRequests")}{" "}
             <span className="text-muted font-normal">({outgoingRequests.length})</span>
           </h2>
           {outgoingRequests.map((req) => (
@@ -191,9 +193,7 @@ export default async function ProfilePage({
       )}
 
       {withPhotos.length === 0 ? (
-        <p className="px-6 py-10 text-center text-sm text-muted">
-          These pages are still blank.
-        </p>
+        <p className="px-6 py-10 text-center text-sm text-muted">{t("blankPages")}</p>
       ) : (
         <>
           <div className="flex justify-end px-3">

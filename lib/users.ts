@@ -17,6 +17,7 @@ export async function getUserSettings(userId: string) {
       notifyComments: true,
       notifyFollows: true,
       notifyMentions: true,
+      locale: true,
     },
   });
 }
@@ -61,6 +62,7 @@ export type UpdateUserSettingsInput = {
   notifyComments?: boolean;
   notifyFollows?: boolean;
   notifyMentions?: boolean;
+  locale?: string | null;
 };
 
 export async function updateUserSettings(userId: string, input: UpdateUserSettingsInput) {

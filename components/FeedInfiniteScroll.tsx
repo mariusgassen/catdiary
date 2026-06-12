@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Loader2 } from "lucide-react";
+import { useTranslations, useLocale } from "next-intl";
 import { CatEntryCard } from "@/components/CatEntryCard";
 import { photoUrlsFor } from "@/lib/photo-urls";
 
@@ -27,21 +28,29 @@ export type FeedEntry = {
   likes?: { userId: string }[];
 };
 
-function dayLabel(date: Date, now: Date): string {
-  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-  const dayDiff = Math.round((startOfDay(now) - startOfDay(date)) / 86400000);
-  if (dayDiff === 0) return "Today";
-  if (dayDiff === 1) return "Yesterday";
-  const opts: Intl.DateTimeFormatOptions = {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    ...(date.getFullYear() !== now.getFullYear() ? { year: "numeric" } : {}),
+function useDayLabel() {
+  const t = useTranslations("feed");
+  const locale = useLocale();
+
+  return function dayLabel(date: Date, now: Date): string {
+    const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    const dayDiff = Math.round((startOfDay(now) - startOfDay(date)) / 86400000);
+    if (dayDiff === 0) return t("today");
+    if (dayDiff === 1) return t("yesterday");
+    const opts: Intl.DateTimeFormatOptions = {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      ...(date.getFullYear() !== now.getFullYear() ? { year: "numeric" } : {}),
+    };
+    return new Intl.DateTimeFormat(locale, opts).format(date);
   };
-  return new Intl.DateTimeFormat("en", opts).format(date);
 }
 
-function groupByDay(entries: FeedEntry[]): { label: string; entries: FeedEntry[] }[] {
+function groupByDay(
+  entries: FeedEntry[],
+  dayLabel: (date: Date, now: Date) => string,
+): { label: string; entries: FeedEntry[] }[] {
   const now = new Date();
   const groups: { label: string; entries: FeedEntry[] }[] = [];
   for (const entry of entries) {
@@ -66,6 +75,7 @@ export function FeedInfiniteScroll({
   const [nextCursor, setNextCursor] = useState(initialNextCursor);
   const [loading, setLoading] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const getDayLabel = useDayLabel();
 
   // Reset extra pages when initial data refreshes (pull-to-refresh)
   const initialFirstIdRef = useRef(initialEntries[0]?.id);
@@ -112,7 +122,7 @@ export function FeedInfiniteScroll({
   }, [loadMore, nextCursor]);
 
   const allEntries = [...initialEntries, ...extraEntries];
-  const groups = groupByDay(allEntries);
+  const groups = groupByDay(allEntries, getDayLabel);
 
   return (
     <>

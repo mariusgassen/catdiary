@@ -1,0 +1,217 @@
+{
+  "nav": {
+    "journal": "Tagebuch",
+    "discover": "Entdecken",
+    "logACat": "Katze eintragen",
+    "map": "Karte",
+    "myDiary": "Mein Tagebuch"
+  },
+  "home": {
+    "tagline": "Ein Feldtagebuch für jede Katze, der du begegnest",
+    "intro": "Mach ein Foto, markiere den Ort, schreib eine Notiz — und führe ein Tagebuch über jede Katze, der du begegnet bist. Folge anderen Katzenspottern und lies ihre Tagebücher.",
+    "startDiary": "Tagebuch starten",
+    "signIn": "Anmelden",
+    "free": "Kostenlos, und dein Tagebuch kann privat bleiben.",
+    "howItWorks": "So funktioniert es",
+    "nextCat": "Die nächste Katze, der du begegnest, verdient eine Seite.",
+    "steps": {
+      "snap": {
+        "title": "Fotografieren",
+        "text": "Fotografiere jede Katze, die dir über den Weg läuft — Streuner, Ladenkatzen, Stammgäste in der Nachbarschaft."
+      },
+      "note": {
+        "title": "Notieren",
+        "text": "Gib ihr einen Namen, schreib auf, was sie getrieben hat, und markiere den Ort. Jede Sichtung wird zu einer Seite in deinem Tagebuch."
+      },
+      "track": {
+        "title": "Verfolgen",
+        "text": "Folge anderen Katzenspottern, hinterlasse Pfotenabdrücke und Randnotizen, und durchstöbere ihre Tagebücher im täglichen Feed."
+      }
+    }
+  },
+  "authLayout": {
+    "title": "Katzentagebuch",
+    "tagline": "Ein Feldtagebuch für jede Katze, der du begegnest"
+  },
+  "signIn": {
+    "title": "Öffne dein Tagebuch",
+    "welcome": "Willkommen zurück — die Katzen haben dich vermisst.",
+    "newHere": "Neu hier?",
+    "startDiary": "Starte dein eigenes Katzentagebuch"
+  },
+  "register": {
+    "title": "Starte dein Tagebuch",
+    "alreadyHaveAccount": "Schon registriert?",
+    "signIn": "Anmelden",
+    "perks": {
+      "log": "Trage jede Katze ein, der du begegnest — Fotos, Notizen und den Fundort",
+      "track": "Folge anderen Katzenspottern und lies ihre Tagebücher im täglichen Feed",
+      "privacy": "Dein Tagebuch, deine Regeln — behalte es öffentlich oder mach es privat"
+    }
+  },
+  "authForm": {
+    "username": "Benutzername",
+    "displayName": "Anzeigename (optional)",
+    "email": "E-Mail",
+    "emailOrUsername": "E-Mail oder Benutzername",
+    "password": "Passwort",
+    "signIn": "Anmelden",
+    "register": "Registrieren",
+    "orContinueWith": "oder weiter mit",
+    "continueWith": "Weiter mit {provider}",
+    "errors": {
+      "emailTaken": "Diese E-Mail-Adresse ist bereits registriert.",
+      "usernameTaken": "Dieser Benutzername ist bereits vergeben.",
+      "invalidUsername": "Benutzernamen bestehen aus 3–30 Kleinbuchstaben, Zahlen, Punkten oder Unterstrichen.",
+      "invalidCredentials": "Ungültige Anmeldedaten.",
+      "registrationFailed": "Registrierung fehlgeschlagen."
+    }
+  },
+  "feed": {
+    "title": "Katzentagebuch",
+    "emptyTitle": "Diese Seite ist noch leer",
+    "emptySubtitle": "Heute einer Katze begegnet? Schreib es auf.",
+    "logACat": "Katze eintragen",
+    "today": "Heute",
+    "yesterday": "Gestern"
+  },
+  "notifications": {
+    "title": "Benachrichtigungen",
+    "markAllRead": "Alle als gelesen markieren",
+    "empty": "Noch keine Benachrichtigungen",
+    "justNow": "gerade eben",
+    "minutesAgo": "vor {count} Min.",
+    "hoursAgo": "vor {count} Std.",
+    "daysAgo": "vor {count} Tagen",
+    "and": "und",
+    "others": "{count, plural, one {# weiterer} other {# weitere}}",
+    "noOne": "Jemand",
+    "types": {
+      "like": "{actor} hat deinen Eintrag mit einer Pfote markiert",
+      "comment": "{actor} hat eine Notiz hinterlassen",
+      "reply": "{actor} hat auf deine Notiz geantwortet",
+      "follow": "{actor} liest jetzt dein Tagebuch",
+      "followPlural": "{actor} lesen jetzt dein Tagebuch",
+      "mention": "{actor} hat dich erwähnt",
+      "default": "{actor} hat mit deinem Tagebuch interagiert"
+    }
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "backToDiary": "Zurück zu meinem Tagebuch",
+    "sections": {
+      "profile": "Profil",
+      "privacy": "Privatsphäre",
+      "inviteFriends": "Freunde einladen",
+      "notifications": "Benachrichtigungen",
+      "appearance": "Erscheinungsbild",
+      "language": "Sprache",
+      "account": "Konto",
+      "dangerZone": "Gefahrenzone"
+    },
+    "profile": {
+      "photo": "Profilfoto",
+      "uploading": "Wird hochgeladen…",
+      "tapToChange": "Zum Ändern tippen",
+      "remove": "Entfernen",
+      "username": "Benutzername",
+      "usernameHint": "Dein Handle — zum Anmelden und als Anzeige, wenn kein Anzeigename gesetzt ist.",
+      "displayName": "Anzeigename",
+      "displayNamePlaceholder": "Wie andere dich sehen",
+      "bio": "Biografie",
+      "bioPlaceholder": "Ein Satz über dich und die Katzen, denen du begegnest…",
+      "save": "Speichern",
+      "saved": "Gespeichert",
+      "errors": {
+        "usernameTaken": "Dieser Benutzername ist bereits vergeben.",
+        "invalidUsername": "Benutzernamen bestehen aus 3–30 Kleinbuchstaben, Zahlen, Punkten oder Unterstrichen.",
+        "couldNotSave": "Profil konnte nicht gespeichert werden.",
+        "couldNotUpload": "Foto konnte nicht hochgeladen werden.",
+        "couldNotRemove": "Foto konnte nicht entfernt werden.",
+        "couldNotUpdatePrivacy": "Datenschutzeinstellung konnte nicht aktualisiert werden."
+      }
+    },
+    "privacy": {
+      "label": "Privates Tagebuch",
+      "description": "Nur genehmigte Leser können deine Einträge sehen."
+    },
+    "notifications": {
+      "paws": "Pfoten (Likes)",
+      "pawsDesc": "Wenn jemand deinen Eintrag mit einer Pfote markiert",
+      "notesReplies": "Notizen & Antworten",
+      "notesRepliesDesc": "Wenn jemand kommentiert oder antwortet",
+      "newReaders": "Neue Leser",
+      "newReadersDesc": "Wenn jemand anfängt, dir zu folgen",
+      "mentions": "Erwähnungen",
+      "mentionsDesc": "Wenn jemand dich @erwähnt",
+      "push": "Push-Benachrichtigungen",
+      "pushEnabled": "Auf diesem Gerät aktiviert",
+      "pushDisabled": "Benachrichtigungen auch wenn die App geschlossen ist"
+    },
+    "appearance": {
+      "theme": "Design"
+    },
+    "language": {
+      "label": "Sprache",
+      "en": "English",
+      "de": "Deutsch"
+    },
+    "account": {
+      "email": "E-Mail",
+      "signOut": "Abmelden"
+    },
+    "dangerZone": {
+      "deleteAccount": "Konto löschen",
+      "deleteConfirm": "Dies löscht dauerhaft dein Konto, Tagebuch und alle Einträge. Das kann nicht rückgängig gemacht werden.",
+      "deleteEverything": "Alles löschen",
+      "cancel": "Abbrechen",
+      "couldNotDelete": "Konto konnte nicht gelöscht werden."
+    }
+  },
+  "card": {
+    "sDiary": "s Tagebuch",
+    "aCatIMet": "Eine Katze, die ich getroffen habe",
+    "pinnedOnMap": "Auf der Karte markiert",
+    "removePaw": "Pfote entfernen",
+    "leaveAPaw": "Pfote hinterlassen",
+    "marginNotes": "Randnotizen",
+    "share": "Teilen",
+    "copied": "Kopiert",
+    "editEntry": "Eintrag bearbeiten",
+    "photoAlt": "{name} — Foto {n}",
+    "aCatPhotoAlt": "Eine Katze — Foto {n}"
+  },
+  "comments": {
+    "heading": "Randnotizen",
+    "noNotes": "Noch keine Randnotizen.",
+    "scribbleReply": "Eine Antwort hinzufügen…",
+    "scribbleNote": "Eine Randnotiz hinterlassen…",
+    "postNote": "Notiz senden",
+    "replyingTo": "Antwort auf",
+    "cancelReply": "Antwort abbrechen",
+    "replyTo": "Auf {name} antworten",
+    "deleteNote": "Notiz löschen",
+    "signIn": "Anmelden",
+    "toLeaveNote": "um eine Notiz zu hinterlassen.",
+    "couldNotAdd": "Notiz konnte nicht hinzugefügt werden. Versuch es nochmal."
+  },
+  "profile": {
+    "diary": "{name}s Tagebuch",
+    "entries": "{count, plural, one {# Eintrag} other {# Einträge}}",
+    "trackers": "{count, plural, one {# Leser} other {# Leser}}",
+    "tracking": "folgt {count}",
+    "privateDiary": "privates Tagebuch",
+    "blankPages": "Diese Seiten sind noch leer.",
+    "trackRequests": "Leseanfragen",
+    "pendingRequests": "Ausstehende Anfragen"
+  },
+  "onThisDay": {
+    "title": "An diesem Tag"
+  },
+  "discover": {
+    "placeholder": "Katzen, Personen, #Tags suchen…",
+    "peopleHeading": "Personen",
+    "noResults": "Keine Ergebnisse für \"{query}\"",
+    "nearbyCats": "Katzen in der Nähe"
+  }
+}
