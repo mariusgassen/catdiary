@@ -395,6 +395,82 @@ export async function listOnThisDayEntries(viewerId: string | null, limit = 6) {
   return entries.sort((a, b) => (idOrder.get(a.id) ?? 0) - (idOrder.get(b.id) ?? 0));
 }
 
+export type NearbyEntry = {
+  id: string;
+  name: string | null;
+  breed: string | null;
+  notes: string | null;
+  locationName: string | null;
+  latitude: number;
+  longitude: number;
+  createdAt: Date;
+  distanceKm: number;
+  owner: { id: string; username: string | null; displayName: string | null; avatarKey: string | null; image: string | null };
+  photos: { id: string; catEntryId: string; photoKey: string; thumbKey: string | null; position: number }[];
+  _count: { likes: number; comments: number };
+  likes: { userId: string }[];
+};
+
+/**
+ * Returns up to 30 visible entries within `radiusKm` of the given coordinates,
+ * ordered closest-first. Uses the Haversine formula in a raw query since
+ * Prisma doesn't support computed-column filtering natively.
+ */
+export async function listNearbyCatEntries(opts: {
+  lat: number;
+  lng: number;
+  radiusKm: number;
+  viewerId: string | null;
+}): Promise<NearbyEntry[]> {
+  const { lat, lng, radiusKm, viewerId } = opts;
+  const ownerIds = await listVisibleOwnerIds(viewerId);
+  if (ownerIds.length === 0) return [];
+
+  const rows = await db.$queryRaw<{ id: string; distance_km: number }[]>`
+    SELECT id,
+      (6371.0 * 2.0 * ASIN(SQRT(
+        POWER(SIN(RADIANS((${lat}::double precision - latitude) / 2.0)), 2) +
+        COS(RADIANS(latitude)) * COS(RADIANS(${lat}::double precision)) *
+        POWER(SIN(RADIANS((${lng}::double precision - longitude) / 2.0)), 2)
+      )))::double precision AS distance_km
+    FROM "CatEntry"
+    WHERE "ownerId" = ANY(${ownerIds}::text[])
+      AND latitude IS NOT NULL
+      AND longitude IS NOT NULL
+      AND (6371.0 * 2.0 * ASIN(SQRT(
+        POWER(SIN(RADIANS((${lat}::double precision - latitude) / 2.0)), 2) +
+        COS(RADIANS(latitude)) * COS(RADIANS(${lat}::double precision)) *
+        POWER(SIN(RADIANS((${lng}::double precision - longitude) / 2.0)), 2)
+      ))) <= ${radiusKm}::double precision
+    ORDER BY distance_km ASC
+    LIMIT 30
+  `;
+
+  if (rows.length === 0) return [];
+
+  const distanceMap = new Map(rows.map((r) => [r.id, Number(r.distance_km)]));
+
+  const entries = await db.catEntry.findMany({
+    where: { id: { in: rows.map((r) => r.id) } },
+    include: {
+      photos: { orderBy: { position: "asc" } },
+      owner: { select: { id: true, username: true, displayName: true, avatarKey: true, image: true } },
+      _count: { select: { likes: true, comments: true } },
+      likes: viewerId ? { where: { userId: viewerId }, select: { userId: true } } : false,
+    },
+  });
+
+  return entries
+    .map((e) => ({
+      ...e,
+      latitude: e.latitude!,
+      longitude: e.longitude!,
+      distanceKm: distanceMap.get(e.id) ?? 0,
+      likes: (Array.isArray(e.likes) ? e.likes : []) as { userId: string }[],
+    }))
+    .sort((a, b) => a.distanceKm - b.distanceKm);
+}
+
 /**
  * Returns `limit` random public cat entries — used for the Discover page
  * empty state. Uses ORDER BY RANDOM() so every load shows a different set.

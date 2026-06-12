@@ -117,48 +117,47 @@ Keep this document in sync with reality as the app evolves.
 - Design system: sunny cream/ink palette, fountain-pen blue accent, dot-grid
   texture, readable Geist typography
 - Theme setting: Light / Dark / System (default System) via next-themes, in Settings
-
-### Core diary polish
-- Richer profile pages: grid/list toggle, entry count, follower/following counts
-- Public/private visibility enforcement in all paths
-- Pending-follow approval UI (data model exists, no UI yet)
-- Edit profile: display name, bio, avatar upload, private toggle
+- **Richer profile pages**: grid/list toggle, entry count, follower/following counts,
+  clickable follower/following links
+- **Pending-follow approval UI**: `FollowRequestRow` + `PendingOutgoingRow` on
+  private profiles; data model `Follow.approved` gates visibility
+- **Edit profile**: display name, bio, avatar upload (`POST/DELETE /api/avatar`),
+  private toggle all in Settings
+- **Mention autocomplete in comments**: `@`-triggered dropdown in comment textarea,
+  backed by `GET /api/users?q=`, same as capture flow
+- **Mark individual notifications as read**: `PATCH /api/notifications` with
+  `ids[]`; `NotificationsView` marks single notifications on click
+- **Map tab**: Leaflet + OpenStreetMap tiles, photo-thumbnail markers, interactive
+  popups; `GET /api/cat-entries/map` → `lib/catEntries.listCatEntriesForMap`
+- **Map pin on entry detail page**: `<EntryMap>` shown when coordinates are present
+- **Draft recovery**: `localStorage` draft in capture flow (`catdiary_capture_draft`
+  key); restores caption, cat name, and breed on mount
+- **Infinite scroll**: Intersection Observer sentinel in `FeedInfiniteScroll`;
+  loads next page via `GET /api/cat-entries?cursor=`
+- **Account deletion**: `DELETE /api/me`; confirm dialog in Settings; signs out and
+  redirects
+- **Public profile URL**: `/@username` route resolves username → `/profile/{id}`
+- **"On This Day"**: `listOnThisDayEntries` queries same month/day in prior years;
+  `<OnThisDayStrip>` horizontal scroll above the feed
+- **Haptic feedback**: `navigator.vibrate?.([10])` on like and follow actions
+- **Nearby cats**: Haversine raw-SQL query in `listNearbyCatEntries`; "Cats near
+  you" section in Discover requests geolocation and shows pins within 5 km
+  (`GET /api/cat-entries/nearby?lat=&lng=&radius=`)
 
 ### Social / engagement
 - Notification grouping / summary ("X and 3 others pawed your entry")
-- Mention autocomplete in the **comment** textarea (currently only in capture/edit captions)
-- Mark individual notifications as read (currently all marked on page open)
-
-### Cat entry detail page
-- Map pin on the detail page once the map view exists
 
 ### Capture flow improvements
 - **Photo editing** — crop, basic brightness/contrast before upload
 - **Reorder photos** in the capture flow (order is currently capture/pick order)
-- **Draft recovery** — `localStorage` draft so back-navigation doesn't lose form
 - Gallery sheet polished for iOS (vs. browser file picker as fallback)
-
-### Discovery
-- **Map tab** — real map view with cat sighting pins using Leaflet + OpenStreetMap
-  tiles (no API key needed); `/map` route is currently a stub
-- **"On This Day"** resurfacing in the feed
-- **Nearby cats** — distance-based filter using lat/lng; requires PostGIS or
-  Haversine in a raw query
-
-### Profile & settings
-- Account deletion, avatar upload in Settings
-- Public profile URL (`/@username` or `/profile/[id]`) with Open Graph tags
-- Follow requests approval/rejection UI
 
 ### PWA / mobile hardening
 - Service worker caching strategy (currently handles push + notificationclick only)
-- Haptic feedback on like/follow (`navigator.vibrate`)
 - Offline-capable read view (cache feed in SW)
 - Add-to-home-screen prompt
 
 ### API hardening
-- Pagination: cursor already in `listCatEntriesForViewer`; feed needs infinite
-  scroll (Intersection Observer client-side)
 - Rate limiting on upload and entry creation
 - API versioning strategy before native mobile client launches
 
