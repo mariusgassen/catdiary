@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Settings } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { listCatEntriesForViewer } from "@/lib/catEntries";
@@ -20,6 +20,7 @@ import { FollowButton } from "@/components/FollowButton";
 import { FollowRequestRow } from "@/components/FollowRequestRow";
 import { PendingOutgoingRow } from "@/components/PendingOutgoingRow";
 import { displayNameFor } from "@/lib/userDisplay";
+import { possessiveDiaryTitleEn, possessiveDiaryTitleDe } from "@/lib/possessiveDiary";
 
 export async function generateMetadata({
   params,
@@ -27,6 +28,7 @@ export async function generateMetadata({
   params: Promise<{ userId: string }>;
 }): Promise<Metadata> {
   const { userId } = await params;
+  const locale = await getLocale();
   const user = await db.user.findUnique({
     where: { id: userId },
     select: {
@@ -41,7 +43,11 @@ export async function generateMetadata({
   if (!user) return { title: "Cat Diary" };
 
   const name = displayNameFor(user);
-  const title = `${name}'s Diary — Cat Diary`;
+  const diaryTitle =
+    locale === "de"
+      ? possessiveDiaryTitleDe(name)
+      : possessiveDiaryTitleEn(name);
+  const title = `${diaryTitle} — Cat Diary`;
   const description =
     user.bio ??
     `${name} has logged ${user._count.catEntries} ${user._count.catEntries === 1 ? "cat" : "cats"}.`;
@@ -71,6 +77,7 @@ export default async function ProfilePage({
   const view: "list" | "grid" = rawView === "grid" ? "grid" : "list";
   const session = await auth();
   const viewerId = session?.user?.id ?? null;
+  const locale = await getLocale();
   const t = await getTranslations("profile");
 
   const profileUser = await db.user.findUnique({
@@ -100,6 +107,10 @@ export default async function ProfilePage({
   }));
 
   const name = displayNameFor(profileUser);
+  const diaryTitle =
+    locale === "de"
+      ? possessiveDiaryTitleDe(name)
+      : possessiveDiaryTitleEn(name);
 
   return (
     <div className="paper-grid min-h-dvh flex flex-col gap-5 py-4">
@@ -121,24 +132,24 @@ export default async function ProfilePage({
               );
             })()}
           <div className="min-w-0">
-            <h1 className="text-2xl font-bold tracking-tight break-words">{t("diary", { name })}</h1>
+            <h1 className="text-2xl font-bold tracking-tight break-words">{diaryTitle}</h1>
             <p className="pt-0.5 text-sm text-muted">
-              {t("entries", { count: withPhotos.length })}
+              {withPhotos.length} {withPhotos.length === 1 ? "entry" : "entries"}
               {" · "}
               <Link
                 href={`/profile/${profileUser.id}/trackers`}
                 className="transition-colors hover:text-foreground"
               >
-                {t("trackers", { count: followCounts.trackers })}
+                {followCounts.trackers} {followCounts.trackers === 1 ? "tracker" : "trackers"}
               </Link>
               {" · "}
               <Link
                 href={`/profile/${profileUser.id}/tracking`}
                 className="transition-colors hover:text-foreground"
               >
-                {t("tracking", { count: followCounts.tracking })}
+                tracking {followCounts.tracking}
               </Link>
-              {profileUser.isPrivate && ` · ${t("privateDiary")}`}
+              {profileUser.isPrivate && " · private diary"}
             </p>
             {profileUser.bio && <p className="pt-2 text-sm text-foreground/80">{profileUser.bio}</p>}
           </div>

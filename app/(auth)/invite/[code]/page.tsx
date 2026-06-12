@@ -1,23 +1,29 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { getInviterByCode } from "@/lib/invites";
 import { displayNameFor } from "@/lib/userDisplay";
+import { possessiveDiaryEn, possessiveDiaryDe, possessiveDiaryTitleEn, possessiveDiaryTitleDe } from "@/lib/possessiveDiary";
 
 type Props = { params: Promise<{ code: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { code } = await params;
+  const locale = await getLocale();
   const inviter = await getInviterByCode(code);
   if (!inviter) {
     return { title: "Cat Diary" };
   }
 
   const name = displayNameFor(inviter);
+  const possessiveDiary =
+    locale === "de"
+      ? possessiveDiaryDe(name)
+      : possessiveDiaryEn(name);
   const title = `${name} invited you to Cat Diary`;
-  const description = `Join Cat Diary, a field journal for the cats you meet, and track ${name}'s diary.`;
+  const description = `Join Cat Diary, a field journal for the cats you meet, and track ${possessiveDiary}.`;
   return {
     title,
     description,
@@ -27,6 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function InvitePage({ params }: Props) {
   const { code } = await params;
+  const locale = await getLocale();
   const [session, inviter] = await Promise.all([auth(), getInviterByCode(code)]);
   const t = await getTranslations("invite.landing");
 
@@ -86,7 +93,11 @@ export default async function InvitePage({ params }: Props) {
           </div>
         )}
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold">{name}&rsquo;s Diary</p>
+          <p className="truncate text-sm font-semibold">
+            {locale === "de"
+              ? possessiveDiaryTitleDe(name)
+              : possessiveDiaryTitleEn(name)}
+          </p>
           <p className="text-xs text-muted">
             {t("entryCount", { count: entryCount })}
             {inviter.username && ` · @${inviter.username}`}
@@ -110,7 +121,11 @@ export default async function InvitePage({ params }: Props) {
       </div>
 
       <p className="text-xs text-muted">
-        {t("footerText", { name })}
+        {t("footerText", {
+          name: locale === "de"
+            ? possessiveDiaryDe(name)
+            : possessiveDiaryEn(name)
+        })}
       </p>
     </div>
   );

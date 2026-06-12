@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useLocale } from "next-intl";
 import { Search, X, Loader2, Cat, Users, Lock, ChevronRight, MapPin } from "lucide-react";
 import { PolaroidGrid } from "@/components/PolaroidGrid";
 import { photoUrlsFor, type EntryPhoto } from "@/lib/photo-urls";
 import { displayNameFor } from "@/lib/userDisplay";
+import { possessiveDiaryEn, possessiveDiaryDe } from "@/lib/possessiveDiary";
 
 type Entry = {
   id: string;
@@ -128,7 +130,13 @@ function isTagQuery(q: string) {
 }
 
 function UserRow({ user }: { user: UserResult }) {
+  const locale = useLocale();
   const name = displayNameFor(user);
+  const possessiveDiary =
+    locale === "de"
+      ? possessiveDiaryDe(name)
+      : possessiveDiaryEn(name);
+
   return (
     <Link
       href={`/profile/${user.id}`}
@@ -146,7 +154,7 @@ function UserRow({ user }: { user: UserResult }) {
         );
       })()}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold">{name}&rsquo;s diary</p>
+        <p className="truncate text-sm font-semibold">{possessiveDiary}</p>
         <p className="truncate text-xs text-muted">
           {user.username && <span>@{user.username} · </span>}
           {user.isPrivate ? (
