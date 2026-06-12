@@ -324,7 +324,10 @@ export function CaptureFlow() {
         <canvas ref={canvasRef} className="hidden" />
 
         {/* Top bar */}
-        <div className="flex items-center justify-between px-4 pt-[env(safe-area-inset-top,12px)] pb-3 z-10">
+        <div
+          className="flex items-center justify-between px-4 pb-3 z-10"
+          style={{ paddingTop: "calc(1rem + env(safe-area-inset-top, 0px))" }}
+        >
           <button
             onClick={() => router.back()}
             className="p-2 -m-2 text-white/80 hover:text-white"
@@ -338,9 +341,9 @@ export function CaptureFlow() {
                 void refreshDrafts();
                 setShowDrafts(true);
               }}
-              className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-medium text-white/90 hover:bg-white/20"
+              className="flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm font-semibold text-white shadow-sm ring-1 ring-white/20 hover:bg-white/25"
             >
-              <History size={15} />
+              <History size={17} />
               {t("camera.draftsChip", { count: otherDraftCount })}
             </button>
           )}

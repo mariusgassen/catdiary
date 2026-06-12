@@ -366,7 +366,7 @@ export function PhotoEditor({ shot, onConfirm, onCancel }: Props) {
                   className="flex shrink-0 flex-col items-center gap-1.5"
                 >
                   <span
-                    className={`block h-16 w-16 overflow-hidden rounded-xl ring-2 transition-all ${
+                    className={`block h-16 w-16 isolate overflow-hidden rounded-xl ring-2 transition-all ${
                       selected ? "ring-white" : "ring-transparent"
                     }`}
                   >
@@ -374,7 +374,7 @@ export function PhotoEditor({ shot, onConfirm, onCancel }: Props) {
                     <img
                       src={shot.previewUrl}
                       alt=""
-                      className="h-full w-full object-cover"
+                      className="h-full w-full rounded-xl object-cover"
                       style={{ filter: cssFilterString(p.adjustments) }}
                     />
                   </span>
