@@ -19,7 +19,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useTranslations } from "next-intl";
-import { X, Plus, SlidersHorizontal, GripVertical } from "lucide-react";
+import { X, Plus, SlidersHorizontal } from "lucide-react";
 
 export type StripPhoto = { id: string; previewUrl: string };
 
@@ -133,19 +133,22 @@ function SortableTile({
         isDragging ? "opacity-80 shadow-lg scale-[1.03]" : ""
       }`}
     >
-      {/* The whole tile is the drag handle (with a visible grip affordance). */}
+      {/* The whole photo is the drag handle. Suppress the native long-press
+          callout (Save to Photos, etc.) so holding starts a drag instead. */}
       <div
         {...attributes}
         {...listeners}
-        className="h-full w-full overflow-hidden rounded-xl"
+        className="h-full w-full overflow-hidden rounded-xl select-none [-webkit-touch-callout:none] [-webkit-user-select:none]"
         aria-label={t("dragHandle", { n: index + 1 })}
+        onContextMenu={(e) => e.preventDefault()}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={photo.previewUrl}
           alt={t("photoAlt", { n: index + 1 })}
           draggable={false}
-          className="h-full w-full object-cover"
+          onContextMenu={(e) => e.preventDefault()}
+          className="pointer-events-none h-full w-full object-cover select-none [-webkit-touch-callout:none] [-webkit-user-select:none]"
         />
       </div>
 
@@ -166,7 +169,7 @@ function SortableTile({
             <X size={13} />
           </button>
 
-          <div className="absolute inset-x-1.5 bottom-1.5 flex items-center justify-between">
+          <div className="absolute inset-x-1.5 bottom-1.5 flex items-center">
             <button
               type="button"
               onClick={onEdit}
@@ -176,9 +179,6 @@ function SortableTile({
               <SlidersHorizontal size={12} />
               {t("edit")}
             </button>
-            <span className="pointer-events-none flex h-6 w-6 items-center justify-center rounded-full bg-black/40 text-white/80">
-              <GripVertical size={14} />
-            </span>
           </div>
         </>
       )}
