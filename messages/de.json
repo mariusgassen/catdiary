@@ -213,5 +213,38 @@
     "peopleHeading": "Personen",
     "noResults": "Keine Ergebnisse für \"{query}\"",
     "nearbyCats": "Katzen in der Nähe"
+  },
+  "navigation": {
+    "backToJournal": "Zurück zum Tagebuch"
+  },
+  "invite": {
+    "section": {
+      "title": "Freunde einladen",
+      "description": "Teile deinen persönlichen Link — jeder, der damit beitritt, folgt deinem Tagebuch von Anfang an.",
+      "shareButton": "Einladungslink teilen",
+      "copyButton": "Link kopieren",
+      "copySuccess": "Kopiert!",
+      "loadError": "Einladungslink konnte nicht geladen werden.",
+      "copyError": "Automatisches Kopieren fehlgeschlagen — bitte manuell kopieren:",
+      "shareTitle": "Tritt mir auf Cat Diary bei",
+      "shareText": "Ich führe ein Tagebuch über die Katzen, denen ich begegne — schau mir über die Schulter."
+    },
+    "landing": {
+      "invalidTitle": "Diese Einladung ist verloren gegangen",
+      "invalidDescription": "Der Einladungslink entspricht keinem Tagebuch — er könnte falsch eingegeben worden sein. Du kannst trotzdem ein eigenes Tagebuch starten.",
+      "stamp": "Einladung",
+      "startDiary": "Tagebuch starten",
+      "alreadyHave": "Ich habe bereits eins — anmelden",
+      "heading": "{name} hat dich zu Cat Diary eingeladen",
+      "description": "Ein Feldtagebuch für die Katzen, denen du begegnest — fotografiere sie, notiere, wo du ihnen über den Weg gelaufen bist, und folge anderen Katzenspottern.",
+      "entryCount": "{count, plural, one {# Eintrag} other {# Einträge}}",
+      "footerText": "Tritt mit diesem Link bei und folge {name}s Tagebuch von Anfang an."
+    }
+  },
+  "follows": {
+    "isTracking": "{name} folgt",
+    "notTrackingYet": "Folgt noch keinen Tagebüchern.",
+    "trackers": "{name}s Leser",
+    "noTrackers": "Dieses Tagebuch wird noch von niemandem gelesen."
   }
 }

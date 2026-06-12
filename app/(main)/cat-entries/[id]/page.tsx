@@ -48,7 +48,7 @@ export default async function CatEntryPage({ params }: Props) {
 
   return (
     <div className="paper-grid min-h-dvh flex flex-col gap-4 py-4">
-      <BackLink label="Back to the journal" />
+      <BackLink />
       <CatEntryCard
         entry={{ ...entry, photoUrls: photoUrlsFor(entry.photos, { full: true }) }}
         viewerId={viewerId}

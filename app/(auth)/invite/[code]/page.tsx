@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { getInviterByCode } from "@/lib/invites";
 import { displayNameFor } from "@/lib/userDisplay";
@@ -27,6 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function InvitePage({ params }: Props) {
   const { code } = await params;
   const [session, inviter] = await Promise.all([auth(), getInviterByCode(code)]);
+  const t = await getTranslations("invite.landing");
 
   // Already journaling — the invitation resolves to the inviter's diary.
   if (session?.user?.id) {
@@ -36,23 +38,22 @@ export default async function InvitePage({ params }: Props) {
   if (!inviter) {
     return (
       <div className="mx-auto flex w-full max-w-sm flex-col gap-5 rounded-xl border border-border bg-surface px-6 py-7 shadow-sm">
-        <h1 className="text-2xl font-bold tracking-tight">This invitation has wandered off</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t("invalidTitle")}</h1>
         <p className="text-sm text-muted">
-          The invite link doesn&rsquo;t match any diary — it may have been mistyped. You can still
-          start a diary of your own.
+          {t("invalidDescription")}
         </p>
         <div className="flex flex-col gap-2">
           <Link
             href="/register"
             className="rounded-xl bg-accent px-3 py-2.5 text-center text-sm font-semibold text-white shadow-sm shadow-accent/30 transition-transform active:scale-[0.98]"
           >
-            Start your diary
+            {t("startDiary")}
           </Link>
           <Link
             href="/sign-in"
             className="rounded-xl border border-border bg-background px-3 py-2.5 text-center text-sm transition-colors hover:border-accent/40"
           >
-            I already have one — sign in
+            {t("alreadyHave")}
           </Link>
         </div>
       </div>
@@ -65,14 +66,13 @@ export default async function InvitePage({ params }: Props) {
   return (
     <div className="mx-auto flex w-full max-w-sm flex-col gap-5 rounded-xl border border-border bg-surface px-6 py-7 shadow-sm">
       <span className="stamp self-start px-2 py-0.5 text-[11px] font-semibold text-accent">
-        Invitation
+        {t("stamp")}
       </span>
 
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">{name} invited you to Cat Diary</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t("heading", { name })}</h1>
         <p className="pt-2 text-sm text-muted">
-          A field journal for the cats you meet — photograph them, note where they crossed your
-          path, and track other cat spotters.
+          {t("description")}
         </p>
       </div>
 
@@ -88,7 +88,7 @@ export default async function InvitePage({ params }: Props) {
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold">{name}&rsquo;s Diary</p>
           <p className="text-xs text-muted">
-            {entryCount} {entryCount === 1 ? "entry" : "entries"}
+            {t("entryCount", { count: entryCount })}
             {inviter.username && ` · @${inviter.username}`}
           </p>
         </div>
@@ -99,18 +99,18 @@ export default async function InvitePage({ params }: Props) {
           href={`/register?invite=${encodeURIComponent(code)}`}
           className="rounded-xl bg-accent px-3 py-2.5 text-center text-sm font-semibold text-white shadow-sm shadow-accent/30 transition-transform active:scale-[0.98]"
         >
-          Start your diary
+          {t("startDiary")}
         </Link>
         <Link
           href={`/sign-in?callbackUrl=${encodeURIComponent(`/profile/${inviter.id}`)}`}
           className="rounded-xl border border-border bg-background px-3 py-2.5 text-center text-sm transition-colors hover:border-accent/40"
         >
-          I already have one — sign in
+          {t("alreadyHave")}
         </Link>
       </div>
 
       <p className="text-xs text-muted">
-        Join with this link and you&rsquo;ll track {name}&rsquo;s diary from day one.
+        {t("footerText", { name })}
       </p>
     </div>
   );

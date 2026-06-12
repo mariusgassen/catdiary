@@ -1,14 +1,17 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { ChevronLeft } from "lucide-react";
 
 /* Detail pages live under the bottom tab bar but have no top chrome, so the
    only way back was a browser/OS swipe. This gives an explicit, tappable way
    back to wherever the reader came from — falling back to the journal feed
    when the entry was opened cold (e.g. a shared link). */
-export function BackLink({ fallbackHref = "/", label = "Back" }: { fallbackHref?: string; label?: string }) {
+export function BackLink({ fallbackHref = "/", label }: { fallbackHref?: string; label?: string }) {
   const router = useRouter();
+  const t = useTranslations("navigation");
+  const displayLabel = label ?? t("backToJournal");
 
   function goBack() {
     if (typeof window !== "undefined" && window.history.length > 1) {
@@ -26,7 +29,7 @@ export function BackLink({ fallbackHref = "/", label = "Back" }: { fallbackHref?
       aria-label="Go back"
     >
       <ChevronLeft size={18} strokeWidth={2} />
-      {label}
+      {displayLabel}
     </button>
   );
 }
