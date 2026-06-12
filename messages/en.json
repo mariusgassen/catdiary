@@ -75,6 +75,98 @@
     "today": "Today",
     "yesterday": "Yesterday"
   },
+  "capture": {
+    "camera": {
+      "close": "Close",
+      "draftsChip": "{count, plural, one {# draft} other {# drafts}}",
+      "flip": "Flip camera",
+      "unavailable": "Camera unavailable — check permissions or pick from your gallery.",
+      "chooseFromGallery": "Choose from gallery",
+      "gallery": "Gallery",
+      "capture": "Take photo",
+      "continue": "Continue with {count, plural, one {# photo} other {# photos}}",
+      "next": "Next",
+      "dismiss": "Dismiss",
+      "addPhotos": "Add photos",
+      "photoLibrary": "Photo Library",
+      "chooseFromPhotos": "Choose from your photos",
+      "cancel": "Cancel"
+    },
+    "details": {
+      "back": "Back",
+      "newPost": "New entry",
+      "post": "Post",
+      "addOptional": "Add more details",
+      "hideOptional": "Hide extra details",
+      "catNamePlaceholder": "Cat's name (optional)",
+      "breedPlaceholder": "Breed (optional)",
+      "locationHint": "Add a place or switch off geo data to post.",
+      "errorUpload": "Could not upload photo.",
+      "errorSave": "Could not save entry.",
+      "errorGeneric": "Something went wrong. Please try again."
+    },
+    "editor": {
+      "cancel": "Cancel",
+      "reset": "Reset",
+      "done": "Done",
+      "loading": "Loading…",
+      "zoom": "Zoom",
+      "rotateLeft": "Rotate left",
+      "rotateRight": "Rotate right",
+      "flipH": "Flip horizontally",
+      "flipV": "Flip vertically",
+      "frameHint": "Drag to reposition, pinch to zoom",
+      "tabs": {
+        "filters": "Filters",
+        "adjust": "Adjust",
+        "crop": "Crop"
+      },
+      "presets": {
+        "natural": { "name": "Natural", "mood": "As you saw it" },
+        "golden-hour": { "name": "Golden Hour", "mood": "Warm afternoon glow" },
+        "alley-noir": { "name": "Alley Noir", "mood": "Moody black & white" },
+        "sunlit-sill": { "name": "Sunlit Sill", "mood": "Soft and airy" },
+        "velvet-paw": { "name": "Velvet Paw", "mood": "Rich and deep" },
+        "foggy-morning": { "name": "Foggy Morning", "mood": "Hazy and muted" },
+        "catnip-dream": { "name": "Catnip Dream", "mood": "Punchy and surreal" },
+        "vintage-tabby": { "name": "Vintage Tabby", "mood": "Faded and warm" },
+        "moonlit-prowl": { "name": "Moonlit Prowl", "mood": "Cool and nocturnal" },
+        "cream-and-sugar": { "name": "Cream & Sugar", "mood": "Bright and gentle" }
+      },
+      "adjust": {
+        "brightness": "Brightness",
+        "contrast": "Contrast",
+        "saturation": "Saturation",
+        "warmth": "Warmth",
+        "hue": "Hue",
+        "grayscale": "Grayscale",
+        "blur": "Blur",
+        "vignette": "Vignette"
+      }
+    },
+    "strip": {
+      "addPhoto": "Add photo",
+      "reorderHint": "Drag to reorder — the first photo is the cover.",
+      "dragHandle": "Move photo {n}",
+      "photoAlt": "Photo {n}",
+      "cover": "Cover",
+      "removePhoto": "Remove photo {n}",
+      "editPhoto": "Edit photo {n}",
+      "edit": "Edit"
+    },
+    "drafts": {
+      "title": "Drafts",
+      "empty": "No saved drafts.",
+      "untitled": "Untitled draft",
+      "photoCount": "{count, plural, one {# photo} other {# photos}}",
+      "delete": "Delete draft",
+      "close": "Close",
+      "justNow": "just now",
+      "minutesAgo": "{count}m ago",
+      "hoursAgo": "{count}h ago",
+      "daysAgo": "{count}d ago"
+    }
+  },
   "notifications": {
     "title": "Notifications",
     "markAllRead": "Mark all read",
