@@ -412,5 +412,11 @@
     "notTrackingYet": "Folgt noch keinen Tagebüchern.",
     "trackersHeading": "Leser von {name}",
     "noTrackers": "Dieses Tagebuch wird noch von niemandem gelesen."
+  },
+  "handle": {
+    "notFoundTitle": "Hier ist kein Tagebuch",
+    "notFoundBody": "Wir konnten niemanden mit diesem Handle finden. Vielleicht wurde es geändert oder es hat nie existiert.",
+    "backToFeed": "Zurück zum Journal",
+    "discoverPeople": "Katzenspotter finden"
   }
 }

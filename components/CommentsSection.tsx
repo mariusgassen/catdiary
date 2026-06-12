@@ -5,6 +5,7 @@ import { useRef, useState, type FormEvent } from "react";
 import { CornerDownRight, Loader2, Reply, Send, Trash2, X } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import { displayNameFor } from "@/lib/userDisplay";
+import { HashtagCaption } from "@/components/HashtagCaption";
 
 type UserSuggestion = {
   id: string;
@@ -238,7 +239,9 @@ export function CommentsSection({
                     <Avatar user={thread.user} />
                   </div>
                   <p className="break-words pl-3 pr-4 text-sm leading-[28px]">
-                    <span className="italic text-foreground/90">{thread.body}</span>
+                    <span className="italic text-foreground/90">
+                      <HashtagCaption text={thread.body} />
+                    </span>
                     {noteSignature(thread)}
                   </p>
                 </div>
@@ -252,7 +255,9 @@ export function CommentsSection({
                             <CornerDownRight size={11} aria-hidden />
                             <Avatar user={reply.user} size={5} />
                           </span>
-                          <span className="italic text-foreground/90">{reply.body}</span>
+                          <span className="italic text-foreground/90">
+                            <HashtagCaption text={reply.body} />
+                          </span>
                           {noteSignature(reply)}
                         </p>
                       </li>

@@ -29,10 +29,17 @@ export function HashtagCaption({ text }: { text: string }) {
           );
         }
         if (part.type === "mention") {
+          // part.value is "@username"; "/@username" routes through the
+          // [handle] page, which redirects to the profile or 404s if the
+          // handle doesn't exist.
           return (
-            <span key={i} className="text-accent font-medium">
+            <Link
+              key={i}
+              href={`/${part.value}`}
+              className="text-accent font-medium hover:underline"
+            >
               {part.value}
-            </span>
+            </Link>
           );
         }
         return <span key={i}>{part.value}</span>;
