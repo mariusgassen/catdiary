@@ -274,6 +274,22 @@
       "couldNotDelete": "Could not delete your account."
     }
   },
+  "editEntry": {
+    "cancel": "Cancel",
+    "title": "Edit entry",
+    "save": "Save",
+    "saving": "Saving…",
+    "namePlaceholder": "Name (optional)",
+    "breedPlaceholder": "Breed / color (optional)",
+    "notesPlaceholder": "Notes (optional) — #tags and @mentions",
+    "delete": "Delete this entry",
+    "deleting": "Deleting…",
+    "deleteConfirm": "Delete this cat entry? This can't be undone.",
+    "errorLocation": "Pick a location or switch location off.",
+    "errorSave": "Could not save the changes.",
+    "errorDelete": "Could not delete the entry.",
+    "pinnedOnMap": "Pinned on the map"
+  },
   "card": {
     "sDiary": "'s diary",
     "aCatIMet": "A cat I met",
