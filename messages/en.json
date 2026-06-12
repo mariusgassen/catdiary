@@ -167,6 +167,20 @@
       "daysAgo": "{count}d ago"
     }
   },
+  "captionInput": {
+    "placeholder": "Add a caption… #orange @friend"
+  },
+  "location": {
+    "searchPlaceholder": "Search for a place…",
+    "noPlaces": "No places found",
+    "off": "Location off — nothing is shared",
+    "turnOn": "Turn on",
+    "finding": "Finding where you are…",
+    "none": "No location set",
+    "search": "Search location",
+    "useMyLocation": "Use my location",
+    "turnOff": "Turn location off"
+  },
   "notifications": {
     "title": "Notifications",
     "markAllRead": "Mark all read",
