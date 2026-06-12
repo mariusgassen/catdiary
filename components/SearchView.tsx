@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Search, X, Loader2, Cat, Users, Lock, ChevronRight } from "lucide-react";
+import { Search, X, Loader2, Cat, Users, Lock, ChevronRight, MapPin } from "lucide-react";
 import { PolaroidGrid } from "@/components/PolaroidGrid";
 import { photoUrlsFor, type EntryPhoto } from "@/lib/photo-urls";
 import { displayNameFor } from "@/lib/userDisplay";
@@ -42,6 +42,85 @@ export type UserResult = {
 type Results = { entries: Entry[]; users: UserResult[] };
 
 const FALLBACK_TAGS = ["#orange", "#kitten", "#stray", "#fluffy", "#tabby", "#blackcat", "#ginger"];
+
+type NearbyState =
+  | { status: "idle" }
+  | { status: "locating" }
+  | { status: "results"; entries: RandomEntry[]; radiusKm: number }
+  | { status: "error"; message: string };
+
+function NearbySection() {
+  const [state, setState] = useState<NearbyState>({ status: "idle" });
+
+  async function requestNearby() {
+    if (!navigator.geolocation) {
+      setState({ status: "error", message: "Location not supported on this device" });
+      return;
+    }
+    setState({ status: "locating" });
+    try {
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
+        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 })
+      );
+      const { latitude: lat, longitude: lng } = pos.coords;
+      const radiusKm = 5;
+      const res = await fetch(`/api/cat-entries/nearby?lat=${lat}&lng=${lng}&radius=${radiusKm}`);
+      if (!res.ok) throw new Error("fetch failed");
+      const data = await res.json();
+      setState({ status: "results", entries: data.entries, radiusKm });
+    } catch (err) {
+      const isDenied = err && typeof err === "object" && "code" in err && (err as GeolocationPositionError).code === 1;
+      setState({ status: "error", message: isDenied ? "Location access denied" : "Couldn't find nearby cats" });
+    }
+  }
+
+  if (state.status === "idle") {
+    return (
+      <div className="px-4 pt-3 pb-1">
+        <button
+          onClick={requestNearby}
+          className="inline-flex items-center gap-2 rounded-lg border border-dashed border-accent/50 bg-surface text-accent text-sm font-medium px-3.5 py-1.5 hover:bg-accent hover:border-accent hover:text-white transition-colors"
+        >
+          <MapPin size={14} aria-hidden />
+          Cats near you
+        </button>
+      </div>
+    );
+  }
+
+  if (state.status === "locating") {
+    return (
+      <div className="px-4 pt-3 pb-1 flex items-center gap-2 text-sm text-muted">
+        <Loader2 size={14} className="animate-spin shrink-0" aria-hidden />
+        Finding cats nearby…
+      </div>
+    );
+  }
+
+  if (state.status === "error") {
+    return (
+      <div className="px-4 pt-3 pb-1 flex items-center gap-2 text-sm">
+        <span className="text-muted">{state.message}</span>
+        <button onClick={requestNearby} className="text-accent underline shrink-0">
+          Try again
+        </button>
+      </div>
+    );
+  }
+
+  const { entries, radiusKm } = state;
+  return (
+    <div>
+      <p className="px-4 pt-3 pb-0 text-xs font-semibold uppercase tracking-wide text-muted flex items-center gap-1.5">
+        <MapPin size={11} aria-hidden />
+        {entries.length === 0
+          ? `No cats spotted within ${radiusKm} km`
+          : `Cats near you · within ${radiusKm} km`}
+      </p>
+      {entries.length > 0 && <PolaroidGrid entries={entries} />}
+    </div>
+  );
+}
 
 /** Tag searches (#…) are about cats only — no point matching people on them. */
 function isTagQuery(q: string) {
@@ -255,9 +334,10 @@ export function SearchResults({
               ))}
             </div>
           </div>
+          <NearbySection />
           {randomEntries.length > 0 && (
             <div>
-              <p className="px-4 pt-1 pb-0 text-xs font-semibold uppercase tracking-wide text-muted">
+              <p className="px-4 pt-3 pb-0 text-xs font-semibold uppercase tracking-wide text-muted">
                 Cats around the world
               </p>
               <PolaroidGrid entries={randomEntries} />
