@@ -274,6 +274,22 @@
       "couldNotDelete": "Konto konnte nicht gelöscht werden."
     }
   },
+  "editEntry": {
+    "cancel": "Abbrechen",
+    "title": "Eintrag bearbeiten",
+    "save": "Speichern",
+    "saving": "Wird gespeichert…",
+    "namePlaceholder": "Name (optional)",
+    "breedPlaceholder": "Rasse / Farbe (optional)",
+    "notesPlaceholder": "Notizen (optional) — #tags und @erwähnungen",
+    "delete": "Diesen Eintrag löschen",
+    "deleting": "Wird gelöscht…",
+    "deleteConfirm": "Diesen Katzeneintrag löschen? Das kann nicht rückgängig gemacht werden.",
+    "errorLocation": "Wähle einen Ort oder schalte den Standort aus.",
+    "errorSave": "Änderungen konnten nicht gespeichert werden.",
+    "errorDelete": "Eintrag konnte nicht gelöscht werden.",
+    "pinnedOnMap": "Auf der Karte markiert"
+  },
   "card": {
     "sDiary": "s Tagebuch",
     "aCatIMet": "Eine Katze, die ich getroffen habe",

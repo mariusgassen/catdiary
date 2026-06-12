@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import { useTranslations } from "next-intl";
 import { Loader2, Trash2, X } from "lucide-react";
 import { LocationPicker, type PickedLocation } from "@/components/LocationPicker";
 import { CaptionInput } from "@/components/CaptionInput";
@@ -29,13 +30,14 @@ type CatEntryEditFormProps = {
  */
 export function CatEntryEditForm({ entry, coverUrl }: CatEntryEditFormProps) {
   const router = useRouter();
+  const t = useTranslations("editEntry");
   const [name, setName] = useState(entry.name ?? "");
   const [breed, setBreed] = useState(entry.breed ?? "");
   const [notes, setNotes] = useState(entry.notes ?? "");
   const [frameStyle, setFrameStyle] = useState<FrameStyle>(asFrameStyle(entry.frameStyle));
   const [location, setLocation] = useState<PickedLocation | null>(
     entry.latitude != null && entry.longitude != null
-      ? { name: entry.locationName ?? "Pinned on the map", lat: entry.latitude, lng: entry.longitude }
+      ? { name: entry.locationName ?? t("pinnedOnMap"), lat: entry.latitude, lng: entry.longitude }
       : null
   );
   const [geoDisabled, setGeoDisabled] = useState(entry.latitude == null);
@@ -53,7 +55,7 @@ export function CatEntryEditForm({ entry, coverUrl }: CatEntryEditFormProps) {
     setError(null);
 
     if (!location && !geoDisabled) {
-      setError("Pick a location or switch location off.");
+      setError(t("errorLocation"));
       return;
     }
 
@@ -73,7 +75,7 @@ export function CatEntryEditForm({ entry, coverUrl }: CatEntryEditFormProps) {
         }),
       });
       if (!res.ok) {
-        setError("Could not save the changes.");
+        setError(t("errorSave"));
         return;
       }
 
@@ -85,14 +87,14 @@ export function CatEntryEditForm({ entry, coverUrl }: CatEntryEditFormProps) {
   }
 
   async function handleDelete() {
-    if (!confirm("Delete this cat entry? This can't be undone.")) return;
+    if (!confirm(t("deleteConfirm"))) return;
 
     setError(null);
     setDeleting(true);
     try {
       const res = await fetch(`/api/cat-entries/${entry.id}`, { method: "DELETE" });
       if (!res.ok) {
-        setError("Could not delete the entry.");
+        setError(t("errorDelete"));
         return;
       }
       router.push("/feed");
@@ -116,30 +118,30 @@ export function CatEntryEditForm({ entry, coverUrl }: CatEntryEditFormProps) {
             className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-muted transition-colors hover:text-foreground disabled:opacity-50"
           >
             <X size={16} aria-hidden />
-            Cancel
+            {t("cancel")}
           </button>
-          <h1 className="text-sm font-semibold">Edit entry</h1>
+          <h1 className="text-sm font-semibold">{t("title")}</h1>
           <button
             type="submit"
             disabled={busy}
             className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-accent disabled:opacity-50"
           >
             {submitting && <Loader2 size={14} className="animate-spin" aria-hidden />}
-            {submitting ? "Saving…" : "Save"}
+            {submitting ? t("saving") : t("save")}
           </button>
         </div>
       </header>
 
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-3 px-4 py-4">
         <input
-          placeholder="Name (optional)"
+          placeholder={t("namePlaceholder")}
           value={name}
           onChange={(e) => setName(e.target.value)}
           maxLength={120}
           className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:ring-1 focus:ring-accent placeholder:text-muted"
         />
         <input
-          placeholder="Breed / color (optional)"
+          placeholder={t("breedPlaceholder")}
           value={breed}
           onChange={(e) => setBreed(e.target.value)}
           maxLength={120}
@@ -148,7 +150,7 @@ export function CatEntryEditForm({ entry, coverUrl }: CatEntryEditFormProps) {
         <CaptionInput
           value={notes}
           onChange={setNotes}
-          placeholder="Notes (optional) — #tags and @mentions"
+          placeholder={t("notesPlaceholder")}
           rows={3}
         />
         <FramePicker
@@ -178,7 +180,7 @@ export function CatEntryEditForm({ entry, coverUrl }: CatEntryEditFormProps) {
             className="flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-600/10 disabled:opacity-50"
           >
             {deleting ? <Loader2 size={14} className="animate-spin" aria-hidden /> : <Trash2 size={14} aria-hidden />}
-            {deleting ? "Deleting…" : "Delete this entry"}
+            {deleting ? t("deleting") : t("delete")}
           </button>
         </div>
       </div>
