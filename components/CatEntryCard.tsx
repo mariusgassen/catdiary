@@ -61,6 +61,7 @@ function Avatar({ user }: { user: { displayName: string | null; username?: strin
 }
 
 export function CatEntryCard({ entry, viewerId, linkToDetail = true }: CatEntryCardProps) {
+  const t = useTranslations("card");
   const locale = useLocale();
   const router = useRouter();
   const date = new Date(entry.createdAt);

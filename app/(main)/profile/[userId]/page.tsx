@@ -78,6 +78,7 @@ export default async function ProfilePage({
   const session = await auth();
   const viewerId = session?.user?.id ?? null;
   const locale = await getLocale();
+  const t = await getTranslations("profile");
 
   const profileUser = await db.user.findUnique({
     where: { id: userId },
