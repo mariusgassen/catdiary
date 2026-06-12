@@ -1,5 +1,5 @@
 import { requireUserId } from "@/lib/auth-helpers";
-import { listNotifications } from "@/lib/notifications";
+import { listGroupedNotifications } from "@/lib/notifications";
 import { NotificationsView } from "@/components/NotificationsView";
 import { redirect } from "next/navigation";
 import { UnauthorizedError } from "@/lib/auth-helpers";
@@ -15,6 +15,6 @@ export default async function NotificationsPage() {
     throw err;
   }
 
-  const notifications = await listNotifications(userId, 30);
+  const notifications = await listGroupedNotifications(userId);
   return <NotificationsView initialNotifications={notifications} />;
 }
