@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import { useTranslations, useLocale } from "next-intl";
 import { Trash2, FileClock } from "lucide-react";
 import type { CaptureDraftMeta } from "@/lib/captureDrafts";
 
@@ -11,19 +12,26 @@ type Props = {
   onClose: () => void;
 };
 
-function relativeTime(ts: number): string {
-  const diff = Date.now() - ts;
-  const mins = Math.round(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.round(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.round(hrs / 24);
-  if (days < 7) return `${days}d ago`;
-  return new Date(ts).toLocaleDateString();
+function useRelativeTime() {
+  const t = useTranslations("capture.drafts");
+  const locale = useLocale();
+
+  return function relativeTime(ts: number): string {
+    const mins = Math.round((Date.now() - ts) / 60000);
+    if (mins < 1) return t("justNow");
+    if (mins < 60) return t("minutesAgo", { count: mins });
+    const hrs = Math.round(mins / 60);
+    if (hrs < 24) return t("hoursAgo", { count: hrs });
+    const days = Math.round(hrs / 24);
+    if (days < 7) return t("daysAgo", { count: days });
+    return new Date(ts).toLocaleDateString(locale);
+  };
 }
 
 export function DraftsSheet({ drafts, onResume, onDelete, onClose }: Props) {
+  const t = useTranslations("capture.drafts");
+  const relativeTime = useRelativeTime();
+
   // Build object URLs for the cover thumbnails and revoke them on unmount.
   const covers = useMemo(() => {
     const map = new Map<string, string>();
@@ -46,19 +54,19 @@ export function DraftsSheet({ drafts, onResume, onDelete, onClose }: Props) {
       >
         <div className="mx-auto my-2 h-1 w-10 rounded-full bg-white/20" />
         <p className="px-5 pb-2 pt-1 text-xs font-medium uppercase tracking-wide text-white/40">
-          Saved drafts
+          {t("title")}
         </p>
 
         {drafts.length === 0 ? (
           <div className="flex flex-col items-center gap-2 px-5 py-10 text-center text-white/40">
             <FileClock size={28} />
-            <p className="text-sm">No saved drafts yet.</p>
+            <p className="text-sm">{t("empty")}</p>
           </div>
         ) : (
           <ul>
             {drafts.map((d) => {
               const cover = covers.get(d.id);
-              const title = d.caption.trim() || d.catName.trim() || "Untitled post";
+              const title = d.caption.trim() || d.catName.trim() || t("untitled");
               return (
                 <li key={d.id} className="flex items-center gap-3 px-4 py-2.5 active:bg-white/5">
                   <button
@@ -76,7 +84,7 @@ export function DraftsSheet({ drafts, onResume, onDelete, onClose }: Props) {
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-medium text-white">{title}</span>
                       <span className="block truncate text-xs text-white/45">
-                        {d.photoCount} photo{d.photoCount === 1 ? "" : "s"}
+                        {t("photoCount", { count: d.photoCount })}
                         {d.locationName ? ` · ${d.locationName}` : ""} · {relativeTime(d.updatedAt)}
                       </span>
                     </span>
@@ -84,7 +92,7 @@ export function DraftsSheet({ drafts, onResume, onDelete, onClose }: Props) {
                   <button
                     onClick={() => onDelete(d.id)}
                     className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white/50 active:bg-white/10"
-                    aria-label="Delete draft"
+                    aria-label={t("delete")}
                   >
                     <Trash2 size={18} />
                   </button>
@@ -98,7 +106,7 @@ export function DraftsSheet({ drafts, onResume, onDelete, onClose }: Props) {
           onClick={onClose}
           className="mx-4 mb-3 mt-2 w-[calc(100%-2rem)] rounded-xl bg-[#2c2c2e] py-3.5 text-sm font-semibold text-white active:bg-white/10"
         >
-          Close
+          {t("close")}
         </button>
       </div>
     </div>

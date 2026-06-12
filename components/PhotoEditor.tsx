@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   X,
   Check,
@@ -42,6 +43,7 @@ const MAX_ZOOM = 4;
 const OUTPUT = 1200;
 
 export function PhotoEditor({ shot, onConfirm, onCancel }: Props) {
+  const t = useTranslations("capture.editor");
   const containerRef = useRef<HTMLDivElement>(null);
   const bitmapRef = useRef<ImageBitmap | null>(null);
 
@@ -276,7 +278,7 @@ export function PhotoEditor({ shot, onConfirm, onCancel }: Props) {
         className="flex items-center justify-between px-4 pb-3"
         style={{ paddingTop: "calc(0.75rem + env(safe-area-inset-top, 0px))" }}
       >
-        <button onClick={onCancel} className="p-2 -m-2 text-white/80 hover:text-white" aria-label="Cancel">
+        <button onClick={onCancel} className="p-2 -m-2 text-white/80 hover:text-white" aria-label={t("cancel")}>
           <X size={22} />
         </button>
         <button
@@ -284,13 +286,13 @@ export function PhotoEditor({ shot, onConfirm, onCancel }: Props) {
           disabled={pristine}
           className="text-xs font-medium text-white/60 disabled:opacity-30 hover:text-white"
         >
-          Reset
+          {t("reset")}
         </button>
         <button
           onClick={() => (pristine ? onCancel() : void applyEdits())}
           disabled={applying || !imgLoaded}
           className="flex items-center gap-1.5 p-2 -m-2 text-sm font-semibold text-white disabled:opacity-40"
-          aria-label="Done"
+          aria-label={t("done")}
         >
           {applying ? <Loader2 size={20} className="animate-spin" /> : <Check size={22} />}
         </button>
@@ -340,7 +342,11 @@ export function PhotoEditor({ shot, onConfirm, onCancel }: Props) {
             </div>
           )}
           {!imgLoaded && (
-            <div className="absolute inset-0 flex items-center justify-center">
+            <div
+              className="absolute inset-0 flex items-center justify-center"
+              role="status"
+              aria-label={t("loading")}
+            >
               <Loader2 size={28} className="animate-spin text-white/50" />
             </div>
           )}
@@ -375,10 +381,10 @@ export function PhotoEditor({ shot, onConfirm, onCancel }: Props) {
                   <span
                     className={`text-[11px] leading-tight ${selected ? "text-white" : "text-white/55"}`}
                   >
-                    {p.name}
+                    {t(`presets.${p.id}.name`)}
                   </span>
                   <span className="max-w-[72px] text-center text-[9px] leading-tight text-white/35">
-                    {p.mood}
+                    {t(`presets.${p.id}.mood`)}
                   </span>
                 </button>
               );
@@ -392,7 +398,7 @@ export function PhotoEditor({ shot, onConfirm, onCancel }: Props) {
               const value = adjustments[c.key];
               return (
                 <label key={c.key} className="flex items-center gap-3">
-                  <span className="w-20 shrink-0 text-xs text-white/60">{c.label}</span>
+                  <span className="w-20 shrink-0 text-xs text-white/60">{t(`adjust.${c.key}`)}</span>
                   <input
                     type="range"
                     min={c.min}
@@ -422,6 +428,7 @@ export function PhotoEditor({ shot, onConfirm, onCancel }: Props) {
                 step={0.01}
                 value={zoom}
                 onChange={(e) => updateZoom(Number(e.target.value))}
+                aria-label={t("zoom")}
                 className="flex-1 accent-white"
               />
               <span className="w-10 text-right text-xs text-white/45 tabular-nums">
@@ -429,28 +436,28 @@ export function PhotoEditor({ shot, onConfirm, onCancel }: Props) {
               </span>
             </label>
             <div className="flex items-center justify-center gap-3">
-              <ToolButton label="Rotate left" onClick={() => rotate(-90)}>
+              <ToolButton label={t("rotateLeft")} onClick={() => rotate(-90)}>
                 <RotateCcw size={20} />
               </ToolButton>
-              <ToolButton label="Rotate right" onClick={() => rotate(90)}>
+              <ToolButton label={t("rotateRight")} onClick={() => rotate(90)}>
                 <RotateCw size={20} />
               </ToolButton>
-              <ToolButton label="Flip horizontal" onClick={() => setFlipH((v) => -v)} active={flipH === -1}>
+              <ToolButton label={t("flipH")} onClick={() => setFlipH((v) => -v)} active={flipH === -1}>
                 <FlipHorizontal size={20} />
               </ToolButton>
-              <ToolButton label="Flip vertical" onClick={() => setFlipV((v) => -v)} active={flipV === -1}>
+              <ToolButton label={t("flipV")} onClick={() => setFlipV((v) => -v)} active={flipV === -1}>
                 <FlipVertical size={20} />
               </ToolButton>
             </div>
-            <p className="text-center text-[11px] text-white/35">Pinch or drag the photo to frame it</p>
+            <p className="text-center text-[11px] text-white/35">{t("frameHint")}</p>
           </div>
         )}
 
         {/* Tab bar */}
         <div className="flex items-stretch justify-around border-t border-white/10 pt-2">
-          <TabButton active={tab === "filters"} onClick={() => setTab("filters")} icon={<Sparkles size={18} />} label="Filters" />
-          <TabButton active={tab === "adjust"} onClick={() => setTab("adjust")} icon={<SlidersHorizontal size={18} />} label="Adjust" />
-          <TabButton active={tab === "crop"} onClick={() => setTab("crop")} icon={<Crop size={18} />} label="Crop" />
+          <TabButton active={tab === "filters"} onClick={() => setTab("filters")} icon={<Sparkles size={18} />} label={t("tabs.filters")} />
+          <TabButton active={tab === "adjust"} onClick={() => setTab("adjust")} icon={<SlidersHorizontal size={18} />} label={t("tabs.adjust")} />
+          <TabButton active={tab === "crop"} onClick={() => setTab("crop")} icon={<Crop size={18} />} label={t("tabs.crop")} />
         </div>
       </div>
     </div>

@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import exifr from "exifr";
 import {
   X,
@@ -40,6 +41,7 @@ function makeShot(file: File): Shot {
 // ── Main capture flow ─────────────────────────────────────────────────────────
 
 export function CaptureFlow() {
+  const t = useTranslations("capture");
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -159,8 +161,9 @@ export function CaptureFlow() {
         videoRef.current.srcObject = stream;
       }
     } catch {
-      setCameraError("Camera unavailable — pick a photo from your gallery instead.");
+      setCameraError(t("camera.unavailable"));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -280,7 +283,7 @@ export function CaptureFlow() {
         const fd = new FormData();
         fd.append("file", shot.file);
         const upload = await fetch("/api/upload-url", { method: "POST", body: fd });
-        if (!upload.ok) throw new Error("Photo upload failed");
+        if (!upload.ok) throw new Error(t("details.errorUpload"));
         const { key, thumbKey } = await upload.json();
         photos.push({ photoKey: key, thumbKey });
         setUploadedCount(photos.length);
@@ -299,14 +302,14 @@ export function CaptureFlow() {
           longitude: location?.lng ?? null,
         }),
       });
-      if (!create.ok) throw new Error("Could not save the entry");
+      if (!create.ok) throw new Error(t("details.errorSave"));
 
       shots.forEach((shot) => URL.revokeObjectURL(shot.previewUrl));
       await deleteDraft(currentDraftId);
       router.push("/feed");
       router.refresh();
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Something went wrong");
+      setSubmitError(err instanceof Error ? err.message : t("details.errorGeneric"));
       setSubmitting(false);
     }
   }
@@ -325,7 +328,7 @@ export function CaptureFlow() {
           <button
             onClick={() => router.back()}
             className="p-2 -m-2 text-white/80 hover:text-white"
-            aria-label="Close"
+            aria-label={t("camera.close")}
           >
             <X size={24} />
           </button>
@@ -338,7 +341,7 @@ export function CaptureFlow() {
               className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-medium text-white/90 hover:bg-white/20"
             >
               <History size={15} />
-              {otherDraftCount} draft{otherDraftCount === 1 ? "" : "s"}
+              {t("camera.draftsChip", { count: otherDraftCount })}
             </button>
           )}
           <button
@@ -347,7 +350,7 @@ export function CaptureFlow() {
               setFacing(next);
             }}
             className="p-2 -m-2 text-white/80 hover:text-white"
-            aria-label="Flip camera"
+            aria-label={t("camera.flip")}
           >
             <RotateCcw size={22} />
           </button>
@@ -385,12 +388,12 @@ export function CaptureFlow() {
           <button
             onClick={() => setShowGallerySheet(true)}
             className="flex flex-col items-center gap-1.5 text-white/70 hover:text-white transition-colors"
-            aria-label="Choose from gallery"
+            aria-label={t("camera.chooseFromGallery")}
           >
             <div className="w-12 h-12 rounded-2xl border-2 border-white/30 flex items-center justify-center">
               <ImageIcon size={20} />
             </div>
-            <span className="text-xs">Gallery</span>
+            <span className="text-xs">{t("camera.gallery")}</span>
           </button>
 
           {/* Capture */}
@@ -398,7 +401,7 @@ export function CaptureFlow() {
             onClick={capturePhoto}
             disabled={!cameraReady || !!cameraError || slotsLeft <= 0}
             className="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center disabled:opacity-40 active:scale-95 transition-transform"
-            aria-label="Capture photo"
+            aria-label={t("camera.capture")}
           >
             <div className="w-14 h-14 rounded-full bg-white" />
           </button>
@@ -408,7 +411,7 @@ export function CaptureFlow() {
             <button
               onClick={() => setStep("details")}
               className="flex w-16 flex-col items-center gap-1.5 text-white/90 hover:text-white transition-colors"
-              aria-label={`Continue with ${shots.length} photo${shots.length === 1 ? "" : "s"}`}
+              aria-label={t("camera.continue", { count: shots.length })}
             >
               <div className="relative">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -422,7 +425,7 @@ export function CaptureFlow() {
                 </span>
               </div>
               <span className="flex items-center text-xs">
-                Next <ChevronRight size={12} />
+                {t("camera.next")} <ChevronRight size={12} />
               </span>
             </button>
           ) : (
@@ -445,7 +448,7 @@ export function CaptureFlow() {
             {/* Backdrop */}
             <button
               className="flex-1 bg-black/50"
-              aria-label="Dismiss"
+              aria-label={t("camera.dismiss")}
               onClick={() => setShowGallerySheet(false)}
             />
             <div
@@ -454,7 +457,7 @@ export function CaptureFlow() {
             >
               <div className="mx-auto my-2 h-1 w-10 rounded-full bg-white/20" />
               <p className="px-5 pb-2 pt-1 text-xs font-medium text-white/40 uppercase tracking-wide">
-                Add photos
+                {t("camera.addPhotos")}
               </p>
               <button
                 onClick={() => {
@@ -467,15 +470,15 @@ export function CaptureFlow() {
                   <ImageIcon size={20} className="text-white" />
                 </div>
                 <div className="text-left">
-                  <p className="text-sm font-medium">Photo Library</p>
-                  <p className="text-xs text-white/50">Choose from your photos</p>
+                  <p className="text-sm font-medium">{t("camera.photoLibrary")}</p>
+                  <p className="text-xs text-white/50">{t("camera.chooseFromPhotos")}</p>
                 </div>
               </button>
               <button
                 onClick={() => setShowGallerySheet(false)}
                 className="mx-4 mb-2 mt-2 w-[calc(100%-2rem)] rounded-xl bg-[#2c2c2e] py-4 text-sm font-semibold text-white active:bg-white/10 transition-colors"
               >
-                Cancel
+                {t("camera.cancel")}
               </button>
             </div>
           </div>
@@ -517,11 +520,11 @@ export function CaptureFlow() {
         <button
           onClick={() => setStep("camera")}
           className="p-1.5 -m-1.5 text-muted hover:text-foreground transition-colors"
-          aria-label="Back to camera"
+          aria-label={t("details.back")}
         >
           <ChevronLeft size={22} />
         </button>
-        <span className="font-semibold text-sm">New post</span>
+        <span className="font-semibold text-sm">{t("details.newPost")}</span>
         <button
           onClick={handlePost}
           disabled={shots.length === 0 || (!location && !geoDisabled) || submitting}
@@ -537,7 +540,7 @@ export function CaptureFlow() {
               )}
             </>
           ) : (
-            "Post"
+            t("details.post")
           )}
         </button>
       </div>
@@ -577,7 +580,7 @@ export function CaptureFlow() {
             onClick={() => setShowOptional((v) => !v)}
             className="text-sm text-muted hover:text-foreground transition-colors"
           >
-            {showOptional ? "Hide optional fields ↑" : "Add cat name & breed ↓"}
+            {showOptional ? t("details.hideOptional") : t("details.addOptional")}
           </button>
           {showOptional && (
             <div className="mt-3 space-y-2">
@@ -585,7 +588,7 @@ export function CaptureFlow() {
                 type="text"
                 value={catName}
                 onChange={(e) => setCatName(e.target.value)}
-                placeholder="Cat name (optional)"
+                placeholder={t("details.catNamePlaceholder")}
                 maxLength={120}
                 className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:ring-1 focus:ring-accent placeholder:text-muted"
               />
@@ -593,7 +596,7 @@ export function CaptureFlow() {
                 type="text"
                 value={breed}
                 onChange={(e) => setBreed(e.target.value)}
-                placeholder="Breed / color (optional)"
+                placeholder={t("details.breedPlaceholder")}
                 maxLength={120}
                 className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:ring-1 focus:ring-accent placeholder:text-muted"
               />
@@ -607,7 +610,7 @@ export function CaptureFlow() {
 
         {!location && !geoDisabled && !isLocating && (
           <p className="px-4 pt-2 text-xs text-muted">
-            Pick a location — search, use your position, or switch location off.
+            {t("details.locationHint")}
           </p>
         )}
 

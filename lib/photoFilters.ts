@@ -83,31 +83,30 @@ export function vignetteOverlayStyle(strength: number): string {
 
 // ── Adjustment slider metadata (drives the "Adjust" tab) ──────────────────────
 
+// `key` doubles as the translation key under `capture.editor.adjust.*`.
 export type AdjustmentKey = keyof Adjustments;
 
 export const ADJUSTMENT_CONTROLS: {
   key: AdjustmentKey;
-  label: string;
   min: number;
   max: number;
   step: number;
 }[] = [
-  { key: "brightness", label: "Brightness", min: -50, max: 50, step: 1 },
-  { key: "contrast", label: "Contrast", min: -50, max: 50, step: 1 },
-  { key: "saturation", label: "Saturation", min: -100, max: 100, step: 1 },
-  { key: "warmth", label: "Warmth", min: 0, max: 100, step: 1 },
-  { key: "hue", label: "Tint", min: -180, max: 180, step: 1 },
-  { key: "grayscale", label: "Mono", min: 0, max: 100, step: 1 },
-  { key: "blur", label: "Soften", min: 0, max: 8, step: 0.5 },
-  { key: "vignette", label: "Vignette", min: 0, max: 100, step: 1 },
+  { key: "brightness", min: -50, max: 50, step: 1 },
+  { key: "contrast", min: -50, max: 50, step: 1 },
+  { key: "saturation", min: -100, max: 100, step: 1 },
+  { key: "warmth", min: 0, max: 100, step: 1 },
+  { key: "hue", min: -180, max: 180, step: 1 },
+  { key: "grayscale", min: 0, max: 100, step: 1 },
+  { key: "blur", min: 0, max: 8, step: 0.5 },
+  { key: "vignette", min: 0, max: 100, step: 1 },
 ];
 
 // ── Mood presets ──────────────────────────────────────────────────────────────
 
+// `id` doubles as the translation key under `capture.editor.presets.<id>.{name,mood}`.
 export type FilterPreset = {
   id: string;
-  name: string;
-  mood: string;
   adjustments: Adjustments;
 };
 
@@ -116,64 +115,41 @@ function preset(over: Partial<Adjustments>): Adjustments {
 }
 
 export const FILTER_PRESETS: FilterPreset[] = [
-  {
-    id: "natural",
-    name: "Au Naturel",
-    mood: "Just as you saw them",
-    adjustments: NEUTRAL_ADJUSTMENTS,
-  },
+  { id: "natural", adjustments: NEUTRAL_ADJUSTMENTS },
   {
     id: "golden-hour",
-    name: "Golden Hour",
-    mood: "Warm low evening sun",
     adjustments: preset({ brightness: 8, contrast: 6, saturation: 18, warmth: 28, hue: -6, vignette: 12 }),
   },
   {
     id: "alley-noir",
-    name: "Alley Cat Noir",
-    mood: "Moody black & white",
     adjustments: preset({ brightness: -2, contrast: 28, grayscale: 100, vignette: 36 }),
   },
   {
     id: "sunlit-sill",
-    name: "Sunlit Windowsill",
-    mood: "Bright, soft, cosy",
     adjustments: preset({ brightness: 14, contrast: -6, saturation: 6, warmth: 18 }),
   },
   {
     id: "velvet-paw",
-    name: "Velvet Paw",
-    mood: "Deep, rich colour",
     adjustments: preset({ brightness: -2, contrast: 14, saturation: 26, warmth: 8, vignette: 18 }),
   },
   {
     id: "foggy-morning",
-    name: "Foggy Morning",
-    mood: "Cool, hazy, faded",
     adjustments: preset({ brightness: 6, contrast: -12, saturation: -30, hue: 8, blur: 0.6 }),
   },
   {
     id: "catnip-dream",
-    name: "Catnip Dream",
-    mood: "Punchy and surreal",
     adjustments: preset({ brightness: 4, contrast: 8, saturation: 42, hue: -18, vignette: 10 }),
   },
   {
     id: "vintage-tabby",
-    name: "Vintage Tabby",
-    mood: "Old photo-album sepia",
     adjustments: preset({ brightness: 2, contrast: -6, saturation: -10, warmth: 55, hue: -4, vignette: 30 }),
   },
   {
     id: "moonlit-prowl",
-    name: "Moonlit Prowl",
-    mood: "Cold midnight blue",
     adjustments: preset({ brightness: -8, contrast: 20, saturation: -10, hue: 170, vignette: 32 }),
   },
   {
     id: "cream-and-sugar",
-    name: "Cream & Sugar",
-    mood: "Pale, airy pastels",
     adjustments: preset({ brightness: 12, contrast: -4, saturation: -8, warmth: 14 }),
   },
 ];

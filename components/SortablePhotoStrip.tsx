@@ -18,6 +18,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useTranslations } from "next-intl";
 import { X, Plus, SlidersHorizontal, GripVertical } from "lucide-react";
 
 export type StripPhoto = { id: string; previewUrl: string };
@@ -41,6 +42,7 @@ export function SortablePhotoStrip({
   onEdit,
   onAddMore,
 }: Props) {
+  const t = useTranslations("capture.strip");
   const sensors = useSensors(
     // A small movement threshold lets taps on the per-photo buttons still
     // register as clicks instead of immediately starting a drag.
@@ -80,7 +82,7 @@ export function SortablePhotoStrip({
                 type="button"
                 onClick={onAddMore}
                 className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-border text-muted transition-colors hover:text-foreground"
-                aria-label="Add another photo"
+                aria-label={t("addPhoto")}
               >
                 <Plus size={22} />
                 <span className="text-[11px]">
@@ -92,7 +94,7 @@ export function SortablePhotoStrip({
         </SortableContext>
       </DndContext>
       {photos.length > 1 && !disabled && (
-        <p className="pt-2 text-[11px] text-muted">Drag to reorder · the first photo is the cover</p>
+        <p className="pt-2 text-[11px] text-muted">{t("reorderHint")}</p>
       )}
     </div>
   );
@@ -111,6 +113,7 @@ function SortableTile({
   onRemove: () => void;
   onEdit: () => void;
 }) {
+  const t = useTranslations("capture.strip");
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: photo.id,
     disabled,
@@ -135,12 +138,12 @@ function SortableTile({
         {...attributes}
         {...listeners}
         className="h-full w-full overflow-hidden rounded-xl"
-        aria-label={`Photo ${index + 1}, drag to reorder`}
+        aria-label={t("dragHandle", { n: index + 1 })}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={photo.previewUrl}
-          alt={`Photo ${index + 1}`}
+          alt={t("photoAlt", { n: index + 1 })}
           draggable={false}
           className="h-full w-full object-cover"
         />
@@ -148,7 +151,7 @@ function SortableTile({
 
       {index === 0 && (
         <span className="pointer-events-none absolute left-1.5 top-1.5 rounded bg-black/60 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white">
-          Cover
+          {t("cover")}
         </span>
       )}
 
@@ -158,7 +161,7 @@ function SortableTile({
             type="button"
             onClick={onRemove}
             className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-background shadow-sm"
-            aria-label={`Remove photo ${index + 1}`}
+            aria-label={t("removePhoto", { n: index + 1 })}
           >
             <X size={13} />
           </button>
@@ -168,10 +171,10 @@ function SortableTile({
               type="button"
               onClick={onEdit}
               className="flex items-center gap-1 rounded-full bg-black/60 px-2 py-1 text-[11px] font-medium text-white"
-              aria-label={`Edit photo ${index + 1}`}
+              aria-label={t("editPhoto", { n: index + 1 })}
             >
               <SlidersHorizontal size={12} />
-              Edit
+              {t("edit")}
             </button>
             <span className="pointer-events-none flex h-6 w-6 items-center justify-center rounded-full bg-black/40 text-white/80">
               <GripVertical size={14} />
