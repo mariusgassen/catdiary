@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { Trash2, FileClock } from "lucide-react";
 import type { CaptureDraftMeta } from "@/lib/captureDrafts";
@@ -32,18 +32,20 @@ export function DraftsSheet({ drafts, onResume, onDelete, onClose }: Props) {
   const t = useTranslations("capture.drafts");
   const relativeTime = useRelativeTime();
 
-  // Build object URLs for the cover thumbnails and revoke them on unmount.
-  const covers = useMemo(() => {
+  // Build object URLs for the cover thumbnails. Creation and revocation must
+  // live in the same effect run: doing the work in useMemo and revoking in a
+  // cleanup breaks under React StrictMode's mount→cleanup→mount cycle, which
+  // revokes URLs the memo still references and leaves the thumbnails broken.
+  const [covers, setCovers] = useState<Map<string, string>>(new Map());
+  useEffect(() => {
     const map = new Map<string, string>();
     for (const d of drafts) {
       if (d.coverBlob) map.set(d.id, URL.createObjectURL(d.coverBlob));
     }
-    return map;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- URLs must be created and revoked within one effect run (see comment above)
+    setCovers(map);
+    return () => map.forEach((url) => URL.revokeObjectURL(url));
   }, [drafts]);
-
-  useEffect(() => {
-    return () => covers.forEach((url) => URL.revokeObjectURL(url));
-  }, [covers]);
 
   return (
     <div className="absolute inset-0 z-30 flex flex-col justify-end">

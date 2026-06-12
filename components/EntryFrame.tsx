@@ -69,12 +69,15 @@ export function EntryFrame({
 
   // ── Shared photo film ──────────────────────────────────────────────────────
   const film: ReactNode = preview ? (
-    <div className="aspect-square w-full overflow-hidden bg-accent-soft">
+    // The img is absolutely pinned to the aspect-square box rather than sized
+    // with h-full: iOS Safari otherwise lets a replaced child keep its intrinsic
+    // (portrait) height and stretches the frame vertically.
+    <div className="relative aspect-square w-full overflow-hidden bg-accent-soft">
       {photoUrls[0] ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={photoUrls[0]} alt="" className="h-full w-full object-cover" />
+        <img src={photoUrls[0]} alt="" className="absolute inset-0 h-full w-full object-cover" />
       ) : (
-        <div className="flex h-full w-full select-none items-center justify-center text-3xl">🐱</div>
+        <div className="absolute inset-0 flex select-none items-center justify-center text-3xl">🐱</div>
       )}
     </div>
   ) : photoUrls.length > 0 ? (
