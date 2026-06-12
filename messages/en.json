@@ -78,86 +78,47 @@
   "capture": {
     "camera": {
       "close": "Close",
-      "draftsChip": "{count, plural, one {# draft} other {# drafts}}",
       "flip": "Flip camera",
-      "unavailable": "Camera unavailable — check permissions or pick from your gallery.",
-      "chooseFromGallery": "Choose from gallery",
+      "draftsChip": "{count, plural, one {# draft} other {# drafts}}",
+      "unavailable": "Camera unavailable — pick a photo from your gallery instead.",
       "gallery": "Gallery",
-      "capture": "Take photo",
+      "capture": "Capture photo",
       "continue": "Continue with {count, plural, one {# photo} other {# photos}}",
       "next": "Next",
-      "dismiss": "Dismiss",
       "addPhotos": "Add photos",
       "photoLibrary": "Photo Library",
       "chooseFromPhotos": "Choose from your photos",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "chooseFromGallery": "Choose from gallery",
+      "dismiss": "Dismiss"
     },
     "details": {
-      "back": "Back",
-      "newPost": "New entry",
+      "back": "Back to camera",
+      "newPost": "New post",
       "post": "Post",
-      "addOptional": "Add more details",
-      "hideOptional": "Hide extra details",
-      "catNamePlaceholder": "Cat's name (optional)",
-      "breedPlaceholder": "Breed (optional)",
-      "locationHint": "Add a place or switch off geo data to post.",
-      "errorUpload": "Could not upload photo.",
-      "errorSave": "Could not save entry.",
-      "errorGeneric": "Something went wrong. Please try again."
-    },
-    "editor": {
-      "cancel": "Cancel",
-      "reset": "Reset",
-      "done": "Done",
-      "loading": "Loading…",
-      "zoom": "Zoom",
-      "rotateLeft": "Rotate left",
-      "rotateRight": "Rotate right",
-      "flipH": "Flip horizontally",
-      "flipV": "Flip vertically",
-      "frameHint": "Drag to reposition, pinch to zoom",
-      "tabs": {
-        "filters": "Filters",
-        "adjust": "Adjust",
-        "crop": "Crop"
-      },
-      "presets": {
-        "natural": { "name": "Natural", "mood": "As you saw it" },
-        "golden-hour": { "name": "Golden Hour", "mood": "Warm afternoon glow" },
-        "alley-noir": { "name": "Alley Noir", "mood": "Moody black & white" },
-        "sunlit-sill": { "name": "Sunlit Sill", "mood": "Soft and airy" },
-        "velvet-paw": { "name": "Velvet Paw", "mood": "Rich and deep" },
-        "foggy-morning": { "name": "Foggy Morning", "mood": "Hazy and muted" },
-        "catnip-dream": { "name": "Catnip Dream", "mood": "Punchy and surreal" },
-        "vintage-tabby": { "name": "Vintage Tabby", "mood": "Faded and warm" },
-        "moonlit-prowl": { "name": "Moonlit Prowl", "mood": "Cool and nocturnal" },
-        "cream-and-sugar": { "name": "Cream & Sugar", "mood": "Bright and gentle" }
-      },
-      "adjust": {
-        "brightness": "Brightness",
-        "contrast": "Contrast",
-        "saturation": "Saturation",
-        "warmth": "Warmth",
-        "hue": "Hue",
-        "grayscale": "Grayscale",
-        "blur": "Blur",
-        "vignette": "Vignette"
-      }
+      "addOptional": "Add cat name & breed ↓",
+      "hideOptional": "Hide optional fields ↑",
+      "catNamePlaceholder": "Cat name (optional)",
+      "breedPlaceholder": "Breed / color (optional)",
+      "locationHint": "Pick a location — search, use your position, or switch location off.",
+      "errorUpload": "Photo upload failed",
+      "errorSave": "Could not save the entry",
+      "errorGeneric": "Something went wrong"
     },
     "strip": {
-      "addPhoto": "Add photo",
-      "reorderHint": "Drag to reorder — the first photo is the cover.",
-      "dragHandle": "Move photo {n}",
-      "photoAlt": "Photo {n}",
       "cover": "Cover",
+      "addPhoto": "Add another photo",
       "removePhoto": "Remove photo {n}",
+      "dragHandle": "Photo {n}, drag to reorder",
+      "edit": "Edit",
       "editPhoto": "Edit photo {n}",
-      "edit": "Edit"
+      "photoAlt": "Photo {n}",
+      "reorderHint": "Drag to reorder · the first photo is the cover"
     },
     "drafts": {
-      "title": "Drafts",
-      "empty": "No saved drafts.",
-      "untitled": "Untitled draft",
+      "title": "Saved drafts",
+      "empty": "No saved drafts yet.",
+      "untitled": "Untitled post",
       "photoCount": "{count, plural, one {# photo} other {# photos}}",
       "delete": "Delete draft",
       "close": "Close",
@@ -165,6 +126,75 @@
       "minutesAgo": "{count}m ago",
       "hoursAgo": "{count}h ago",
       "daysAgo": "{count}d ago"
+    },
+    "editor": {
+      "cancel": "Cancel",
+      "reset": "Reset",
+      "done": "Done",
+      "loading": "Loading photo",
+      "frameHint": "Pinch or drag the photo to frame it",
+      "zoom": "Zoom",
+      "rotateLeft": "Rotate left",
+      "rotateRight": "Rotate right",
+      "flipH": "Flip horizontal",
+      "flipV": "Flip vertical",
+      "tabs": {
+        "filters": "Filters",
+        "adjust": "Adjust",
+        "crop": "Crop"
+      },
+      "adjust": {
+        "brightness": "Brightness",
+        "contrast": "Contrast",
+        "saturation": "Saturation",
+        "warmth": "Warmth",
+        "hue": "Tint",
+        "grayscale": "Mono",
+        "blur": "Soften",
+        "vignette": "Vignette"
+      },
+      "presets": {
+        "natural": {
+          "name": "Au Naturel",
+          "mood": "Just as you saw them"
+        },
+        "golden-hour": {
+          "name": "Golden Hour",
+          "mood": "Warm low evening sun"
+        },
+        "alley-noir": {
+          "name": "Alley Cat Noir",
+          "mood": "Moody black & white"
+        },
+        "sunlit-sill": {
+          "name": "Sunlit Windowsill",
+          "mood": "Bright, soft, cosy"
+        },
+        "velvet-paw": {
+          "name": "Velvet Paw",
+          "mood": "Deep, rich colour"
+        },
+        "foggy-morning": {
+          "name": "Foggy Morning",
+          "mood": "Cool, hazy, faded"
+        },
+        "catnip-dream": {
+          "name": "Catnip Dream",
+          "mood": "Punchy and surreal"
+        },
+        "vintage-tabby": {
+          "name": "Vintage Tabby",
+          "mood": "Old photo-album sepia"
+        },
+        "moonlit-prowl": {
+          "name": "Moonlit Prowl",
+          "mood": "Cold midnight blue"
+        },
+        "cream-and-sugar": {
+          "name": "Cream & Sugar",
+          "mood": "Pale, airy pastels"
+        }
+      }
     }
   },
   "captionInput": {
