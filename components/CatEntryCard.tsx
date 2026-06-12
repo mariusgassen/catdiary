@@ -6,7 +6,8 @@ import { useRef, useState } from "react";
 import { PawPrint, MessageSquareText, Share2, MapPin, SquarePen, Check } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import { HashtagCaption } from "@/components/HashtagCaption";
-import { DevelopingPhoto } from "@/components/DevelopingPhoto";
+import { EntryFrame } from "@/components/EntryFrame";
+import { asFrameStyle } from "@/lib/frames";
 import { displayNameFor } from "@/lib/userDisplay";
 import { possessiveDiaryEn, possessiveDiaryDe } from "@/lib/possessiveDiary";
 
@@ -20,6 +21,7 @@ type CatEntryCardProps = {
     latitude: number | null;
     longitude: number | null;
     createdAt: string | Date;
+    frameStyle?: string | null; // journal artifact the photos are framed as
     photoUrls?: string[]; // in position order; first photo is the cover
     owner: {
       id: string;
@@ -36,15 +38,6 @@ type CatEntryCardProps = {
       is already the full view, so self-navigation is disabled. */
   linkToDetail?: boolean;
 };
-
-/* Each photo sits slightly crooked, like it was glued in by hand.
-   Derive the tilt from the entry id so it's stable across renders. */
-function tiltFor(id: string): string {
-  const tilts = ["-rotate-1", "rotate-1", "-rotate-[1.5deg]", "rotate-[0.75deg]"];
-  let hash = 0;
-  for (const ch of id) hash = (hash * 31 + ch.charCodeAt(0)) | 0;
-  return tilts[Math.abs(hash) % tilts.length];
-}
 
 function Avatar({ user }: { user: { displayName: string | null; username?: string | null; avatarKey?: string | null; image?: string | null } }) {
   const name = displayNameFor(user);
@@ -73,8 +66,6 @@ export function CatEntryCard({ entry, viewerId, linkToDetail = true }: CatEntryC
   const commentCount = entry._count?.comments ?? 0;
 
   const photoUrls = entry.photoUrls ?? [];
-  const [photoIndex, setPhotoIndex] = useState(0);
-  const filmRef = useRef<HTMLDivElement>(null);
   // Single tap on the photo opens the entry; a double tap leaves a paw instead.
   // Delay the open just long enough to tell the two gestures apart.
   const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -83,12 +74,6 @@ export function CatEntryCard({ entry, viewerId, linkToDetail = true }: CatEntryC
     locale === "de"
       ? possessiveDiaryDe(displayNameFor(entry.owner))
       : possessiveDiaryEn(displayNameFor(entry.owner));
-
-  function handleFilmScroll() {
-    const el = filmRef.current;
-    if (!el) return;
-    setPhotoIndex(Math.round(el.scrollLeft / el.clientWidth));
-  }
 
   function handlePhotoClick() {
     if (!linkToDetail) return;
@@ -176,72 +161,23 @@ export function CatEntryCard({ entry, viewerId, linkToDetail = true }: CatEntryC
         </div>
       </div>
 
-      {/* Taped-in polaroid — with multiple photos it becomes a little stack
-          you can flip through, like prints glued on top of each other. */}
-      <figure className={`relative mx-auto mb-3 mt-2 w-[88%] ${tiltFor(entry.id)}`}>
-        {photoUrls.length > 1 && (
-          <span
-            className="absolute inset-0 translate-x-1.5 translate-y-1 rotate-1 bg-white shadow-sm dark:bg-[#e4dccb]"
-            aria-hidden
-          />
-        )}
-        <div className="relative bg-white p-2 pb-2.5 shadow-md dark:bg-[#efe8da]">
-          <span className="tape-strip" aria-hidden />
-          {photoUrls.length > 0 ? (
-            <div
-              ref={filmRef}
-              onScroll={handleFilmScroll}
-              className="flex aspect-square w-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            >
-              {photoUrls.map((url, i) => (
-                <DevelopingPhoto
-                  key={url}
-                  src={url}
-                  alt={entry.name
-                    ? t("photoAlt", { name: entry.name, n: i + 1 })
-                    : t("aCatPhotoAlt", { n: i + 1 })}
-                  loading={i === 0 ? "eager" : "lazy"}
-                  frameClassName={`h-full w-full shrink-0 snap-center ${linkToDetail ? "cursor-pointer" : ""}`}
-                  imgClassName="h-full w-full object-cover"
-                  onClick={handlePhotoClick}
-                  onDoubleClick={handlePhotoDoubleClick}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="flex aspect-square w-full select-none items-center justify-center bg-accent-soft text-6xl">
-              🐱
-            </div>
-          )}
-          {photoUrls.length > 1 && (
-            <span className="absolute right-3 top-3 rounded-md bg-black/45 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-white backdrop-blur-sm">
-              {photoIndex + 1}/{photoUrls.length}
-            </span>
-          )}
-          <figcaption className="pt-1.5 text-center text-sm font-medium leading-none text-[#3a3128]">
-            {linkToDetail ? (
-              <Link href={`/cat-entries/${entry.id}`} className="hover:underline">
-                {entry.name ?? t("aCatIMet")}
-              </Link>
-            ) : (
-              <span>{entry.name ?? t("aCatIMet")}</span>
-            )}
-            {entry.breed && <span className="font-normal text-[#8a7d6b]"> · {entry.breed}</span>}
-          </figcaption>
-          {photoUrls.length > 1 && (
-            <div className="flex items-center justify-center gap-1 pt-1.5" aria-hidden>
-              {photoUrls.map((url, i) => (
-                <span
-                  key={url}
-                  className={`h-1.5 w-1.5 rounded-full transition-colors ${
-                    i === photoIndex ? "bg-accent" : "bg-[#d8cfbe] dark:bg-[#bdb39e]"
-                  }`}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </figure>
+      {/* The photos as a chosen journal artifact — taped polaroid by default,
+          or a specimen card / index card / postcard / ticket stub. With more
+          than one photo it becomes a little stack you can flip through. */}
+      <div className="mb-3 mt-2">
+        <EntryFrame
+          frameStyle={asFrameStyle(entry.frameStyle)}
+          photoUrls={photoUrls}
+          name={entry.name}
+          breed={entry.breed}
+          locationName={entry.locationName}
+          date={date}
+          entryId={entry.id}
+          captionHref={linkToDetail ? `/cat-entries/${entry.id}` : undefined}
+          onPhotoClick={handlePhotoClick}
+          onPhotoDoubleClick={handlePhotoDoubleClick}
+        />
+      </div>
 
       {/* Diary text */}
       {entry.notes && (

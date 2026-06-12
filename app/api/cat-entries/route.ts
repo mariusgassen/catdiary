@@ -9,6 +9,7 @@ import {
 } from "@/lib/catEntries";
 import { requireUserId, UnauthorizedError } from "@/lib/auth-helpers";
 import { getObject } from "@/lib/storage";
+import { FRAME_STYLES } from "@/lib/frames";
 
 async function embedInBackground(entryId: string, photoKey: string) {
   try {
@@ -36,6 +37,7 @@ const createSchema = z
     name: z.string().max(120).optional(),
     breed: z.string().max(120).optional(),
     notes: z.string().max(2000).optional(),
+    frameStyle: z.enum(FRAME_STYLES).optional(),
     locationName: z.string().max(200).nullish(),
     // Both null/absent when the user disabled geo data for this entry.
     latitude: z.number().min(-90).max(90).nullish(),

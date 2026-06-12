@@ -73,17 +73,29 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+// The journal artifact an entry's photos are presented as. Purely a render
+// choice (the polaroid stack, a pressed-specimen card, an index card, …) —
+// it never gates documenting, so it always has a sensible default.
+enum FrameStyle {
+  POLAROID
+  SPECIMEN
+  INDEX_CARD
+  POSTCARD
+  TICKET
+}
+
 model CatEntry {
-  id           String   @id @default(cuid())
+  id           String     @id @default(cuid())
   ownerId      String
-  owner        User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  owner        User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   name         String?
   breed        String?
   notes        String?
   locationName String? // human-readable place name shown in the UI
   latitude     Float? // null when the user disabled geo data for this entry
   longitude    Float?
-  createdAt    DateTime @default(now())
+  frameStyle   FrameStyle @default(POLAROID)
+  createdAt    DateTime   @default(now())
 
   embedding Unsupported("vector(512)")?
 

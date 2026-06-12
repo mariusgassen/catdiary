@@ -285,7 +285,21 @@
     "copied": "Kopiert",
     "editEntry": "Eintrag bearbeiten",
     "photoAlt": "{name} — Foto {n}",
-    "aCatPhotoAlt": "Eine Katze — Foto {n}"
+    "aCatPhotoAlt": "Eine Katze — Foto {n}",
+    "chooseFrame": "Rahmen",
+    "frames": {
+      "name": {
+        "POLAROID": "Polaroid",
+        "SPECIMEN": "Herbarkarte",
+        "INDEX_CARD": "Karteikarte",
+        "POSTCARD": "Postkarte",
+        "TICKET": "Eintrittskarte"
+      },
+      "callNo": "Signatur",
+      "admitOne": "Eintritt",
+      "greetingsFrom": "Grüße aus {place}",
+      "greetings": "Grüße!"
+    }
   },
   "comments": {
     "heading": "Randnotizen",

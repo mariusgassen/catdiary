@@ -10,12 +10,14 @@ import {
   updateCatEntry,
 } from "@/lib/catEntries";
 import { deleteObject } from "@/lib/storage";
+import { FRAME_STYLES } from "@/lib/frames";
 
 const updateSchema = z
   .object({
     name: z.string().max(120).nullable().optional(),
     breed: z.string().max(120).nullable().optional(),
     notes: z.string().max(2000).nullable().optional(),
+    frameStyle: z.enum(FRAME_STYLES).optional(),
     locationName: z.string().max(200).nullable().optional(),
     latitude: z.number().min(-90).max(90).nullable().optional(),
     longitude: z.number().min(-180).max(180).nullable().optional(),

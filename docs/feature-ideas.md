@@ -34,20 +34,25 @@ Whenever an idea below could be built two ways, we pick the journal way.
 
 ## Reactions to the input ideas
 
-### ✅ Custom frames (beyond polaroid) — **do it, it's perfectly on-brand**
+### ✅ Custom frames (beyond polaroid) — **SHIPPED**
 The polaroid is a *journal artifact*, not a filter. More artifacts deepen the
-notebook feel without becoming "filters for clout":
-- **Pressed-specimen card** — like a botanical pressing, cat on aged card stock
-  with a handwritten species/breed label.
-- **Index card / library catalog card** — monospace, ruled, with a call number.
-- **Instant-film variants** — square SX-70, wide, faded vintage.
-- **Postcard** — "Greetings from \<place name\>", reusing `locationName`.
-- **Ticket stub / luggage tag** — date + place punched in.
-- Frame choice is a *per-entry* presentation, stored on the entry; no frame is
-  "premium-only" in a way that gates documenting. (See monetization for the
-  honest way to charge.)
-- Implementation: a `frameStyle` enum on `CatEntry`; the polaroid stack
-  component already exists, so this is a render-layer change.
+notebook feel without becoming "filters for clout". Shipped as a `frameStyle`
+enum on `CatEntry` with five styles, rendered by `components/EntryFrame.tsx`
+(shared across feed/detail) and chosen via `FramePicker` in capture + edit:
+- ✅ **Polaroid** — the default taped-in print.
+- ✅ **Pressed-specimen card** — cat mounted on aged card stock with photo
+  corners and an italic species/breed label.
+- ✅ **Index card / library catalog card** — monospace, with a 636.8 Dewey
+  "call number" derived from the entry id.
+- ✅ **Postcard** — "Greetings from \<place name\>" banner, reusing
+  `locationName`, with a postage stamp + postmark.
+- ✅ **Ticket stub** — "Admit one" header, perforated tear line, date + place.
+- Frame choice is a *per-entry* presentation stored on the entry; no frame is
+  "premium-only" in a way that gates documenting (defaults to Polaroid). (See
+  monetization for the honest way to charge — e.g. premium frames later.)
+- Still open: **instant-film variants** (square SX-70, wide, faded vintage) and
+  **luggage tag** could join as further styles; the render layer is now in
+  place, so each is just another `case` in `EntryFrame` + an enum value.
 
 ### ✅ Short videos on entries — **yes, but framed as "field footage," capped**
 A 3–10s clip of a cat doing a cat thing is exactly what a field observer would
@@ -211,8 +216,8 @@ Naming these protects the identity better than any feature list:
 
 ## Suggested sequencing
 
-1. **Custom frames** + **different reactions** — pure render-layer, on-brand,
-   cheap, immediately deepen the journal feel.
+1. ~~**Custom frames**~~ (✅ shipped) + **different reactions** — pure
+   render-layer, on-brand, cheap, immediately deepen the journal feel.
 2. **Photo calendar / "year in cats" export** — high delight, reuses existing
    date logic, opens the honest monetization door.
 3. **The `Cat` entity** ("own" cats) — the structural unlock for metadata,
