@@ -5,9 +5,12 @@ import { useRouter } from "next/navigation";
 import { useState, useRef, useEffect, type FormEvent } from "react";
 import { signOut, useSession } from "next-auth/react";
 import { Camera, ChevronLeft, Loader2, LogOut, Bell, BellOff, Trash2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { InviteFriends } from "@/components/InviteFriends";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { displayNameFor } from "@/lib/userDisplay";
+import { setLocale } from "@/lib/locale";
+import { LOCALES, type Locale } from "@/i18n/request";
 
 type SettingsUser = {
   id: string;
@@ -22,11 +25,7 @@ type SettingsUser = {
   notifyComments: boolean;
   notifyFollows: boolean;
   notifyMentions: boolean;
-};
-
-const PROFILE_ERRORS: Record<string, string> = {
-  USERNAME_TAKEN: "That username is taken.",
-  INVALID_USERNAME: "Usernames are 3-30 lowercase letters, numbers, dots or underscores.",
+  locale: string | null;
 };
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -39,6 +38,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 export function SettingsView({ user }: { user: SettingsUser }) {
+  const t = useTranslations("settings");
   const router = useRouter();
   const { update: updateSession } = useSession();
   const [displayName, setDisplayName] = useState(user.displayName ?? "");
@@ -54,6 +54,7 @@ export function SettingsView({ user }: { user: SettingsUser }) {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [changingLocale, setChangingLocale] = useState(false);
 
   // Notification prefs
   const [notifyLikes, setNotifyLikes] = useState(user.notifyLikes);
@@ -101,7 +102,7 @@ export function SettingsView({ user }: { user: SettingsUser }) {
       formData.append("file", file);
       const res = await fetch("/api/avatar", { method: "POST", body: formData });
       if (!res.ok) {
-        setAvatarError("Could not upload photo.");
+        setAvatarError(t("profile.errors.couldNotUpload"));
         return;
       }
       const { avatarKey: newKey } = await res.json() as { avatarKey: string };
@@ -109,7 +110,7 @@ export function SettingsView({ user }: { user: SettingsUser }) {
       await updateSession({ avatarKey: newKey });
       router.refresh();
     } catch {
-      setAvatarError("Could not upload photo.");
+      setAvatarError(t("profile.errors.couldNotUpload"));
     } finally {
       setAvatarUploading(false);
       if (avatarInputRef.current) avatarInputRef.current.value = "";
@@ -122,14 +123,14 @@ export function SettingsView({ user }: { user: SettingsUser }) {
     try {
       const res = await fetch("/api/avatar", { method: "DELETE" });
       if (!res.ok) {
-        setAvatarError("Could not remove photo.");
+        setAvatarError(t("profile.errors.couldNotRemove"));
         return;
       }
       setAvatarKey(null);
       await updateSession({ avatarKey: null });
       router.refresh();
     } catch {
-      setAvatarError("Could not remove photo.");
+      setAvatarError(t("profile.errors.couldNotRemove"));
     } finally {
       setAvatarUploading(false);
     }
@@ -154,13 +155,18 @@ export function SettingsView({ user }: { user: SettingsUser }) {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
-        setError(PROFILE_ERRORS[data?.error as string] ?? "Could not save your profile.");
+        const errorKey = data?.error as string | undefined;
+        const errorMap: Record<string, string> = {
+          USERNAME_TAKEN: t("profile.errors.usernameTaken"),
+          INVALID_USERNAME: t("profile.errors.invalidUsername"),
+        };
+        setError(errorMap[errorKey ?? ""] ?? t("profile.errors.couldNotSave"));
         return;
       }
       setProfileSaved(true);
       router.refresh();
     } catch {
-      setError("Could not save your profile.");
+      setError(t("profile.errors.couldNotSave"));
     } finally {
       setSavingProfile(false);
     }
@@ -177,7 +183,7 @@ export function SettingsView({ user }: { user: SettingsUser }) {
     });
     if (!res.ok) {
       setIsPrivate(!next);
-      setError("Could not update your privacy setting.");
+      setError(t("profile.errors.couldNotUpdatePrivacy"));
     } else {
       router.refresh();
     }
@@ -203,12 +209,12 @@ export function SettingsView({ user }: { user: SettingsUser }) {
     try {
       const res = await fetch("/api/me", { method: "DELETE" });
       if (!res.ok) {
-        setError("Could not delete your account.");
+        setError(t("dangerZone.couldNotDelete"));
         return;
       }
       await signOut({ callbackUrl: "/" });
     } catch {
-      setError("Could not delete your account.");
+      setError(t("dangerZone.couldNotDelete"));
     } finally {
       setDeletingAccount(false);
     }
@@ -252,6 +258,26 @@ export function SettingsView({ user }: { user: SettingsUser }) {
     }
   }
 
+  async function handleLocaleChange(locale: Locale) {
+    setChangingLocale(true);
+    try {
+      await setLocale(locale);
+      await fetch("/api/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ locale }),
+      });
+      router.refresh();
+    } finally {
+      setChangingLocale(false);
+    }
+  }
+
+  const LOCALE_LABELS: Record<Locale, string> = {
+    en: t("language.en"),
+    de: t("language.de"),
+  };
+
   return (
     <div className="flex flex-col gap-4">
       {/* Header */}
@@ -259,14 +285,14 @@ export function SettingsView({ user }: { user: SettingsUser }) {
         <Link
           href={`/profile/${user.id}`}
           className="p-1.5 -m-1.5 text-muted hover:text-foreground transition-colors"
-          aria-label="Back to my diary"
+          aria-label={t("backToDiary")}
         >
           <ChevronLeft size={22} />
         </Link>
-        <h1 className="text-xl font-bold tracking-tight">Settings</h1>
+        <h1 className="text-xl font-bold tracking-tight">{t("title")}</h1>
       </header>
 
-      <Section title="Profile">
+      <Section title={t("sections.profile")}>
         {/* Avatar upload */}
         <div className="flex items-center gap-3 pb-4">
           <div className="relative">
@@ -275,7 +301,7 @@ export function SettingsView({ user }: { user: SettingsUser }) {
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={avatarSrc}
-                  alt="Your avatar"
+                  alt={t("profile.photo")}
                   className="w-16 h-16 rounded-full object-cover ring-2 ring-border"
                 />
               ) : (
@@ -298,15 +324,15 @@ export function SettingsView({ user }: { user: SettingsUser }) {
             />
           </div>
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="text-sm font-medium">Profile photo</span>
+            <span className="text-sm font-medium">{t("profile.photo")}</span>
             {avatarUploading ? (
               <span className="flex items-center gap-1 text-xs text-muted">
-                <Loader2 size={11} className="animate-spin" /> Uploading…
+                <Loader2 size={11} className="animate-spin" /> {t("profile.uploading")}
               </span>
             ) : avatarError ? (
               <span className="text-xs text-red-500">{avatarError}</span>
             ) : (
-              <span className="text-xs text-muted">Tap to change</span>
+              <span className="text-xs text-muted">{t("profile.tapToChange")}</span>
             )}
           </div>
           {avatarKey && !avatarUploading && (
@@ -315,13 +341,13 @@ export function SettingsView({ user }: { user: SettingsUser }) {
               onClick={removeAvatar}
               className="shrink-0 text-xs text-muted transition-colors hover:text-red-500"
             >
-              Remove
+              {t("profile.remove")}
             </button>
           )}
         </div>
         <form onSubmit={saveProfile} className="flex flex-col gap-3">
           <label className="flex flex-col gap-1 text-sm">
-            <span className="text-xs font-medium text-muted">Username</span>
+            <span className="text-xs font-medium text-muted">{t("profile.username")}</span>
             <div className="flex items-center rounded-xl border border-border bg-background focus-within:ring-1 focus-within:ring-accent">
               <span className="pl-3 text-sm text-muted select-none">@</span>
               <input
@@ -336,28 +362,26 @@ export function SettingsView({ user }: { user: SettingsUser }) {
                 className="min-w-0 flex-1 bg-transparent py-2.5 pl-0.5 pr-3 text-sm outline-none"
               />
             </div>
-            <span className="text-xs text-muted">
-              Your handle — used to sign in and shown when you have no display name.
-            </span>
+            <span className="text-xs text-muted">{t("profile.usernameHint")}</span>
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="text-xs font-medium text-muted">Display name</span>
+            <span className="text-xs font-medium text-muted">{t("profile.displayName")}</span>
             <input
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               maxLength={80}
-              placeholder={username ? `@${username}` : "How you appear to others"}
+              placeholder={username ? `@${username}` : t("profile.displayNamePlaceholder")}
               className="rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none placeholder:text-muted focus:ring-1 focus:ring-accent"
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="text-xs font-medium text-muted">Bio</span>
+            <span className="text-xs font-medium text-muted">{t("profile.bio")}</span>
             <textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               rows={2}
               maxLength={500}
-              placeholder="A line about you and the cats you meet…"
+              placeholder={t("profile.bioPlaceholder")}
               className="rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none placeholder:text-muted focus:ring-1 focus:ring-accent"
             />
           </label>
@@ -367,14 +391,14 @@ export function SettingsView({ user }: { user: SettingsUser }) {
               disabled={savingProfile}
               className="self-start rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-accent/30 transition-transform active:scale-[0.98] disabled:opacity-50"
             >
-              {savingProfile ? <Loader2 size={16} className="animate-spin" /> : "Save"}
+              {savingProfile ? <Loader2 size={16} className="animate-spin" /> : t("profile.save")}
             </button>
-            {profileSaved && <span className="text-xs text-muted">Saved</span>}
+            {profileSaved && <span className="text-xs text-muted">{t("profile.saved")}</span>}
           </div>
         </form>
       </Section>
 
-      <Section title="Privacy">
+      <Section title={t("sections.privacy")}>
         <button
           onClick={togglePrivate}
           role="switch"
@@ -382,10 +406,8 @@ export function SettingsView({ user }: { user: SettingsUser }) {
           className="flex w-full items-center justify-between gap-3 text-left"
         >
           <span className="min-w-0">
-            <span className="block text-sm font-medium">Private diary</span>
-            <span className="block text-xs text-muted">
-              Only approved readers can see your entries.
-            </span>
+            <span className="block text-sm font-medium">{t("privacy.label")}</span>
+            <span className="block text-xs text-muted">{t("privacy.description")}</span>
           </span>
           <span
             aria-hidden
@@ -402,20 +424,20 @@ export function SettingsView({ user }: { user: SettingsUser }) {
         </button>
       </Section>
 
-      <Section title="Invite friends">
+      <Section title={t("sections.inviteFriends")}>
         <InviteFriends />
       </Section>
 
-      <Section title="Notifications">
+      <Section title={t("sections.notifications")}>
         <div className="flex flex-col gap-3">
           {(
             [
-              { key: "notifyLikes", label: "Paws (likes)", desc: "When someone paws your entry", value: notifyLikes, setter: setNotifyLikes },
-              { key: "notifyComments", label: "Notes & replies", desc: "When someone comments or replies", value: notifyComments, setter: setNotifyComments },
-              { key: "notifyFollows", label: "New readers", desc: "When someone starts following you", value: notifyFollows, setter: setNotifyFollows },
-              { key: "notifyMentions", label: "Mentions", desc: "When someone @mentions you", value: notifyMentions, setter: setNotifyMentions },
+              { key: "notifyLikes", labelKey: "notifications.paws", descKey: "notifications.pawsDesc", value: notifyLikes, setter: setNotifyLikes },
+              { key: "notifyComments", labelKey: "notifications.notesReplies", descKey: "notifications.notesRepliesDesc", value: notifyComments, setter: setNotifyComments },
+              { key: "notifyFollows", labelKey: "notifications.newReaders", descKey: "notifications.newReadersDesc", value: notifyFollows, setter: setNotifyFollows },
+              { key: "notifyMentions", labelKey: "notifications.mentions", descKey: "notifications.mentionsDesc", value: notifyMentions, setter: setNotifyMentions },
             ] as const
-          ).map(({ key, label, desc, value, setter }) => (
+          ).map(({ key, labelKey, descKey, value, setter }) => (
             <button
               key={key}
               onClick={() => void toggleNotifPref(key, value, setter as (v: boolean) => void)}
@@ -424,8 +446,8 @@ export function SettingsView({ user }: { user: SettingsUser }) {
               className="flex w-full items-center justify-between gap-3 text-left"
             >
               <span className="min-w-0">
-                <span className="block text-sm font-medium">{label}</span>
-                <span className="block text-xs text-muted">{desc}</span>
+                <span className="block text-sm font-medium">{t(labelKey)}</span>
+                <span className="block text-xs text-muted">{t(descKey)}</span>
               </span>
               <span
                 aria-hidden
@@ -451,9 +473,9 @@ export function SettingsView({ user }: { user: SettingsUser }) {
               <span className="min-w-0 flex items-center gap-2">
                 {pushEnabled ? <Bell size={16} className="text-accent shrink-0" /> : <BellOff size={16} className="text-muted shrink-0" />}
                 <span>
-                  <span className="block text-sm font-medium">Push notifications</span>
+                  <span className="block text-sm font-medium">{t("notifications.push")}</span>
                   <span className="block text-xs text-muted">
-                    {pushEnabled ? "Enabled on this device" : "Get alerts even when the app is closed"}
+                    {pushEnabled ? t("notifications.pushEnabled") : t("notifications.pushDisabled")}
                   </span>
                 </span>
               </span>
@@ -478,17 +500,43 @@ export function SettingsView({ user }: { user: SettingsUser }) {
         </div>
       </Section>
 
-      <Section title="Appearance">
+      <Section title={t("sections.appearance")}>
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">Theme</span>
+          <span className="text-sm font-medium">{t("appearance.theme")}</span>
           <ThemeToggle />
         </div>
       </Section>
 
-      <Section title="Account">
+      <Section title={t("sections.language")}>
+        <div className="flex flex-col gap-2">
+          {LOCALES.map((locale) => {
+            const isActive = (user.locale ?? "") === locale ||
+              (!user.locale && locale === "en");
+            return (
+              <button
+                key={locale}
+                onClick={() => void handleLocaleChange(locale)}
+                disabled={changingLocale}
+                className={`flex items-center justify-between rounded-xl border px-3 py-2.5 text-sm transition-colors disabled:opacity-50 ${
+                  isActive
+                    ? "border-accent bg-accent-soft text-accent font-semibold"
+                    : "border-border hover:border-accent/40"
+                }`}
+              >
+                <span>{LOCALE_LABELS[locale]}</span>
+                {isActive && (
+                  <span className="text-xs font-medium opacity-70">✓</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </Section>
+
+      <Section title={t("sections.account")}>
         <dl className="flex flex-col gap-2 pb-3 text-sm">
           <div className="flex justify-between gap-3">
-            <dt className="text-muted">Email</dt>
+            <dt className="text-muted">{t("account.email")}</dt>
             <dd className="truncate font-medium">{user.email}</dd>
           </div>
         </dl>
@@ -497,24 +545,22 @@ export function SettingsView({ user }: { user: SettingsUser }) {
           className="flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-accent/40"
         >
           <LogOut size={15} />
-          Sign out
+          {t("account.signOut")}
         </button>
       </Section>
 
-      <Section title="Danger zone">
+      <Section title={t("sections.dangerZone")}>
         {!deleteConfirm ? (
           <button
             onClick={() => setDeleteConfirm(true)}
             className="flex items-center gap-2 rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-500 transition-colors hover:border-red-400 dark:border-red-900 dark:text-red-400"
           >
             <Trash2 size={15} />
-            Delete account
+            {t("dangerZone.deleteAccount")}
           </button>
         ) : (
           <div className="flex flex-col gap-3">
-            <p className="text-sm text-foreground/80">
-              This permanently deletes your account, diary, and all entries. There is no undo.
-            </p>
+            <p className="text-sm text-foreground/80">{t("dangerZone.deleteConfirm")}</p>
             <div className="flex gap-2">
               <button
                 onClick={() => void deleteAccount()}
@@ -522,13 +568,13 @@ export function SettingsView({ user }: { user: SettingsUser }) {
                 className="flex items-center gap-1.5 rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-white shadow-sm disabled:opacity-50"
               >
                 {deletingAccount ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                Delete everything
+                {t("dangerZone.deleteEverything")}
               </button>
               <button
                 onClick={() => setDeleteConfirm(false)}
                 className="rounded-xl border border-border px-4 py-2 text-sm text-muted transition-colors hover:text-foreground"
               >
-                Cancel
+                {t("dangerZone.cancel")}
               </button>
             </div>
           </div>

@@ -17,6 +17,7 @@ const updateSchema = z.object({
   notifyComments: z.boolean().optional(),
   notifyFollows: z.boolean().optional(),
   notifyMentions: z.boolean().optional(),
+  locale: z.string().nullable().optional(),
 });
 
 async function withUser<T>(fn: (userId: string) => Promise<T>) {

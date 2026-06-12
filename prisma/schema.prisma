@@ -27,6 +27,8 @@ model User {
   notifyFollows  Boolean @default(true)
   notifyMentions Boolean @default(true)
 
+  locale String? // preferred UI language (e.g. "en", "de"); null = auto-detect
+
   invitedBy User?  @relation("Invitations", fields: [invitedById], references: [id], onDelete: SetNull)
   invitees  User[] @relation("Invitations")
 

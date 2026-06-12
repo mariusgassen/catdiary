@@ -1,0 +1,217 @@
+{
+  "nav": {
+    "journal": "Journal",
+    "discover": "Discover",
+    "logACat": "Log a cat",
+    "map": "Map",
+    "myDiary": "My diary"
+  },
+  "home": {
+    "tagline": "A field journal for every cat you meet",
+    "intro": "Snap a photo, pin the place, jot a note — and keep a diary of every cat that's crossed your path. Track other cat spotters and read their diaries too.",
+    "startDiary": "Start your diary",
+    "signIn": "Sign in",
+    "free": "Free, and your diary can stay private.",
+    "howItWorks": "How it works",
+    "nextCat": "The next cat you meet deserves a page.",
+    "steps": {
+      "snap": {
+        "title": "Snap",
+        "text": "Photograph any cat that crosses your path — strays, shop cats, neighbourhood regulars."
+      },
+      "note": {
+        "title": "Note",
+        "text": "Give them a name, jot down what they were up to, and pin the place. Every sighting becomes a page in your diary."
+      },
+      "track": {
+        "title": "Track",
+        "text": "Track other cat spotters, leave paw prints and margin notes, and browse their diaries in a day-by-day feed."
+      }
+    }
+  },
+  "authLayout": {
+    "title": "Cat Diary",
+    "tagline": "A field journal for every cat you meet"
+  },
+  "signIn": {
+    "title": "Open your diary",
+    "welcome": "Welcome back — the cats have missed you.",
+    "newHere": "New here?",
+    "startDiary": "Start your own cat diary"
+  },
+  "register": {
+    "title": "Start your diary",
+    "alreadyHaveAccount": "Already have an account?",
+    "signIn": "Sign in",
+    "perks": {
+      "log": "Log every cat you meet — photos, notes, and the place you found them",
+      "track": "Track other cat spotters and read their diaries in a daily feed",
+      "privacy": "Your diary, your rules — keep it public or make it private"
+    }
+  },
+  "authForm": {
+    "username": "Username",
+    "displayName": "Display name (optional)",
+    "email": "Email",
+    "emailOrUsername": "Email or username",
+    "password": "Password",
+    "signIn": "Sign in",
+    "register": "Register",
+    "orContinueWith": "or continue with",
+    "continueWith": "Continue with {provider}",
+    "errors": {
+      "emailTaken": "That email is already registered.",
+      "usernameTaken": "That username is taken.",
+      "invalidUsername": "Usernames are 3-30 lowercase letters, numbers, dots or underscores.",
+      "invalidCredentials": "Invalid credentials.",
+      "registrationFailed": "Registration failed."
+    }
+  },
+  "feed": {
+    "title": "Cat Diary",
+    "emptyTitle": "This page is still blank",
+    "emptySubtitle": "Met a cat today? Write it down.",
+    "logACat": "Log a cat",
+    "today": "Today",
+    "yesterday": "Yesterday"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all read",
+    "empty": "No notifications yet",
+    "justNow": "just now",
+    "minutesAgo": "{count}m ago",
+    "hoursAgo": "{count}h ago",
+    "daysAgo": "{count}d ago",
+    "and": "and",
+    "others": "{count, plural, one {# other} other {# others}}",
+    "noOne": "Someone",
+    "types": {
+      "like": "{actor} pawed your entry",
+      "comment": "{actor} left a note",
+      "reply": "{actor} replied to your note",
+      "follow": "{actor} is now reading your diary",
+      "followPlural": "{actor} are now reading your diary",
+      "mention": "{actor} mentioned you",
+      "default": "{actor} interacted with your diary"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "backToDiary": "Back to my diary",
+    "sections": {
+      "profile": "Profile",
+      "privacy": "Privacy",
+      "inviteFriends": "Invite friends",
+      "notifications": "Notifications",
+      "appearance": "Appearance",
+      "language": "Language",
+      "account": "Account",
+      "dangerZone": "Danger zone"
+    },
+    "profile": {
+      "photo": "Profile photo",
+      "uploading": "Uploading…",
+      "tapToChange": "Tap to change",
+      "remove": "Remove",
+      "username": "Username",
+      "usernameHint": "Your handle — used to sign in and shown when you have no display name.",
+      "displayName": "Display name",
+      "displayNamePlaceholder": "How you appear to others",
+      "bio": "Bio",
+      "bioPlaceholder": "A line about you and the cats you meet…",
+      "save": "Save",
+      "saved": "Saved",
+      "errors": {
+        "usernameTaken": "That username is taken.",
+        "invalidUsername": "Usernames are 3-30 lowercase letters, numbers, dots or underscores.",
+        "couldNotSave": "Could not save your profile.",
+        "couldNotUpload": "Could not upload photo.",
+        "couldNotRemove": "Could not remove photo.",
+        "couldNotUpdatePrivacy": "Could not update your privacy setting."
+      }
+    },
+    "privacy": {
+      "label": "Private diary",
+      "description": "Only approved readers can see your entries."
+    },
+    "notifications": {
+      "paws": "Paws (likes)",
+      "pawsDesc": "When someone paws your entry",
+      "notesReplies": "Notes & replies",
+      "notesRepliesDesc": "When someone comments or replies",
+      "newReaders": "New readers",
+      "newReadersDesc": "When someone starts following you",
+      "mentions": "Mentions",
+      "mentionsDesc": "When someone @mentions you",
+      "push": "Push notifications",
+      "pushEnabled": "Enabled on this device",
+      "pushDisabled": "Get alerts even when the app is closed"
+    },
+    "appearance": {
+      "theme": "Theme"
+    },
+    "language": {
+      "label": "Language",
+      "en": "English",
+      "de": "Deutsch"
+    },
+    "account": {
+      "email": "Email",
+      "signOut": "Sign out"
+    },
+    "dangerZone": {
+      "deleteAccount": "Delete account",
+      "deleteConfirm": "This permanently deletes your account, diary, and all entries. There is no undo.",
+      "deleteEverything": "Delete everything",
+      "cancel": "Cancel",
+      "couldNotDelete": "Could not delete your account."
+    }
+  },
+  "card": {
+    "sDiary": "'s diary",
+    "aCatIMet": "A cat I met",
+    "pinnedOnMap": "Pinned on the map",
+    "removePaw": "Remove paw",
+    "leaveAPaw": "Leave a paw",
+    "marginNotes": "Margin notes",
+    "share": "Share",
+    "copied": "Copied",
+    "editEntry": "Edit entry",
+    "photoAlt": "{name} — photo {n}",
+    "aCatPhotoAlt": "A cat — photo {n}"
+  },
+  "comments": {
+    "heading": "Margin notes",
+    "noNotes": "No notes in the margins yet.",
+    "scribbleReply": "Scribble a reply…",
+    "scribbleNote": "Scribble a note in the margin…",
+    "postNote": "Post note",
+    "replyingTo": "Replying to",
+    "cancelReply": "Cancel reply",
+    "replyTo": "Reply to {name}",
+    "deleteNote": "Delete note",
+    "signIn": "Sign in",
+    "toLeaveNote": "to leave a note.",
+    "couldNotAdd": "Could not add your note. Try again."
+  },
+  "profile": {
+    "diary": "{name}'s Diary",
+    "entries": "{count, plural, one {# entry} other {# entries}}",
+    "trackers": "{count, plural, one {# tracker} other {# trackers}}",
+    "tracking": "tracking {count}",
+    "privateDiary": "private diary",
+    "blankPages": "These pages are still blank.",
+    "trackRequests": "Track requests",
+    "pendingRequests": "Pending requests"
+  },
+  "onThisDay": {
+    "title": "On this day"
+  },
+  "discover": {
+    "placeholder": "Search cats, people, #tags…",
+    "peopleHeading": "People",
+    "noResults": "No results for \"{query}\"",
+    "nearbyCats": "Cats near you"
+  }
+}

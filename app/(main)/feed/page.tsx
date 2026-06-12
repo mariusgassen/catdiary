@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PawPrint } from "lucide-react";
+import { getTranslations, getLocale } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { listCatEntriesForViewer, listOnThisDayEntries } from "@/lib/catEntries";
 import { photoUrlsFor } from "@/lib/photo-urls";
@@ -12,6 +13,8 @@ export default async function FeedPage() {
   const session = await auth();
   const viewerId = session?.user?.id ?? null;
 
+  const t = await getTranslations("feed");
+  const locale = await getLocale();
   const [{ entries, nextCursor }, onThisDay] = await Promise.all([
     listCatEntriesForViewer({ viewerId }),
     listOnThisDayEntries(viewerId),
@@ -29,20 +32,26 @@ export default async function FeedPage() {
     photos: e.photos.map((p) => ({ photoKey: p.photoKey, thumbKey: p.thumbKey })),
   }));
 
+  const today = new Date().toLocaleDateString(locale, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+
   if (withPhotos.length === 0 && onThisDayEntries.length === 0) {
     return (
       <div className="paper-grid flex min-h-dvh flex-col items-center gap-4 px-6 py-24 text-center">
         <span className="text-5xl">🐱</span>
         <div className="space-y-1">
-          <p className="text-lg font-semibold">This page is still blank</p>
-          <p className="text-sm text-muted">Met a cat today? Write it down.</p>
+          <p className="text-lg font-semibold">{t("emptyTitle")}</p>
+          <p className="text-sm text-muted">{t("emptySubtitle")}</p>
         </div>
         <Link
           href="/capture"
           className="flex items-center gap-2 rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-accent/30 transition-transform active:scale-95"
         >
           <PawPrint size={16} />
-          Log a cat
+          {t("logACat")}
         </Link>
       </div>
     );
@@ -55,12 +64,10 @@ export default async function FeedPage() {
         <div className="flex items-center justify-between gap-3">
           <h1 className="flex items-center gap-1.5 text-xl font-bold tracking-tight">
             <PawPrint size={18} className="text-accent" aria-hidden />
-            Cat Diary
+            {t("title")}
           </h1>
           <div className="flex items-center gap-3">
-            <p className="text-xs text-muted">
-              {new Date().toLocaleDateString("en", { weekday: "long", day: "numeric", month: "long" })}
-            </p>
+            <p className="text-xs text-muted">{today}</p>
             <NotificationBell />
           </div>
         </div>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { PawPrint, MessageSquareText, Share2, MapPin, SquarePen, Check } from "lucide-react";
+import { useTranslations, useLocale } from "next-intl";
 import { HashtagCaption } from "@/components/HashtagCaption";
 import { DevelopingPhoto } from "@/components/DevelopingPhoto";
 import { displayNameFor } from "@/lib/userDisplay";
@@ -35,8 +36,6 @@ type CatEntryCardProps = {
   linkToDetail?: boolean;
 };
 
-const STAMP_DATE = new Intl.DateTimeFormat("en", { day: "2-digit", month: "short" });
-
 /* Each photo sits slightly crooked, like it was glued in by hand.
    Derive the tilt from the entry id so it's stable across renders. */
 function tiltFor(id: string): string {
@@ -61,8 +60,11 @@ function Avatar({ user }: { user: { displayName: string | null; username?: strin
 }
 
 export function CatEntryCard({ entry, viewerId, linkToDetail = true }: CatEntryCardProps) {
+  const t = useTranslations("card");
+  const locale = useLocale();
   const router = useRouter();
   const date = new Date(entry.createdAt);
+  const stampDate = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short" });
   const isOwner = viewerId != null && viewerId === entry.owner.id;
   const [liked, setLiked] = useState((entry.likes?.length ?? 0) > 0);
   const [likeCount, setLikeCount] = useState(entry._count?.likes ?? 0);
@@ -102,7 +104,7 @@ export function CatEntryCard({ entry, viewerId, linkToDetail = true }: CatEntryC
   // Place name in the UI — never raw coordinates. Entries that have a pin but
   // no resolved name (older entries) get a generic label; the map still has them.
   const hasPin = entry.latitude != null && entry.longitude != null;
-  const placeLabel = entry.locationName ?? (hasPin ? "Pinned on the map" : null);
+  const placeLabel = entry.locationName ?? (hasPin ? t("pinnedOnMap") : null);
 
   async function handleLike() {
     if (!viewerId) {
@@ -149,7 +151,7 @@ export function CatEntryCard({ entry, viewerId, linkToDetail = true }: CatEntryC
         <Link href={`/profile/${entry.owner.id}`} className="flex min-w-0 items-center gap-2 group">
           <Avatar user={entry.owner} />
           <span className="truncate text-sm font-semibold text-foreground group-hover:underline">
-            {displayNameFor(entry.owner)}&rsquo;s diary
+            {displayNameFor(entry.owner)}{t("sDiary")}
           </span>
         </Link>
         <div className="flex shrink-0 items-center gap-2">
@@ -157,13 +159,13 @@ export function CatEntryCard({ entry, viewerId, linkToDetail = true }: CatEntryC
             <Link
               href={`/cat-entries/${entry.id}/edit`}
               className="p-1.5 -m-0.5 text-muted hover:text-foreground transition-colors"
-              aria-label="Edit entry"
+              aria-label={t("editEntry")}
             >
               <SquarePen size={16} strokeWidth={1.75} />
             </Link>
           )}
           <time className="stamp px-1.5 py-0.5 text-[10px] font-semibold text-accent">
-            {STAMP_DATE.format(date)}
+            {stampDate.format(date)}
           </time>
         </div>
       </div>
@@ -189,7 +191,9 @@ export function CatEntryCard({ entry, viewerId, linkToDetail = true }: CatEntryC
                 <DevelopingPhoto
                   key={url}
                   src={url}
-                  alt={entry.name ? `${entry.name} — photo ${i + 1}` : `A cat — photo ${i + 1}`}
+                  alt={entry.name
+                    ? t("photoAlt", { name: entry.name, n: i + 1 })
+                    : t("aCatPhotoAlt", { n: i + 1 })}
                   loading={i === 0 ? "eager" : "lazy"}
                   frameClassName={`h-full w-full shrink-0 snap-center ${linkToDetail ? "cursor-pointer" : ""}`}
                   imgClassName="h-full w-full object-cover"
@@ -211,10 +215,10 @@ export function CatEntryCard({ entry, viewerId, linkToDetail = true }: CatEntryC
           <figcaption className="pt-1.5 text-center text-sm font-medium leading-none text-[#3a3128]">
             {linkToDetail ? (
               <Link href={`/cat-entries/${entry.id}`} className="hover:underline">
-                {entry.name ?? "A cat I met"}
+                {entry.name ?? t("aCatIMet")}
               </Link>
             ) : (
-              <span>{entry.name ?? "A cat I met"}</span>
+              <span>{entry.name ?? t("aCatIMet")}</span>
             )}
             {entry.breed && <span className="font-normal text-[#8a7d6b]"> · {entry.breed}</span>}
           </figcaption>
@@ -266,7 +270,7 @@ export function CatEntryCard({ entry, viewerId, linkToDetail = true }: CatEntryC
             className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium transition-all active:scale-90 ${
               liked ? "text-accent" : "hover:text-foreground"
             }`}
-            aria-label={liked ? "Remove paw" : "Leave a paw"}
+            aria-label={liked ? t("removePaw") : t("leaveAPaw")}
           >
             <PawPrint size={16} strokeWidth={1.75} fill={liked ? "currentColor" : "none"} />
             {likeCount > 0 && <span>{likeCount}</span>}
@@ -275,7 +279,7 @@ export function CatEntryCard({ entry, viewerId, linkToDetail = true }: CatEntryC
             <Link
               href={`/cat-entries/${entry.id}`}
               className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium hover:text-foreground transition-colors"
-              aria-label="Margin notes"
+              aria-label={t("marginNotes")}
             >
               <MessageSquareText size={16} strokeWidth={1.75} />
               {commentCount > 0 && <span>{commentCount}</span>}
@@ -283,7 +287,7 @@ export function CatEntryCard({ entry, viewerId, linkToDetail = true }: CatEntryC
           ) : (
             <span
               className="flex items-center gap-1 px-2 py-1 text-xs font-medium"
-              aria-label="Margin notes"
+              aria-label={t("marginNotes")}
             >
               <MessageSquareText size={16} strokeWidth={1.75} />
               {commentCount > 0 && <span>{commentCount}</span>}
@@ -292,10 +296,10 @@ export function CatEntryCard({ entry, viewerId, linkToDetail = true }: CatEntryC
           <button
             onClick={handleShare}
             className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium hover:text-foreground transition-colors"
-            aria-label="Share"
+            aria-label={t("share")}
           >
             {shared ? <Check size={15} strokeWidth={2} className="text-accent" /> : <Share2 size={15} strokeWidth={1.75} />}
-            {shared && <span className="text-accent">Copied</span>}
+            {shared && <span className="text-accent">{t("copied")}</span>}
           </button>
         </div>
       </div>

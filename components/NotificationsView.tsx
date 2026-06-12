@@ -4,18 +4,58 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Bell, Heart, MessageCircle, UserPlus, AtSign, ArrowLeft, CheckCheck } from "lucide-react";
+import { useTranslations, useLocale } from "next-intl";
 import type { GroupedNotification, NotificationActor } from "@/lib/notifications";
 import { displayNameFor } from "@/lib/userDisplay";
 
-function relativeTime(date: Date | string): string {
-  const now = Date.now();
-  const then = new Date(date).getTime();
-  const diff = Math.floor((now - then) / 1000);
-  if (diff < 60) return "just now";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
-  return new Date(date).toLocaleDateString();
+function useRelativeTime() {
+  const t = useTranslations("notifications");
+  const locale = useLocale();
+
+  return function relativeTime(date: Date | string): string {
+    const now = Date.now();
+    const then = new Date(date).getTime();
+    const diff = Math.floor((now - then) / 1000);
+    if (diff < 60) return t("justNow");
+    if (diff < 3600) return t("minutesAgo", { count: Math.floor(diff / 60) });
+    if (diff < 86400) return t("hoursAgo", { count: Math.floor(diff / 3600) });
+    if (diff < 604800) return t("daysAgo", { count: Math.floor(diff / 86400) });
+    return new Date(date).toLocaleDateString(locale);
+  };
+}
+
+function useGroupedText() {
+  const t = useTranslations("notifications");
+
+  function actorLabel(actors: NotificationActor[], actorCount: number): string {
+    const names = actors.slice(0, 2).map((a) => displayNameFor(a));
+    const remaining = actorCount - names.length;
+    if (remaining > 0) {
+      return `${names.join(", ")} ${t("and")} ${t("others", { count: remaining })}`;
+    }
+    if (names.length === 2) return `${names[0]} ${t("and")} ${names[1]}`;
+    return names[0] ?? t("noOne");
+  }
+
+  return function groupedText(g: GroupedNotification): string {
+    const actor = actorLabel(g.actors, g.actorCount);
+    switch (g.type) {
+      case "LIKE":
+        return t("types.like", { actor });
+      case "COMMENT":
+        return t("types.comment", { actor });
+      case "REPLY":
+        return t("types.reply", { actor });
+      case "FOLLOW":
+        return g.actorCount === 1
+          ? t("types.follow", { actor })
+          : t("types.followPlural", { actor });
+      case "MENTION":
+        return t("types.mention", { actor });
+      default:
+        return t("types.default", { actor });
+    }
+  };
 }
 
 const TYPE_ICON = {
@@ -34,38 +74,8 @@ const TYPE_COLOR = {
   MENTION: "text-accent",
 } as const;
 
-function actorLabel(actors: NotificationActor[], actorCount: number): string {
-  const names = actors.slice(0, 2).map((a) => displayNameFor(a));
-  const remaining = actorCount - names.length;
-  if (remaining > 0) {
-    return `${names.join(", ")} and ${remaining} other${remaining === 1 ? "" : "s"}`;
-  }
-  if (names.length === 2) return `${names[0]} and ${names[1]}`;
-  return names[0] ?? "Someone";
-}
-
-function groupedText(g: GroupedNotification): string {
-  const actor = actorLabel(g.actors, g.actorCount);
-  switch (g.type) {
-    case "LIKE":
-      return `${actor} pawed your entry`;
-    case "COMMENT":
-      return `${actor} left a note`;
-    case "REPLY":
-      return `${actor} replied to your note`;
-    case "FOLLOW":
-      return g.actorCount === 1
-        ? `${actor} is now reading your diary`
-        : `${actor} are now reading your diary`;
-    case "MENTION":
-      return `${actor} mentioned you`;
-    default:
-      return `${actor} interacted with your diary`;
-  }
-}
-
 function groupedHref(g: GroupedNotification): string {
-  if (g.type === "FOLLOW" && g.actors.length === 1) return `/profile/${g.actors[0].id}`;
+  if (g.type === "FOLLOW" && g.actors.length === 1) return `/profile/${g.actors[0]!.id}`;
   if (g.type === "FOLLOW") return "/notifications";
   if (g.catEntryId) return `/cat-entries/${g.catEntryId}`;
   return "/notifications";
@@ -94,10 +104,10 @@ function ActorStack({ actors, actorCount }: { actors: NotificationActor[]; actor
       {shown.length > 1 ? (
         <>
           <div className="absolute bottom-0 left-0">
-            <AvatarBubble actor={shown[1]} size={8} />
+            <AvatarBubble actor={shown[1]!} size={8} />
           </div>
           <div className="absolute top-0 right-0">
-            <AvatarBubble actor={shown[0]} size={8} />
+            <AvatarBubble actor={shown[0]!} size={8} />
           </div>
           {actorCount > 2 && (
             <span className="absolute -bottom-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-foreground px-0.5 text-[9px] font-bold text-background">
@@ -106,7 +116,7 @@ function ActorStack({ actors, actorCount }: { actors: NotificationActor[]; actor
           )}
         </>
       ) : (
-        <AvatarBubble actor={shown[0]} size={10} />
+        <AvatarBubble actor={shown[0]!} size={10} />
       )}
     </div>
   );
@@ -128,9 +138,13 @@ function CoverThumb({ g }: { g: GroupedNotification }) {
 function NotificationRow({
   g,
   onRead,
+  getGroupedText,
+  getRelativeTime,
 }: {
   g: GroupedNotification;
   onRead: (ids: string[]) => void;
+  getGroupedText: (g: GroupedNotification) => string;
+  getRelativeTime: (date: Date | string) => string;
 }) {
   const type = g.type as keyof typeof TYPE_ICON;
   const Icon = TYPE_ICON[type] ?? Bell;
@@ -151,14 +165,14 @@ function NotificationRow({
 
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <p className={`text-sm leading-snug ${!g.isRead ? "font-semibold" : ""}`}>
-          {groupedText(g)}
+          {getGroupedText(g)}
         </p>
         {g.comment && (
           <p className="truncate text-xs text-muted italic">
             &ldquo;{g.comment.body.slice(0, 60)}{g.comment.body.length > 60 ? "…" : ""}&rdquo;
           </p>
         )}
-        <span className="text-xs text-muted">{relativeTime(g.latestAt)}</span>
+        <span className="text-xs text-muted">{getRelativeTime(g.latestAt)}</span>
       </div>
 
       <CoverThumb g={g} />
@@ -171,9 +185,12 @@ export function NotificationsView({
 }: {
   initialNotifications: GroupedNotification[];
 }) {
+  const t = useTranslations("notifications");
   const router = useRouter();
   const [notifications, setNotifications] = useState(initialNotifications);
   const [markingAll, setMarkingAll] = useState(false);
+  const getGroupedText = useGroupedText();
+  const getRelativeTime = useRelativeTime();
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
@@ -216,16 +233,16 @@ export function NotificationsView({
           >
             <ArrowLeft size={20} />
           </Link>
-          <h1 className="text-lg font-bold tracking-tight flex-1">Notifications</h1>
+          <h1 className="text-lg font-bold tracking-tight flex-1">{t("title")}</h1>
           {unreadCount > 0 && (
             <button
               onClick={() => void markAllRead()}
               disabled={markingAll}
               className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent-soft disabled:opacity-50"
-              aria-label="Mark all as read"
+              aria-label={t("markAllRead")}
             >
               <CheckCheck size={14} />
-              Mark all read
+              {t("markAllRead")}
             </button>
           )}
         </div>
@@ -235,11 +252,17 @@ export function NotificationsView({
         {notifications.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-16 text-muted">
             <Bell size={32} strokeWidth={1.5} />
-            <p className="text-sm">No notifications yet</p>
+            <p className="text-sm">{t("empty")}</p>
           </div>
         ) : (
           notifications.map((g) => (
-            <NotificationRow key={g.key} g={g} onRead={markRead} />
+            <NotificationRow
+              key={g.key}
+              g={g}
+              onRead={markRead}
+              getGroupedText={getGroupedText}
+              getRelativeTime={getRelativeTime}
+            />
           ))
         )}
       </div>

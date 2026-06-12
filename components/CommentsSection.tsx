@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRef, useState, type FormEvent } from "react";
 import { CornerDownRight, Loader2, Reply, Send, Trash2, X } from "lucide-react";
+import { useTranslations, useLocale } from "next-intl";
 import { displayNameFor } from "@/lib/userDisplay";
 
 type UserSuggestion = {
@@ -22,8 +23,6 @@ export type CommentItem = {
 };
 
 export type CommentThread = CommentItem & { replies: CommentItem[] };
-
-const COMMENT_DATE = new Intl.DateTimeFormat("en", { day: "2-digit", month: "short" });
 
 function Avatar({
   user,
@@ -69,6 +68,10 @@ export function CommentsSection({
   viewerId: string | null;
   initialComments: CommentThread[];
 }) {
+  const t = useTranslations("comments");
+  const locale = useLocale();
+  const commentDate = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short" });
+
   const [threads, setThreads] = useState(initialComments);
   const [draft, setDraft] = useState("");
   const [replyTo, setReplyTo] = useState<{ rootId: string; name: string } | null>(null);
@@ -156,7 +159,7 @@ export function CommentsSection({
       setDraft("");
       setReplyTo(null);
     } catch {
-      setError("Could not add your note. Try again.");
+      setError(t("couldNotAdd"));
     } finally {
       setSubmitting(false);
     }
@@ -184,13 +187,13 @@ export function CommentsSection({
             {displayNameFor(comment.user)}
           </Link>
           {" · "}
-          {COMMENT_DATE.format(new Date(comment.createdAt))}
+          {commentDate.format(new Date(comment.createdAt))}
         </span>
         {viewerId && (
           <button
             onClick={() => startReply(comment.parentId ?? comment.id, displayNameFor(comment.user))}
             className="ml-1.5 inline-flex translate-y-[1px] text-muted hover:text-accent transition-colors"
-            aria-label={`Reply to ${displayNameFor(comment.user)}`}
+            aria-label={t("replyTo", { name: displayNameFor(comment.user) })}
           >
             <Reply size={12} />
           </button>
@@ -199,7 +202,7 @@ export function CommentsSection({
           <button
             onClick={() => handleDelete(comment.id)}
             className="ml-1.5 inline-flex translate-y-[1px] text-muted hover:text-red-500 transition-colors"
-            aria-label="Delete note"
+            aria-label={t("deleteNote")}
           >
             <Trash2 size={12} />
           </button>
@@ -215,7 +218,7 @@ export function CommentsSection({
         <h2 className="grid grid-cols-[2.75rem_1fr]">
           <span aria-hidden />
           <span className="pl-3 pr-4 text-xs font-semibold uppercase tracking-wide leading-[28px] text-muted">
-            Margin notes{commentCount > 0 && ` · ${commentCount}`}
+            {t("heading")}{commentCount > 0 && ` · ${commentCount}`}
           </span>
         </h2>
 
@@ -223,7 +226,7 @@ export function CommentsSection({
           <p className="grid grid-cols-[2.75rem_1fr]">
             <span aria-hidden />
             <span className="pl-3 pr-4 text-sm italic leading-[28px] text-muted">
-              No notes in the margins yet.
+              {t("noNotes")}
             </span>
           </p>
         ) : (
@@ -268,12 +271,12 @@ export function CommentsSection({
               {replyTo && (
                 <p className="flex items-center gap-1 text-xs leading-[28px] text-muted">
                   <CornerDownRight size={11} aria-hidden />
-                  Replying to <span className="font-medium text-accent">{replyTo.name}</span>
+                  {t("replyingTo")} <span className="font-medium text-accent">{replyTo.name}</span>
                   <button
                     type="button"
                     onClick={() => setReplyTo(null)}
                     className="ml-0.5 inline-flex text-muted hover:text-foreground transition-colors"
-                    aria-label="Cancel reply"
+                    aria-label={t("cancelReply")}
                   >
                     <X size={12} />
                   </button>
@@ -304,7 +307,7 @@ export function CommentsSection({
                       setMentionQuery(null);
                     }
                   }}
-                  placeholder={replyTo ? "Scribble a reply…" : "Scribble a note in the margin…"}
+                  placeholder={replyTo ? t("scribbleReply") : t("scribbleNote")}
                   rows={1}
                   maxLength={1000}
                   className="min-h-[28px] flex-1 resize-none bg-transparent text-sm italic leading-[28px] outline-none placeholder:italic placeholder:text-muted/80"
@@ -313,7 +316,7 @@ export function CommentsSection({
                   type="submit"
                   disabled={submitting || !draft.trim()}
                   className="flex h-7 w-7 items-center justify-center self-start rounded-full text-accent transition-transform active:scale-95 hover:bg-accent-soft disabled:opacity-40"
-                  aria-label="Post note"
+                  aria-label={t("postNote")}
                 >
                   {submitting ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
                 </button>
@@ -363,9 +366,9 @@ export function CommentsSection({
             <span aria-hidden />
             <span className="pl-3 pr-4 text-sm italic leading-[28px] text-muted">
               <Link href={`/sign-in?callbackUrl=/cat-entries/${entryId}`} className="not-italic text-accent hover:underline">
-                Sign in
+                {t("signIn")}
               </Link>{" "}
-              to leave a note.
+              {t("toLeaveNote")}
             </span>
           </p>
         )}

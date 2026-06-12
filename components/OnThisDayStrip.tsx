@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Clock } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 type EntrySnippet = {
   id: string;
@@ -18,6 +19,8 @@ function tiltFor(id: string): string {
 }
 
 export function OnThisDayStrip({ entries }: { entries: EntrySnippet[] }) {
+  const t = useTranslations("onThisDay");
+
   if (entries.length === 0) return null;
 
   const years = [...new Set(entries.map((e) => new Date(e.createdAt).getFullYear()))].sort();
@@ -28,7 +31,7 @@ export function OnThisDayStrip({ entries }: { entries: EntrySnippet[] }) {
         <span className="h-px flex-1 bg-border" aria-hidden />
         <Clock size={11} className="text-muted" aria-hidden />
         <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">
-          On This Day{years.length > 0 && ` · ${years.join(" · ")}`}
+          {t("title")}{years.length > 0 && ` · ${years.join(" · ")}`}
         </h2>
         <span className="h-px flex-1 bg-border" aria-hidden />
       </div>

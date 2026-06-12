@@ -3,19 +3,26 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useTranslations } from "next-intl";
 import type { LucideIcon } from "lucide-react";
 import { BookOpen, Compass, PawPrint, MapPin, User } from "lucide-react";
 
-type NavItem = { href: string; Icon: LucideIcon; label: string; isCapture?: boolean };
+type NavItem = {
+  href: string;
+  Icon: LucideIcon;
+  labelKey: "journal" | "discover" | "logACat" | "map";
+  isCapture?: boolean;
+};
 
 const NAV_ITEMS: NavItem[] = [
-  { href: "/feed", Icon: BookOpen, label: "Journal" },
-  { href: "/search", Icon: Compass, label: "Discover" },
-  { href: "/capture", Icon: PawPrint, label: "Log a cat", isCapture: true },
-  { href: "/map", Icon: MapPin, label: "Map" },
+  { href: "/feed", Icon: BookOpen, labelKey: "journal" },
+  { href: "/search", Icon: Compass, labelKey: "discover" },
+  { href: "/capture", Icon: PawPrint, labelKey: "logACat", isCapture: true },
+  { href: "/map", Icon: MapPin, labelKey: "map" },
 ];
 
 export function BottomNav() {
+  const t = useTranslations("nav");
   const pathname = usePathname();
   const { data: session } = useSession();
   const profileHref = session?.user?.id ? `/profile/${session.user.id}` : "/sign-in";
@@ -34,8 +41,9 @@ export function BottomNav() {
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="mx-auto max-w-[480px] h-14 flex items-center justify-around px-1">
-          {NAV_ITEMS.map(({ href, Icon, label, isCapture }) =>
-            isCapture ? (
+          {NAV_ITEMS.map(({ href, Icon, labelKey, isCapture }) => {
+            const label = t(labelKey);
+            return isCapture ? (
               <Link
                 key={href}
                 href={href}
@@ -58,12 +66,12 @@ export function BottomNav() {
                   {label}
                 </span>
               </Link>
-            )
-          )}
+            );
+          })}
           {/* Profile tab */}
           <Link
             href={profileHref}
-            aria-label="My diary"
+            aria-label={t("myDiary")}
             className={`flex flex-col items-center gap-0.5 px-3 py-1.5 transition-colors ${
               pathname.startsWith("/profile") ? "text-accent" : "text-muted hover:text-foreground"
             }`}
@@ -78,7 +86,7 @@ export function BottomNav() {
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={src}
-                    alt="My diary"
+                    alt={t("myDiary")}
                     className={`w-[21px] h-[21px] rounded-full object-cover ${active ? "ring-2 ring-accent" : "opacity-70"}`}
                   />
                 );
@@ -86,7 +94,7 @@ export function BottomNav() {
               return <User size={21} strokeWidth={active ? 2.25 : 1.75} />;
             })()}
             <span className={`text-[10px] leading-none ${pathname.startsWith("/profile") ? "font-semibold" : "font-medium"}`}>
-              My diary
+              {t("myDiary")}
             </span>
           </Link>
         </div>
