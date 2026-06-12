@@ -1,9 +1,8 @@
 import { getRequestConfig } from "next-intl/server";
 import { cookies, headers } from "next/headers";
+import { LOCALES, DEFAULT_LOCALE, type Locale } from "./config";
 
-export const LOCALES = ["en", "de"] as const;
-export type Locale = (typeof LOCALES)[number];
-export const DEFAULT_LOCALE: Locale = "en";
+export { LOCALES, DEFAULT_LOCALE, type Locale };
 
 function detectLocale(cookieLocale: string | undefined, acceptLanguage: string | null): Locale {
   if (cookieLocale && LOCALES.includes(cookieLocale as Locale)) {

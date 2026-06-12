@@ -10,7 +10,7 @@ import { InviteFriends } from "@/components/InviteFriends";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { displayNameFor } from "@/lib/userDisplay";
 import { setLocale } from "@/lib/locale";
-import { LOCALES, type Locale } from "@/i18n/request";
+import { LOCALES, type Locale } from "@/i18n/config";
 
 type SettingsUser = {
   id: string;

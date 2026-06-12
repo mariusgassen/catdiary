@@ -211,7 +211,7 @@
   "discover": {
     "placeholder": "Katzen, Personen, #Tags suchen…",
     "peopleHeading": "Personen",
-    "noResults": "Keine Ergebnisse für „{query}"",
+    "noResults": "Keine Ergebnisse für \"{query}\"",
     "nearbyCats": "Katzen in der Nähe"
   }
 }
