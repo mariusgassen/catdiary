@@ -16,7 +16,9 @@ import {
 } from "lucide-react";
 import { LocationPicker, reverseGeocode, type PickedLocation } from "@/components/LocationPicker";
 import { MAX_PHOTOS_PER_ENTRY } from "@/lib/photo-urls";
+import { asFrameStyle, DEFAULT_FRAME_STYLE, type FrameStyle } from "@/lib/frames";
 import { CaptionInput } from "@/components/CaptionInput";
+import { FramePicker } from "@/components/FramePicker";
 import { PhotoEditor } from "@/components/PhotoEditor";
 import { SortablePhotoStrip } from "@/components/SortablePhotoStrip";
 import { DraftsSheet } from "@/components/DraftsSheet";
@@ -60,6 +62,7 @@ export function CaptureFlow() {
   const [caption, setCaption] = useState("");
   const [catName, setCatName] = useState("");
   const [breed, setBreed] = useState("");
+  const [frameStyle, setFrameStyle] = useState<FrameStyle>(DEFAULT_FRAME_STYLE);
   const [showOptional, setShowOptional] = useState(false);
 
   // Location defaults, in priority order: the photo's EXIF GPS data, then the
@@ -109,6 +112,7 @@ export function CaptureFlow() {
         caption,
         catName,
         breed,
+        frameStyle,
         location: location ? { name: location.name, lat: location.lat, lng: location.lng } : null,
         geoDisabled,
         photos: shots.map((s) => ({ name: s.file.name, type: s.file.type, blob: s.file })),
@@ -116,7 +120,7 @@ export function CaptureFlow() {
     }, 500);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [caption, catName, breed, location, geoDisabled, shots, submitting, currentDraftId]);
+  }, [caption, catName, breed, frameStyle, location, geoDisabled, shots, submitting, currentDraftId]);
 
   const slotsLeft = MAX_PHOTOS_PER_ENTRY - shots.length;
 
@@ -258,6 +262,7 @@ export function CaptureFlow() {
     setCaption(draft.caption);
     setCatName(draft.catName);
     setBreed(draft.breed);
+    setFrameStyle(asFrameStyle(draft.frameStyle));
     setShowOptional(!!(draft.catName || draft.breed));
     setLocation(draft.location);
     setGeoDisabled(draft.geoDisabled);
@@ -297,6 +302,7 @@ export function CaptureFlow() {
           name: catName.trim() || undefined,
           breed: breed.trim() || undefined,
           notes: caption.trim() || undefined,
+          frameStyle,
           locationName: location?.name ?? null,
           latitude: location?.lat ?? null,
           longitude: location?.lng ?? null,
@@ -559,6 +565,20 @@ export function CaptureFlow() {
           onEdit={(id) => setEditingId(id)}
           onAddMore={() => setStep("camera")}
         />
+
+        {/* Frame — how the photos are presented in the journal */}
+        {shots.length > 0 && (
+          <div className="px-4 pt-4">
+            <FramePicker
+              value={frameStyle}
+              onChange={setFrameStyle}
+              sampleUrl={shots[0]?.previewUrl}
+              name={catName.trim() || null}
+              breed={breed.trim() || null}
+              locationName={location?.name ?? null}
+            />
+          </div>
+        )}
 
         {/* Caption */}
         <div className="px-4 pt-4">

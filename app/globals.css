@@ -179,3 +179,89 @@ body {
   backdrop-filter: blur(1px);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
+
+/* ── Journal frames (EntryFrame) ──────────────────────────────────────────── */
+
+/* Pressed-specimen card: aged card stock the photo is mounted on. */
+.frame-specimen {
+  background-color: #f4ead3;
+}
+.dark .frame-specimen {
+  background-color: #2a2722;
+}
+
+/* Triangular photo-mount corners holding a print to a specimen card. */
+.photo-corner {
+  position: absolute;
+  z-index: 10;
+  width: 16px;
+  height: 16px;
+  background: rgba(58, 49, 40, 0.32);
+  pointer-events: none;
+}
+.dark .photo-corner {
+  background: rgba(0, 0, 0, 0.45);
+}
+.photo-corner-tl {
+  top: 0;
+  left: 0;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+.photo-corner-tr {
+  top: 0;
+  right: 0;
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+}
+.photo-corner-bl {
+  bottom: 0;
+  left: 0;
+  clip-path: polygon(0 0, 0 100%, 100% 100%);
+}
+.photo-corner-br {
+  bottom: 0;
+  right: 0;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
+/* A little perforated postage stamp for the postcard frame. */
+.postage-stamp {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 34px;
+  font-size: 15px;
+  line-height: 1;
+  background: #fff;
+  /* dotted "perforation" along the stamp edge */
+  border: 2px dotted #cbbf9f;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+/* Perforated tear line dividing a ticket stub, with cut-out notches at each
+   end. The notch fill matches the page surface the ticket sits on so it reads
+   as punched-through. */
+.ticket-perf {
+  position: relative;
+  height: 0;
+  border-top: 2px dashed #d8cbac;
+}
+.dark .ticket-perf {
+  border-top-color: #3a352c;
+}
+.ticket-perf::before,
+.ticket-perf::after {
+  content: "";
+  position: absolute;
+  top: -9px;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: var(--surface);
+}
+.ticket-perf::before {
+  left: -8px;
+}
+.ticket-perf::after {
+  right: -8px;
+}

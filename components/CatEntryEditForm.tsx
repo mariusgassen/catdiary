@@ -5,6 +5,8 @@ import { useState, type FormEvent } from "react";
 import { Loader2, Trash2, X } from "lucide-react";
 import { LocationPicker, type PickedLocation } from "@/components/LocationPicker";
 import { CaptionInput } from "@/components/CaptionInput";
+import { FramePicker } from "@/components/FramePicker";
+import { asFrameStyle, type FrameStyle } from "@/lib/frames";
 
 type CatEntryEditFormProps = {
   entry: {
@@ -15,7 +17,9 @@ type CatEntryEditFormProps = {
     locationName: string | null;
     latitude: number | null;
     longitude: number | null;
+    frameStyle?: string | null;
   };
+  coverUrl?: string | null;
 };
 
 /*
@@ -23,11 +27,12 @@ type CatEntryEditFormProps = {
  * right (like a native modal sheet), the fields below, and Delete demoted to
  * a destructive action at the very bottom — backing out is always one tap.
  */
-export function CatEntryEditForm({ entry }: CatEntryEditFormProps) {
+export function CatEntryEditForm({ entry, coverUrl }: CatEntryEditFormProps) {
   const router = useRouter();
   const [name, setName] = useState(entry.name ?? "");
   const [breed, setBreed] = useState(entry.breed ?? "");
   const [notes, setNotes] = useState(entry.notes ?? "");
+  const [frameStyle, setFrameStyle] = useState<FrameStyle>(asFrameStyle(entry.frameStyle));
   const [location, setLocation] = useState<PickedLocation | null>(
     entry.latitude != null && entry.longitude != null
       ? { name: entry.locationName ?? "Pinned on the map", lat: entry.latitude, lng: entry.longitude }
@@ -61,6 +66,7 @@ export function CatEntryEditForm({ entry }: CatEntryEditFormProps) {
           name: name.trim() || null,
           breed: breed.trim() || null,
           notes: notes.trim() || null,
+          frameStyle,
           locationName: location?.name ?? null,
           latitude: location?.lat ?? null,
           longitude: location?.lng ?? null,
@@ -144,6 +150,14 @@ export function CatEntryEditForm({ entry }: CatEntryEditFormProps) {
           onChange={setNotes}
           placeholder="Notes (optional) — #tags and @mentions"
           rows={3}
+        />
+        <FramePicker
+          value={frameStyle}
+          onChange={setFrameStyle}
+          sampleUrl={coverUrl}
+          name={name.trim() || null}
+          breed={breed.trim() || null}
+          locationName={location?.name ?? null}
         />
         <LocationPicker
           location={location}

@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { getOwnedCatEntry } from "@/lib/catEntries";
+import { photoUrlsFor } from "@/lib/photo-urls";
 import { CatEntryEditForm } from "@/components/CatEntryEditForm";
 
 export default async function EditCatEntryPage({ params }: { params: Promise<{ id: string }> }) {
@@ -16,5 +17,7 @@ export default async function EditCatEntryPage({ params }: { params: Promise<{ i
     notFound();
   }
 
-  return <CatEntryEditForm entry={entry} />;
+  const coverUrl = photoUrlsFor(entry.photos)[0] ?? null;
+
+  return <CatEntryEditForm entry={entry} coverUrl={coverUrl} />;
 }

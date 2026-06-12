@@ -33,6 +33,14 @@ Keep this document in sync with reality as the app evolves.
 - Bottom tab nav with icons (Journal, Discover, Log a cat, Map, My diary)
 - Field-journal entry cards: taped polaroid photo with name/breed caption,
   rubber-stamp date, notes with hashtags, place name, paw-print likes
+- **Custom frames (journal artifacts)**: each entry picks a `CatEntry.frameStyle`
+  enum — Polaroid (default), pressed-specimen card, library index card, postcard
+  ("Greetings from {place}"), or ticket stub. The render layer is
+  `components/EntryFrame.tsx` (shared by the feed/detail cards and the
+  `FramePicker` preview); the frame is chosen in the capture flow and the edit
+  screen, previewed on the user's own cover photo, and persisted in capture
+  drafts. Purely presentational — it never gates documenting (always defaults to
+  Polaroid)
 - Date-grouped feed timeline with day dividers and masthead
 - Capture flow: camera viewfinder (front/back), gallery picker, hashtag
   highlighting in caption textarea

@@ -179,7 +179,21 @@
     "copied": "Copied",
     "editEntry": "Edit entry",
     "photoAlt": "{name} — photo {n}",
-    "aCatPhotoAlt": "A cat — photo {n}"
+    "aCatPhotoAlt": "A cat — photo {n}",
+    "chooseFrame": "Frame",
+    "frames": {
+      "name": {
+        "POLAROID": "Polaroid",
+        "SPECIMEN": "Specimen card",
+        "INDEX_CARD": "Index card",
+        "POSTCARD": "Postcard",
+        "TICKET": "Ticket stub"
+      },
+      "callNo": "Call no.",
+      "admitOne": "Admit one",
+      "greetingsFrom": "Greetings from {place}",
+      "greetings": "Greetings!"
+    }
   },
   "comments": {
     "heading": "Margin notes",

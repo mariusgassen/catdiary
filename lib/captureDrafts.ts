@@ -19,6 +19,7 @@ export type CaptureDraft = {
   caption: string;
   catName: string;
   breed: string;
+  frameStyle?: string; // chosen journal frame; absent on older drafts
   location: DraftLocation;
   geoDisabled: boolean;
   photos: DraftPhoto[];

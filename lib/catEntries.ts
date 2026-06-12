@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { MAX_PHOTOS_PER_ENTRY } from "@/lib/photo-urls";
 import { createNotification } from "@/lib/notifications";
+import type { FrameStyle } from "@/lib/frames";
 
 const PAGE_SIZE = 20;
 
@@ -20,6 +21,7 @@ export type CreateCatEntryInput = {
   locationName?: string | null;
   latitude?: number | null; // null = user disabled geo data for this entry
   longitude?: number | null;
+  frameStyle?: FrameStyle;
 };
 
 export class CatEntryNotFoundError extends Error {}
@@ -32,6 +34,7 @@ export type UpdateCatEntryInput = {
   locationName?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  frameStyle?: FrameStyle;
 };
 
 export class CatEntryPhotoCountError extends Error {}
@@ -50,6 +53,7 @@ export async function createCatEntry(input: CreateCatEntryInput) {
       locationName: input.locationName ?? null,
       latitude: input.latitude ?? null,
       longitude: input.longitude ?? null,
+      frameStyle: input.frameStyle ?? "POLAROID",
       photos: {
         create: input.photos.map((photo, position) => ({
           photoKey: photo.photoKey,
@@ -83,9 +87,13 @@ export async function createCatEntry(input: CreateCatEntryInput) {
   return entry;
 }
 
-/** Fetches a CatEntry only if `ownerId` owns it — used for edit/delete flows. */
+/** Fetches a CatEntry (with its cover photo) only if `ownerId` owns it — used
+    for the edit flow, which previews frame styles on the cover. */
 export async function getOwnedCatEntry(entryId: string, ownerId: string) {
-  const entry = await db.catEntry.findUnique({ where: { id: entryId } });
+  const entry = await db.catEntry.findUnique({
+    where: { id: entryId },
+    include: { photos: { orderBy: { position: "asc" }, take: 1 } },
+  });
   if (!entry || entry.ownerId !== ownerId) return null;
   return entry;
 }
