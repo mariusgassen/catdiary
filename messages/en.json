@@ -412,5 +412,11 @@
     "notTrackingYet": "Not tracking any diaries yet.",
     "trackersHeading": "Readers of {name}",
     "noTrackers": "No one is reading this diary yet."
+  },
+  "handle": {
+    "notFoundTitle": "No diary here",
+    "notFoundBody": "We couldn't find anyone with that handle. They may have changed it, or it never existed.",
+    "backToFeed": "Back to the journal",
+    "discoverPeople": "Find cat spotters"
   }
 }
