@@ -8,6 +8,7 @@ import { CatEntryCard } from "@/components/CatEntryCard";
 import { BackLink } from "@/components/BackLink";
 import { CommentsSection } from "@/components/CommentsSection";
 import { SimilarCats } from "@/components/SimilarCats";
+import { EntryMap } from "@/components/EntryMap";
 import { displayNameFor } from "@/lib/userDisplay";
 
 type Props = { params: Promise<{ id: string }> };
@@ -53,6 +54,9 @@ export default async function CatEntryPage({ params }: Props) {
         viewerId={viewerId}
         linkToDetail={false}
       />
+      {entry.latitude != null && entry.longitude != null && (
+        <EntryMap lat={entry.latitude} lng={entry.longitude} locationName={entry.locationName} />
+      )}
       <CommentsSection
         entryId={entry.id}
         entryOwnerId={entry.ownerId}

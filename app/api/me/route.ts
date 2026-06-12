@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUserId, UnauthorizedError } from "@/lib/auth-helpers";
 import { getUserSettings, updateUserSettings } from "@/lib/users";
+import { db } from "@/lib/db";
 
 const updateSchema = z.object({
   // Clearing the display name (null/empty) is allowed — the username takes over.
@@ -56,6 +57,14 @@ export async function PATCH(request: Request) {
       }
       throw err;
     }
+  });
+  return result.ok ? result.value : result.response;
+}
+
+export async function DELETE() {
+  const result = await withUser(async (userId) => {
+    await db.user.delete({ where: { id: userId } });
+    return NextResponse.json({ ok: true });
   });
   return result.ok ? result.value : result.response;
 }

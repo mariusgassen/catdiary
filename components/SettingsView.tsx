@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useRef, useEffect, type FormEvent } from "react";
 import { signOut, useSession } from "next-auth/react";
-import { Camera, ChevronLeft, Loader2, LogOut, Bell, BellOff } from "lucide-react";
+import { Camera, ChevronLeft, Loader2, LogOut, Bell, BellOff, Trash2 } from "lucide-react";
 import { InviteFriends } from "@/components/InviteFriends";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { displayNameFor } from "@/lib/userDisplay";
@@ -48,6 +48,8 @@ export function SettingsView({ user }: { user: SettingsUser }) {
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [avatarKey, setAvatarKey] = useState(user.avatarKey);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
@@ -194,6 +196,22 @@ export function SettingsView({ user }: { user: SettingsUser }) {
       body: JSON.stringify({ [key]: next }),
     });
     if (!res.ok) setter(current);
+  }
+
+  async function deleteAccount() {
+    setDeletingAccount(true);
+    try {
+      const res = await fetch("/api/me", { method: "DELETE" });
+      if (!res.ok) {
+        setError("Could not delete your account.");
+        return;
+      }
+      await signOut({ callbackUrl: "/" });
+    } catch {
+      setError("Could not delete your account.");
+    } finally {
+      setDeletingAccount(false);
+    }
   }
 
   async function togglePush() {
@@ -481,6 +499,40 @@ export function SettingsView({ user }: { user: SettingsUser }) {
           <LogOut size={15} />
           Sign out
         </button>
+      </Section>
+
+      <Section title="Danger zone">
+        {!deleteConfirm ? (
+          <button
+            onClick={() => setDeleteConfirm(true)}
+            className="flex items-center gap-2 rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-500 transition-colors hover:border-red-400 dark:border-red-900 dark:text-red-400"
+          >
+            <Trash2 size={15} />
+            Delete account
+          </button>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <p className="text-sm text-foreground/80">
+              This permanently deletes your account, diary, and all entries. There is no undo.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => void deleteAccount()}
+                disabled={deletingAccount}
+                className="flex items-center gap-1.5 rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-white shadow-sm disabled:opacity-50"
+              >
+                {deletingAccount ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                Delete everything
+              </button>
+              <button
+                onClick={() => setDeleteConfirm(false)}
+                className="rounded-xl border border-border px-4 py-2 text-sm text-muted transition-colors hover:text-foreground"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </Section>
 
       {error && <p className="px-4 text-sm text-red-500">{error}</p>}

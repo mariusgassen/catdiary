@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Settings } from "lucide-react";
@@ -18,6 +19,44 @@ import { FollowButton } from "@/components/FollowButton";
 import { FollowRequestRow } from "@/components/FollowRequestRow";
 import { PendingOutgoingRow } from "@/components/PendingOutgoingRow";
 import { displayNameFor } from "@/lib/userDisplay";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ userId: string }>;
+}): Promise<Metadata> {
+  const { userId } = await params;
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: {
+      username: true,
+      displayName: true,
+      bio: true,
+      avatarKey: true,
+      image: true,
+      _count: { select: { catEntries: true } },
+    },
+  });
+  if (!user) return { title: "Cat Diary" };
+
+  const name = displayNameFor(user);
+  const title = `${name}'s Diary — Cat Diary`;
+  const description =
+    user.bio ??
+    `${name} has logged ${user._count.catEntries} ${user._count.catEntries === 1 ? "cat" : "cats"}.`;
+  const avatarUrl = user.avatarKey ? `/api/photos/${user.avatarKey}` : (user.image ?? undefined);
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "profile",
+      ...(avatarUrl ? { images: [{ url: avatarUrl }] }  : {}),
+    },
+  };
+}
 
 export default async function ProfilePage({
   params,
