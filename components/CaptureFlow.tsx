@@ -12,10 +12,12 @@ import {
   ChevronRight,
   Loader2,
   Plus,
+  SlidersHorizontal,
 } from "lucide-react";
 import { LocationPicker, reverseGeocode, type PickedLocation } from "@/components/LocationPicker";
 import { MAX_PHOTOS_PER_ENTRY } from "@/lib/photo-urls";
 import { CaptionInput } from "@/components/CaptionInput";
+import { PhotoEditor } from "@/components/PhotoEditor";
 
 type Step = "camera" | "details";
 type Facing = "environment" | "user";
@@ -39,6 +41,8 @@ export function CaptureFlow() {
   const [cameraError, setCameraError] = useState<string | null>(null);
 
   const [shots, setShots] = useState<Shot[]>([]);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [showGallerySheet, setShowGallerySheet] = useState(false);
 
   function loadDraft(): { caption: string; catName: string; breed: string } {
     try {
@@ -107,6 +111,23 @@ export function CaptureFlow() {
     setShots((prev) => {
       URL.revokeObjectURL(prev[index].previewUrl);
       return prev.filter((_, i) => i !== index);
+    });
+  }
+
+  function moveShot(from: number, to: number) {
+    setShots((prev) => {
+      const next = [...prev];
+      const [item] = next.splice(from, 1);
+      next.splice(to, 0, item);
+      return next;
+    });
+  }
+
+  function replaceShot(index: number, file: File, previewUrl: string) {
+    setShots((prev) => {
+      const next = [...prev];
+      next[index] = { file, previewUrl };
+      return next;
     });
   }
 
@@ -306,7 +327,7 @@ export function CaptureFlow() {
         >
           {/* Gallery */}
           <button
-            onClick={() => galleryInputRef.current?.click()}
+            onClick={() => setShowGallerySheet(true)}
             className="flex flex-col items-center gap-1.5 text-white/70 hover:text-white transition-colors"
             aria-label="Choose from gallery"
           >
@@ -361,11 +382,67 @@ export function CaptureFlow() {
           className="hidden"
           onChange={handleGalleryFiles}
         />
+
+        {/* Gallery action sheet */}
+        {showGallerySheet && (
+          <div className="absolute inset-0 z-20 flex flex-col justify-end">
+            {/* Backdrop */}
+            <button
+              className="flex-1 bg-black/50"
+              aria-label="Dismiss"
+              onClick={() => setShowGallerySheet(false)}
+            />
+            <div
+              className="rounded-t-2xl bg-[#1c1c1e] pb-[env(safe-area-inset-bottom,16px)]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mx-auto my-2 h-1 w-10 rounded-full bg-white/20" />
+              <p className="px-5 pb-2 pt-1 text-xs font-medium text-white/40 uppercase tracking-wide">
+                Add photos
+              </p>
+              <button
+                onClick={() => {
+                  setShowGallerySheet(false);
+                  galleryInputRef.current?.click();
+                }}
+                className="flex w-full items-center gap-4 px-5 py-4 text-white active:bg-white/10 transition-colors"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#2c2c2e]">
+                  <ImageIcon size={20} className="text-white" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-medium">Photo Library</p>
+                  <p className="text-xs text-white/50">Choose from your photos</p>
+                </div>
+              </button>
+              <button
+                onClick={() => setShowGallerySheet(false)}
+                className="mx-4 mb-2 mt-2 w-[calc(100%-2rem)] rounded-xl bg-[#2c2c2e] py-4 text-sm font-semibold text-white active:bg-white/10 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
   // ── Details step ────────────────────────────────────────────────────────────
+
+  if (editingIndex !== null && shots[editingIndex]) {
+    return (
+      <PhotoEditor
+        shot={shots[editingIndex]}
+        onConfirm={(file, previewUrl) => {
+          replaceShot(editingIndex, file, previewUrl);
+          setEditingIndex(null);
+        }}
+        onCancel={() => setEditingIndex(null)}
+      />
+    );
+  }
+
   return (
     <div className="min-h-dvh bg-background">
       {/* Top bar */}
@@ -405,15 +482,56 @@ export function CaptureFlow() {
           {shots.map((shot, i) => (
             <div key={shot.previewUrl} className="relative shrink-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={shot.previewUrl} alt={`Photo ${i + 1}`} className="w-20 h-20 rounded-xl object-cover" />
+              <img
+                src={shot.previewUrl}
+                alt={`Photo ${i + 1}`}
+                className="w-20 h-20 rounded-xl object-cover"
+              />
               {!submitting && (
-                <button
-                  onClick={() => removeShot(i)}
-                  className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-foreground text-background shadow-sm"
-                  aria-label={`Remove photo ${i + 1}`}
-                >
-                  <X size={12} />
-                </button>
+                <>
+                  {/* Remove */}
+                  <button
+                    onClick={() => removeShot(i)}
+                    className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-foreground text-background shadow-sm"
+                    aria-label={`Remove photo ${i + 1}`}
+                  >
+                    <X size={12} />
+                  </button>
+                  {/* Cover indicator */}
+                  {i === 0 && (
+                    <span className="absolute left-1 top-1 rounded bg-black/60 px-1 text-[9px] font-medium text-white leading-4">
+                      cover
+                    </span>
+                  )}
+                  {/* Bottom controls: [←] [edit] [→] */}
+                  <div className="absolute bottom-1 inset-x-1 flex items-center justify-between">
+                    {i > 0 ? (
+                      <button
+                        onClick={() => moveShot(i, i - 1)}
+                        className="flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white"
+                        aria-label={`Move photo ${i + 1} left`}
+                      >
+                        <ChevronLeft size={12} />
+                      </button>
+                    ) : <span className="w-5" />}
+                    <button
+                      onClick={() => setEditingIndex(i)}
+                      className="flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white"
+                      aria-label={`Edit photo ${i + 1}`}
+                    >
+                      <SlidersHorizontal size={10} />
+                    </button>
+                    {i < shots.length - 1 ? (
+                      <button
+                        onClick={() => moveShot(i, i + 1)}
+                        className="flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white"
+                        aria-label={`Move photo ${i + 1} right`}
+                      >
+                        <ChevronRight size={12} />
+                      </button>
+                    ) : <span className="w-5" />}
+                  </div>
+                </>
               )}
             </div>
           ))}

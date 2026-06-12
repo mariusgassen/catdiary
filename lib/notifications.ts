@@ -21,6 +21,79 @@ const notificationInclude = {
 
 export type NotificationWithDetails = Awaited<ReturnType<typeof listNotifications>>[number];
 
+export type NotificationActor = {
+  id: string;
+  username: string | null;
+  displayName: string | null;
+  avatarKey: string | null;
+  image: string | null;
+};
+
+export type GroupedNotification = {
+  key: string;
+  type: NotificationType;
+  catEntryId: string | null;
+  actors: NotificationActor[];
+  actorCount: number;
+  catEntry: { id: string; name: string | null; photos: { thumbKey: string | null }[] } | null;
+  latestAt: Date;
+  isRead: boolean;
+  notificationIds: string[];
+  comment: { id: string; body: string } | null;
+};
+
+/** Groups flat notifications so likes and follows are summarised ("X and N others…"). */
+export function groupNotifications(notifications: NotificationWithDetails[]): GroupedNotification[] {
+  // Types that collapse across actors for the same entry
+  const GROUPABLE = new Set<NotificationType>(["LIKE", "FOLLOW"]);
+
+  const buckets = new Map<string, GroupedNotification>();
+
+  for (const n of notifications) {
+    let bucketKey: string;
+    if (GROUPABLE.has(n.type)) {
+      // LIKE groups per entry; FOLLOW groups as a single bucket
+      bucketKey = n.type === "LIKE" ? `LIKE:${n.catEntryId ?? ""}` : "FOLLOW";
+    } else {
+      bucketKey = `${n.type}:${n.id}`;
+    }
+
+    const existing = buckets.get(bucketKey);
+    if (existing) {
+      // Only collect up to 3 unique actors for display
+      if (!existing.actors.some((a) => a.id === n.actor.id)) {
+        if (existing.actors.length < 3) existing.actors.push(n.actor);
+        existing.actorCount++;
+      }
+      existing.notificationIds.push(n.id);
+      if (!n.read) existing.isRead = false;
+      if (n.createdAt > existing.latestAt) existing.latestAt = n.createdAt;
+    } else {
+      buckets.set(bucketKey, {
+        key: bucketKey,
+        type: n.type,
+        catEntryId: n.catEntryId,
+        actors: [n.actor],
+        actorCount: 1,
+        catEntry: n.catEntry,
+        latestAt: n.createdAt,
+        isRead: n.read,
+        notificationIds: [n.id],
+        comment: n.comment,
+      });
+    }
+  }
+
+  return Array.from(buckets.values()).sort(
+    (a, b) => b.latestAt.getTime() - a.latestAt.getTime(),
+  );
+}
+
+export async function listGroupedNotifications(userId: string, limit = 100): Promise<GroupedNotification[]> {
+  const raw = await listNotifications(userId, limit);
+  return groupNotifications(raw);
+}
+
 type NotificationPayload = {
   userId: string;
   id: string;

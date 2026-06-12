@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Bell, Heart, MessageCircle, UserPlus, AtSign, ArrowLeft, CheckCheck } from "lucide-react";
-import type { NotificationWithDetails } from "@/lib/notifications";
+import type { GroupedNotification, NotificationActor } from "@/lib/notifications";
 import { displayNameFor } from "@/lib/userDisplay";
 
 function relativeTime(date: Date | string): string {
@@ -34,9 +34,19 @@ const TYPE_COLOR = {
   MENTION: "text-accent",
 } as const;
 
-function notificationText(n: NotificationWithDetails): string {
-  const actor = displayNameFor(n.actor);
-  switch (n.type) {
+function actorLabel(actors: NotificationActor[], actorCount: number): string {
+  const names = actors.slice(0, 2).map((a) => displayNameFor(a));
+  const remaining = actorCount - names.length;
+  if (remaining > 0) {
+    return `${names.join(", ")} and ${remaining} other${remaining === 1 ? "" : "s"}`;
+  }
+  if (names.length === 2) return `${names[0]} and ${names[1]}`;
+  return names[0] ?? "Someone";
+}
+
+function groupedText(g: GroupedNotification): string {
+  const actor = actorLabel(g.actors, g.actorCount);
+  switch (g.type) {
     case "LIKE":
       return `${actor} pawed your entry`;
     case "COMMENT":
@@ -44,7 +54,9 @@ function notificationText(n: NotificationWithDetails): string {
     case "REPLY":
       return `${actor} replied to your note`;
     case "FOLLOW":
-      return `${actor} is now reading your diary`;
+      return g.actorCount === 1
+        ? `${actor} is now reading your diary`
+        : `${actor} are now reading your diary`;
     case "MENTION":
       return `${actor} mentioned you`;
     default:
@@ -52,30 +64,56 @@ function notificationText(n: NotificationWithDetails): string {
   }
 }
 
-function notificationHref(n: NotificationWithDetails): string {
-  if (n.type === "FOLLOW") return `/profile/${n.actor.id}`;
-  if (n.catEntryId) return `/cat-entries/${n.catEntryId}`;
+function groupedHref(g: GroupedNotification): string {
+  if (g.type === "FOLLOW" && g.actors.length === 1) return `/profile/${g.actors[0].id}`;
+  if (g.type === "FOLLOW") return "/notifications";
+  if (g.catEntryId) return `/cat-entries/${g.catEntryId}`;
   return "/notifications";
 }
 
-function AvatarBubble({ actor }: { actor: NotificationWithDetails["actor"] }) {
+function AvatarBubble({ actor, size = 10 }: { actor: NotificationActor; size?: number }) {
   const src = actor.avatarKey ? `/api/photos/${actor.avatarKey}` : actor.image;
   const initials = (displayNameFor(actor)[0] ?? "?").toUpperCase();
+  const cls = `rounded-full object-cover ring-2 ring-background`;
+  const dim = `w-${size} h-${size}`;
   if (src) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img src={src} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
-    );
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={src} alt="" className={`${dim} ${cls} shrink-0`} />;
   }
   return (
-    <div className="w-10 h-10 rounded-full bg-accent-soft flex items-center justify-center text-accent font-semibold text-sm shrink-0 select-none">
+    <div className={`${dim} ${cls} shrink-0 bg-accent-soft flex items-center justify-center text-accent font-semibold text-sm select-none`}>
       {initials}
     </div>
   );
 }
 
-function CoverThumb({ n }: { n: NotificationWithDetails }) {
-  const photo = n.catEntry?.photos?.[0];
+function ActorStack({ actors, actorCount }: { actors: NotificationActor[]; actorCount: number }) {
+  const shown = actors.slice(0, 2);
+  return (
+    <div className="relative shrink-0" style={{ width: shown.length > 1 ? 44 : 40, height: 40 }}>
+      {shown.length > 1 ? (
+        <>
+          <div className="absolute bottom-0 left-0">
+            <AvatarBubble actor={shown[1]} size={8} />
+          </div>
+          <div className="absolute top-0 right-0">
+            <AvatarBubble actor={shown[0]} size={8} />
+          </div>
+          {actorCount > 2 && (
+            <span className="absolute -bottom-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-foreground px-0.5 text-[9px] font-bold text-background">
+              +{actorCount - 1}
+            </span>
+          )}
+        </>
+      ) : (
+        <AvatarBubble actor={shown[0]} size={10} />
+      )}
+    </div>
+  );
+}
+
+function CoverThumb({ g }: { g: GroupedNotification }) {
+  const photo = g.catEntry?.photos?.[0];
   if (!photo?.thumbKey) return null;
   return (
     // eslint-disable-next-line @next/next/no-img-element
@@ -88,42 +126,42 @@ function CoverThumb({ n }: { n: NotificationWithDetails }) {
 }
 
 function NotificationRow({
-  n,
+  g,
   onRead,
 }: {
-  n: NotificationWithDetails;
-  onRead: (id: string) => void;
+  g: GroupedNotification;
+  onRead: (ids: string[]) => void;
 }) {
-  const type = n.type as keyof typeof TYPE_ICON;
+  const type = g.type as keyof typeof TYPE_ICON;
   const Icon = TYPE_ICON[type] ?? Bell;
   const iconColor = (TYPE_COLOR as Record<string, string>)[type] ?? "text-muted";
 
   return (
     <Link
-      href={notificationHref(n)}
-      onClick={() => { if (!n.read) onRead(n.id); }}
-      className={`flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface ${!n.read ? "bg-accent-soft/30" : ""}`}
+      href={groupedHref(g)}
+      onClick={() => { if (!g.isRead) onRead(g.notificationIds); }}
+      className={`flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface ${!g.isRead ? "bg-accent-soft/30" : ""}`}
     >
-      <div className="relative shrink-0">
-        <AvatarBubble actor={n.actor} />
+      <div className="relative shrink-0 flex items-center justify-center" style={{ width: 44, height: 40 }}>
+        <ActorStack actors={g.actors} actorCount={g.actorCount} />
         <span className={`absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-surface ring-2 ring-background ${iconColor}`}>
           <Icon size={10} strokeWidth={2.5} />
         </span>
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <p className={`text-sm leading-snug ${!n.read ? "font-semibold" : ""}`}>
-          {notificationText(n)}
+        <p className={`text-sm leading-snug ${!g.isRead ? "font-semibold" : ""}`}>
+          {groupedText(g)}
         </p>
-        {n.comment && (
+        {g.comment && (
           <p className="truncate text-xs text-muted italic">
-            &ldquo;{n.comment.body.slice(0, 60)}{n.comment.body.length > 60 ? "…" : ""}&rdquo;
+            &ldquo;{g.comment.body.slice(0, 60)}{g.comment.body.length > 60 ? "…" : ""}&rdquo;
           </p>
         )}
-        <span className="text-xs text-muted">{relativeTime(n.createdAt)}</span>
+        <span className="text-xs text-muted">{relativeTime(g.latestAt)}</span>
       </div>
 
-      <CoverThumb n={n} />
+      <CoverThumb g={g} />
     </Link>
   );
 }
@@ -131,28 +169,30 @@ function NotificationRow({
 export function NotificationsView({
   initialNotifications,
 }: {
-  initialNotifications: NotificationWithDetails[];
+  initialNotifications: GroupedNotification[];
 }) {
   const router = useRouter();
   const [notifications, setNotifications] = useState(initialNotifications);
   const [markingAll, setMarkingAll] = useState(false);
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
-  function markOneRead(id: string) {
+  function markRead(ids: string[]) {
     setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
+      prev.map((n) =>
+        n.notificationIds.some((id) => ids.includes(id)) ? { ...n, isRead: true } : n,
+      ),
     );
     void fetch("/api/notifications", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: [id] }),
+      body: JSON.stringify({ ids }),
     });
   }
 
   async function markAllRead() {
     setMarkingAll(true);
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
     try {
       await fetch("/api/notifications", {
         method: "PATCH",
@@ -198,8 +238,8 @@ export function NotificationsView({
             <p className="text-sm">No notifications yet</p>
           </div>
         ) : (
-          notifications.map((n) => (
-            <NotificationRow key={n.id} n={n} onRead={markOneRead} />
+          notifications.map((g) => (
+            <NotificationRow key={g.key} g={g} onRead={markRead} />
           ))
         )}
       </div>
