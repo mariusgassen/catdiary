@@ -246,5 +246,127 @@
     "notTrackingYet": "Folgt noch keinen Tagebüchern.",
     "trackers": "{name}s Leser",
     "noTrackers": "Dieses Tagebuch wird noch von niemandem gelesen."
+  },
+  "capture": {
+    "camera": {
+      "close": "Schließen",
+      "flip": "Kamera wechseln",
+      "draftsChip": "{count, plural, one {# Entwurf} other {# Entwürfe}}",
+      "unavailable": "Kamera nicht verfügbar – wähle stattdessen ein Foto aus deiner Galerie.",
+      "gallery": "Galerie",
+      "capture": "Foto aufnehmen",
+      "continue": "Mit {count, plural, one {# Foto} other {# Fotos}} fortfahren",
+      "next": "Weiter",
+      "addPhotos": "Fotos hinzufügen",
+      "photoLibrary": "Fotomediathek",
+      "chooseFromPhotos": "Aus deinen Fotos wählen",
+      "cancel": "Abbrechen",
+      "chooseFromGallery": "Aus Galerie wählen",
+      "dismiss": "Schließen"
+    },
+    "details": {
+      "back": "Zurück zur Kamera",
+      "newPost": "Neuer Beitrag",
+      "post": "Posten",
+      "addOptional": "Name & Rasse der Katze hinzufügen ↓",
+      "hideOptional": "Optionale Felder ausblenden ↑",
+      "catNamePlaceholder": "Name der Katze (optional)",
+      "breedPlaceholder": "Rasse / Farbe (optional)",
+      "locationHint": "Wähle einen Ort – suche, nutze deine Position oder schalte den Standort aus.",
+      "errorUpload": "Foto-Upload fehlgeschlagen",
+      "errorSave": "Eintrag konnte nicht gespeichert werden",
+      "errorGeneric": "Etwas ist schiefgelaufen"
+    },
+    "strip": {
+      "cover": "Titel",
+      "addPhoto": "Weiteres Foto hinzufügen",
+      "removePhoto": "Foto {n} entfernen",
+      "dragHandle": "Foto {n}, zum Umsortieren ziehen",
+      "edit": "Bearbeiten",
+      "editPhoto": "Foto {n} bearbeiten",
+      "photoAlt": "Foto {n}",
+      "reorderHint": "Zum Umsortieren ziehen · das erste Foto ist das Titelbild"
+    },
+    "drafts": {
+      "title": "Gespeicherte Entwürfe",
+      "empty": "Noch keine gespeicherten Entwürfe.",
+      "untitled": "Beitrag ohne Titel",
+      "photoCount": "{count, plural, one {# Foto} other {# Fotos}}",
+      "delete": "Entwurf löschen",
+      "close": "Schließen",
+      "justNow": "gerade eben",
+      "minutesAgo": "vor {count} Min.",
+      "hoursAgo": "vor {count} Std.",
+      "daysAgo": "vor {count} T."
+    },
+    "editor": {
+      "cancel": "Abbrechen",
+      "reset": "Zurücksetzen",
+      "done": "Fertig",
+      "loading": "Foto wird geladen",
+      "frameHint": "Zieh oder zoome das Foto, um es auszurichten",
+      "zoom": "Zoom",
+      "rotateLeft": "Nach links drehen",
+      "rotateRight": "Nach rechts drehen",
+      "flipH": "Horizontal spiegeln",
+      "flipV": "Vertikal spiegeln",
+      "tabs": {
+        "filters": "Filter",
+        "adjust": "Anpassen",
+        "crop": "Zuschneiden"
+      },
+      "adjust": {
+        "brightness": "Helligkeit",
+        "contrast": "Kontrast",
+        "saturation": "Sättigung",
+        "warmth": "Wärme",
+        "hue": "Farbton",
+        "grayscale": "S/W",
+        "blur": "Weichzeichnen",
+        "vignette": "Vignette"
+      },
+      "presets": {
+        "natural": {
+          "name": "Au Naturel",
+          "mood": "Genau wie du sie gesehen hast"
+        },
+        "golden-hour": {
+          "name": "Goldene Stunde",
+          "mood": "Warmes Abendlicht"
+        },
+        "alley-noir": {
+          "name": "Gassen-Noir",
+          "mood": "Düsteres Schwarzweiß"
+        },
+        "sunlit-sill": {
+          "name": "Sonnige Fensterbank",
+          "mood": "Hell, weich, gemütlich"
+        },
+        "velvet-paw": {
+          "name": "Samtpfote",
+          "mood": "Tiefe, satte Farben"
+        },
+        "foggy-morning": {
+          "name": "Nebliger Morgen",
+          "mood": "Kühl, diesig, verblasst"
+        },
+        "catnip-dream": {
+          "name": "Katzenminze-Traum",
+          "mood": "Knallig und surreal"
+        },
+        "vintage-tabby": {
+          "name": "Vintage-Tigerkatze",
+          "mood": "Altes Album-Sepia"
+        },
+        "moonlit-prowl": {
+          "name": "Mondlicht-Pirsch",
+          "mood": "Kaltes Mitternachtsblau"
+        },
+        "cream-and-sugar": {
+          "name": "Milch & Zucker",
+          "mood": "Blasse, luftige Pastelltöne"
+        }
+      }
+    }
   }
 }

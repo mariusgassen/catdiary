@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import exifr from "exifr";
 import {
   X,
@@ -11,24 +12,36 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
-  Plus,
-  SlidersHorizontal,
+  History,
 } from "lucide-react";
 import { LocationPicker, reverseGeocode, type PickedLocation } from "@/components/LocationPicker";
 import { MAX_PHOTOS_PER_ENTRY } from "@/lib/photo-urls";
 import { CaptionInput } from "@/components/CaptionInput";
 import { PhotoEditor } from "@/components/PhotoEditor";
+import { SortablePhotoStrip } from "@/components/SortablePhotoStrip";
+import { DraftsSheet } from "@/components/DraftsSheet";
+import {
+  deleteDraft,
+  getDraft,
+  listDraftMetas,
+  newDraftId,
+  saveDraft,
+  type CaptureDraftMeta,
+} from "@/lib/captureDrafts";
 
 type Step = "camera" | "details";
 type Facing = "environment" | "user";
 
-type Shot = { file: File; previewUrl: string };
+type Shot = { id: string; file: File; previewUrl: string };
 
-const DRAFT_KEY = "catdiary_capture_draft";
+function makeShot(file: File): Shot {
+  return { id: newDraftId(), file, previewUrl: URL.createObjectURL(file) };
+}
 
 // ── Main capture flow ─────────────────────────────────────────────────────────
 
 export function CaptureFlow() {
+  const t = useTranslations("capture");
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -41,37 +54,13 @@ export function CaptureFlow() {
   const [cameraError, setCameraError] = useState<string | null>(null);
 
   const [shots, setShots] = useState<Shot[]>([]);
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [showGallerySheet, setShowGallerySheet] = useState(false);
 
-  function loadDraft(): { caption: string; catName: string; breed: string } {
-    try {
-      const raw = localStorage.getItem(DRAFT_KEY);
-      if (!raw) return { caption: "", catName: "", breed: "" };
-      const d = JSON.parse(raw) as unknown;
-      if (typeof d !== "object" || d === null) return { caption: "", catName: "", breed: "" };
-      const draft = d as Record<string, unknown>;
-      return {
-        caption: typeof draft.caption === "string" ? draft.caption : "",
-        catName: typeof draft.catName === "string" ? draft.catName : "",
-        breed: typeof draft.breed === "string" ? draft.breed : "",
-      };
-    } catch {
-      return { caption: "", catName: "", breed: "" };
-    }
-  }
-
-  const initialDraft = (() => {
-    if (typeof window === "undefined") return { caption: "", catName: "", breed: "" };
-    return loadDraft();
-  })();
-
-  const [caption, setCaption] = useState(initialDraft.caption);
-  const [catName, setCatName] = useState(initialDraft.catName);
-  const [breed, setBreed] = useState(initialDraft.breed);
-  const [showOptional, setShowOptional] = useState(
-    !!(initialDraft.catName || initialDraft.breed)
-  );
+  const [caption, setCaption] = useState("");
+  const [catName, setCatName] = useState("");
+  const [breed, setBreed] = useState("");
+  const [showOptional, setShowOptional] = useState(false);
 
   // Location defaults, in priority order: the photo's EXIF GPS data, then the
   // device's location, then whatever place the user searches for — or nothing
@@ -80,16 +69,6 @@ export function CaptureFlow() {
   const [geoDisabled, setGeoDisabled] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
 
-  // Persist text fields to localStorage so back-navigation doesn't lose them.
-  useEffect(() => {
-    try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ caption, catName, breed }));
-    } catch {
-      // storage unavailable — ignore
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [caption, catName, breed]);
-
   // Tracks whether EXIF GPS was already found so device-location doesn't overwrite it.
   const exifFoundLocationRef = useRef(false);
 
@@ -97,38 +76,75 @@ export function CaptureFlow() {
   const [uploadedCount, setUploadedCount] = useState(0);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // ── Persistent drafts (IndexedDB) ───────────────────────────────────────────
+  // Each capture session is one draft; leaving the dialogue keeps it, and any
+  // number of drafts can be resumed later from the Drafts sheet.
+  const [currentDraftId, setCurrentDraftId] = useState<string>(() => newDraftId());
+  const [draftMetas, setDraftMetas] = useState<CaptureDraftMeta[]>([]);
+  const [showDrafts, setShowDrafts] = useState(false);
+
+  const refreshDrafts = useCallback(async () => {
+    setDraftMetas(await listDraftMetas());
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void refreshDrafts();
+  }, [refreshDrafts]);
+
+  // Debounced auto-save of the in-progress draft (text, location and photos).
+  useEffect(() => {
+    if (submitting) return;
+    const id = currentDraftId;
+    const hasContent =
+      shots.length > 0 || caption.trim() || catName.trim() || breed.trim();
+    const timer = setTimeout(() => {
+      if (!hasContent) {
+        void deleteDraft(id).then(refreshDrafts);
+        return;
+      }
+      void saveDraft({
+        id,
+        updatedAt: Date.now(),
+        caption,
+        catName,
+        breed,
+        location: location ? { name: location.name, lat: location.lat, lng: location.lng } : null,
+        geoDisabled,
+        photos: shots.map((s) => ({ name: s.file.name, type: s.file.type, blob: s.file })),
+      }).then(refreshDrafts);
+    }, 500);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [caption, catName, breed, location, geoDisabled, shots, submitting, currentDraftId]);
+
   const slotsLeft = MAX_PHOTOS_PER_ENTRY - shots.length;
 
   function addShots(files: File[]) {
     setShots((prev) => {
       const room = MAX_PHOTOS_PER_ENTRY - prev.length;
-      const next = files.slice(0, room).map((file) => ({ file, previewUrl: URL.createObjectURL(file) }));
+      const next = files.slice(0, room).map(makeShot);
       return [...prev, ...next];
     });
   }
 
-  function removeShot(index: number) {
+  function removeShot(id: string) {
     setShots((prev) => {
-      URL.revokeObjectURL(prev[index].previewUrl);
-      return prev.filter((_, i) => i !== index);
+      const target = prev.find((s) => s.id === id);
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((s) => s.id !== id);
     });
   }
 
-  function moveShot(from: number, to: number) {
+  function reorderShots(ids: string[]) {
     setShots((prev) => {
-      const next = [...prev];
-      const [item] = next.splice(from, 1);
-      next.splice(to, 0, item);
-      return next;
+      const byId = new Map(prev.map((s) => [s.id, s]));
+      return ids.map((id) => byId.get(id)).filter((s): s is Shot => !!s);
     });
   }
 
-  function replaceShot(index: number, file: File, previewUrl: string) {
-    setShots((prev) => {
-      const next = [...prev];
-      next[index] = { file, previewUrl };
-      return next;
-    });
+  function replaceShot(id: string, file: File, previewUrl: string) {
+    setShots((prev) => prev.map((s) => (s.id === id ? { ...s, file, previewUrl } : s)));
   }
 
   const startCamera = useCallback(async (f: Facing) => {
@@ -145,8 +161,9 @@ export function CaptureFlow() {
         videoRef.current.srcObject = stream;
       }
     } catch {
-      setCameraError("Camera unavailable — pick a photo from your gallery instead.");
+      setCameraError(t("camera.unavailable"));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -227,6 +244,33 @@ export function CaptureFlow() {
     }
   }
 
+  async function resumeDraft(id: string) {
+    const draft = await getDraft(id);
+    if (!draft) {
+      void refreshDrafts();
+      return;
+    }
+    shots.forEach((s) => URL.revokeObjectURL(s.previewUrl));
+    const restored = draft.photos.map((p) => makeShot(new File([p.blob], p.name, { type: p.type })));
+    setCurrentDraftId(draft.id);
+    exifFoundLocationRef.current = !!draft.location;
+    setShots(restored);
+    setCaption(draft.caption);
+    setCatName(draft.catName);
+    setBreed(draft.breed);
+    setShowOptional(!!(draft.catName || draft.breed));
+    setLocation(draft.location);
+    setGeoDisabled(draft.geoDisabled);
+    setSubmitError(null);
+    setShowDrafts(false);
+    setStep("details");
+  }
+
+  async function discardDraft(id: string) {
+    await deleteDraft(id);
+    await refreshDrafts();
+  }
+
   async function handlePost() {
     if (shots.length === 0 || (!location && !geoDisabled)) return;
     setSubmitting(true);
@@ -239,7 +283,7 @@ export function CaptureFlow() {
         const fd = new FormData();
         fd.append("file", shot.file);
         const upload = await fetch("/api/upload-url", { method: "POST", body: fd });
-        if (!upload.ok) throw new Error("Photo upload failed");
+        if (!upload.ok) throw new Error(t("details.errorUpload"));
         const { key, thumbKey } = await upload.json();
         photos.push({ photoKey: key, thumbKey });
         setUploadedCount(photos.length);
@@ -258,17 +302,20 @@ export function CaptureFlow() {
           longitude: location?.lng ?? null,
         }),
       });
-      if (!create.ok) throw new Error("Could not save the entry");
+      if (!create.ok) throw new Error(t("details.errorSave"));
 
       shots.forEach((shot) => URL.revokeObjectURL(shot.previewUrl));
-      try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+      await deleteDraft(currentDraftId);
       router.push("/feed");
       router.refresh();
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Something went wrong");
+      setSubmitError(err instanceof Error ? err.message : t("details.errorGeneric"));
       setSubmitting(false);
     }
   }
+
+  const otherDrafts = draftMetas.filter((m) => m.id !== currentDraftId);
+  const otherDraftCount = otherDrafts.length;
 
   // ── Camera step ─────────────────────────────────────────────────────────────
   if (step === "camera") {
@@ -281,17 +328,29 @@ export function CaptureFlow() {
           <button
             onClick={() => router.back()}
             className="p-2 -m-2 text-white/80 hover:text-white"
-            aria-label="Close"
+            aria-label={t("camera.close")}
           >
             <X size={24} />
           </button>
+          {otherDraftCount > 0 && (
+            <button
+              onClick={() => {
+                void refreshDrafts();
+                setShowDrafts(true);
+              }}
+              className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-medium text-white/90 hover:bg-white/20"
+            >
+              <History size={15} />
+              {t("camera.draftsChip", { count: otherDraftCount })}
+            </button>
+          )}
           <button
             onClick={() => {
               const next: Facing = facing === "environment" ? "user" : "environment";
               setFacing(next);
             }}
             className="p-2 -m-2 text-white/80 hover:text-white"
-            aria-label="Flip camera"
+            aria-label={t("camera.flip")}
           >
             <RotateCcw size={22} />
           </button>
@@ -329,12 +388,12 @@ export function CaptureFlow() {
           <button
             onClick={() => setShowGallerySheet(true)}
             className="flex flex-col items-center gap-1.5 text-white/70 hover:text-white transition-colors"
-            aria-label="Choose from gallery"
+            aria-label={t("camera.chooseFromGallery")}
           >
             <div className="w-12 h-12 rounded-2xl border-2 border-white/30 flex items-center justify-center">
               <ImageIcon size={20} />
             </div>
-            <span className="text-xs">Gallery</span>
+            <span className="text-xs">{t("camera.gallery")}</span>
           </button>
 
           {/* Capture */}
@@ -342,7 +401,7 @@ export function CaptureFlow() {
             onClick={capturePhoto}
             disabled={!cameraReady || !!cameraError || slotsLeft <= 0}
             className="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center disabled:opacity-40 active:scale-95 transition-transform"
-            aria-label="Capture photo"
+            aria-label={t("camera.capture")}
           >
             <div className="w-14 h-14 rounded-full bg-white" />
           </button>
@@ -352,7 +411,7 @@ export function CaptureFlow() {
             <button
               onClick={() => setStep("details")}
               className="flex w-16 flex-col items-center gap-1.5 text-white/90 hover:text-white transition-colors"
-              aria-label={`Continue with ${shots.length} photo${shots.length === 1 ? "" : "s"}`}
+              aria-label={t("camera.continue", { count: shots.length })}
             >
               <div className="relative">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -366,7 +425,7 @@ export function CaptureFlow() {
                 </span>
               </div>
               <span className="flex items-center text-xs">
-                Next <ChevronRight size={12} />
+                {t("camera.next")} <ChevronRight size={12} />
               </span>
             </button>
           ) : (
@@ -389,7 +448,7 @@ export function CaptureFlow() {
             {/* Backdrop */}
             <button
               className="flex-1 bg-black/50"
-              aria-label="Dismiss"
+              aria-label={t("camera.dismiss")}
               onClick={() => setShowGallerySheet(false)}
             />
             <div
@@ -398,7 +457,7 @@ export function CaptureFlow() {
             >
               <div className="mx-auto my-2 h-1 w-10 rounded-full bg-white/20" />
               <p className="px-5 pb-2 pt-1 text-xs font-medium text-white/40 uppercase tracking-wide">
-                Add photos
+                {t("camera.addPhotos")}
               </p>
               <button
                 onClick={() => {
@@ -411,18 +470,27 @@ export function CaptureFlow() {
                   <ImageIcon size={20} className="text-white" />
                 </div>
                 <div className="text-left">
-                  <p className="text-sm font-medium">Photo Library</p>
-                  <p className="text-xs text-white/50">Choose from your photos</p>
+                  <p className="text-sm font-medium">{t("camera.photoLibrary")}</p>
+                  <p className="text-xs text-white/50">{t("camera.chooseFromPhotos")}</p>
                 </div>
               </button>
               <button
                 onClick={() => setShowGallerySheet(false)}
                 className="mx-4 mb-2 mt-2 w-[calc(100%-2rem)] rounded-xl bg-[#2c2c2e] py-4 text-sm font-semibold text-white active:bg-white/10 transition-colors"
               >
-                Cancel
+                {t("camera.cancel")}
               </button>
             </div>
           </div>
+        )}
+
+        {showDrafts && (
+          <DraftsSheet
+            drafts={otherDrafts}
+            onResume={(id) => void resumeDraft(id)}
+            onDelete={(id) => void discardDraft(id)}
+            onClose={() => setShowDrafts(false)}
+          />
         )}
       </div>
     );
@@ -430,15 +498,16 @@ export function CaptureFlow() {
 
   // ── Details step ────────────────────────────────────────────────────────────
 
-  if (editingIndex !== null && shots[editingIndex]) {
+  const editingShot = editingId ? shots.find((s) => s.id === editingId) : null;
+  if (editingShot) {
     return (
       <PhotoEditor
-        shot={shots[editingIndex]}
+        shot={editingShot}
         onConfirm={(file, previewUrl) => {
-          replaceShot(editingIndex, file, previewUrl);
-          setEditingIndex(null);
+          replaceShot(editingShot.id, file, previewUrl);
+          setEditingId(null);
         }}
-        onCancel={() => setEditingIndex(null)}
+        onCancel={() => setEditingId(null)}
       />
     );
   }
@@ -451,11 +520,11 @@ export function CaptureFlow() {
         <button
           onClick={() => setStep("camera")}
           className="p-1.5 -m-1.5 text-muted hover:text-foreground transition-colors"
-          aria-label="Back to camera"
+          aria-label={t("details.back")}
         >
           <ChevronLeft size={22} />
         </button>
-        <span className="font-semibold text-sm">New post</span>
+        <span className="font-semibold text-sm">{t("details.newPost")}</span>
         <button
           onClick={handlePost}
           disabled={shots.length === 0 || (!location && !geoDisabled) || submitting}
@@ -471,84 +540,25 @@ export function CaptureFlow() {
               )}
             </>
           ) : (
-            "Post"
+            t("details.post")
           )}
         </button>
       </div>
 
       <div>
-        {/* Photo strip — up to MAX_PHOTOS_PER_ENTRY shots, in the order they'll appear */}
-        <div className="flex gap-2 overflow-x-auto px-4 pt-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {shots.map((shot, i) => (
-            <div key={shot.previewUrl} className="relative shrink-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={shot.previewUrl}
-                alt={`Photo ${i + 1}`}
-                className="w-20 h-20 rounded-xl object-cover"
-              />
-              {!submitting && (
-                <>
-                  {/* Remove */}
-                  <button
-                    onClick={() => removeShot(i)}
-                    className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-foreground text-background shadow-sm"
-                    aria-label={`Remove photo ${i + 1}`}
-                  >
-                    <X size={12} />
-                  </button>
-                  {/* Cover indicator */}
-                  {i === 0 && (
-                    <span className="absolute left-1 top-1 rounded bg-black/60 px-1 text-[9px] font-medium text-white leading-4">
-                      cover
-                    </span>
-                  )}
-                  {/* Bottom controls: [←] [edit] [→] */}
-                  <div className="absolute bottom-1 inset-x-1 flex items-center justify-between">
-                    {i > 0 ? (
-                      <button
-                        onClick={() => moveShot(i, i - 1)}
-                        className="flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white"
-                        aria-label={`Move photo ${i + 1} left`}
-                      >
-                        <ChevronLeft size={12} />
-                      </button>
-                    ) : <span className="w-5" />}
-                    <button
-                      onClick={() => setEditingIndex(i)}
-                      className="flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white"
-                      aria-label={`Edit photo ${i + 1}`}
-                    >
-                      <SlidersHorizontal size={10} />
-                    </button>
-                    {i < shots.length - 1 ? (
-                      <button
-                        onClick={() => moveShot(i, i + 1)}
-                        className="flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white"
-                        aria-label={`Move photo ${i + 1} right`}
-                      >
-                        <ChevronRight size={12} />
-                      </button>
-                    ) : <span className="w-5" />}
-                  </div>
-                </>
-              )}
-            </div>
-          ))}
-          {slotsLeft > 0 && !submitting && (
-            <button
-              onClick={() => setStep("camera")}
-              className="flex h-20 w-20 shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border border-dashed border-border text-muted hover:text-foreground transition-colors"
-              aria-label="Add another photo"
-            >
-              <Plus size={18} />
-              <span className="text-[10px]">{shots.length}/{MAX_PHOTOS_PER_ENTRY}</span>
-            </button>
-          )}
-        </div>
+        {/* Photo strip — up to MAX_PHOTOS_PER_ENTRY shots; drag to reorder */}
+        <SortablePhotoStrip
+          photos={shots}
+          max={MAX_PHOTOS_PER_ENTRY}
+          disabled={submitting}
+          onReorder={reorderShots}
+          onRemove={removeShot}
+          onEdit={(id) => setEditingId(id)}
+          onAddMore={() => setStep("camera")}
+        />
 
         {/* Caption */}
-        <div className="px-4 pt-3">
+        <div className="px-4 pt-4">
           <CaptionInput value={caption} onChange={setCaption} />
         </div>
 
@@ -570,7 +580,7 @@ export function CaptureFlow() {
             onClick={() => setShowOptional((v) => !v)}
             className="text-sm text-muted hover:text-foreground transition-colors"
           >
-            {showOptional ? "Hide optional fields ↑" : "Add cat name & breed ↓"}
+            {showOptional ? t("details.hideOptional") : t("details.addOptional")}
           </button>
           {showOptional && (
             <div className="mt-3 space-y-2">
@@ -578,7 +588,7 @@ export function CaptureFlow() {
                 type="text"
                 value={catName}
                 onChange={(e) => setCatName(e.target.value)}
-                placeholder="Cat name (optional)"
+                placeholder={t("details.catNamePlaceholder")}
                 maxLength={120}
                 className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:ring-1 focus:ring-accent placeholder:text-muted"
               />
@@ -586,7 +596,7 @@ export function CaptureFlow() {
                 type="text"
                 value={breed}
                 onChange={(e) => setBreed(e.target.value)}
-                placeholder="Breed / color (optional)"
+                placeholder={t("details.breedPlaceholder")}
                 maxLength={120}
                 className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:ring-1 focus:ring-accent placeholder:text-muted"
               />
@@ -600,7 +610,7 @@ export function CaptureFlow() {
 
         {!location && !geoDisabled && !isLocating && (
           <p className="px-4 pt-2 text-xs text-muted">
-            Pick a location — search, use your position, or switch location off.
+            {t("details.locationHint")}
           </p>
         )}
 
