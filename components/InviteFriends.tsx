@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { Loader2, UserPlus, Copy, Check } from "lucide-react";
 
 export function InviteFriends() {
+  const t = useTranslations("invite.section");
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -33,8 +35,8 @@ export function InviteFriends() {
     if (!inviteUrl) return;
     try {
       await navigator.share({
-        title: "Join me on Cat Diary",
-        text: "I keep a diary of the cats I meet — come read along.",
+        title: t("shareTitle"),
+        text: t("shareText"),
         url: inviteUrl,
       });
     } catch {
@@ -47,10 +49,10 @@ export function InviteFriends() {
   return (
     <div className="flex flex-col gap-3">
       <p className="text-xs text-muted">
-        Share your personal link — anyone who joins with it follows your diary from day one.
+        {t("description")}
       </p>
       {loadError ? (
-        <p className="text-sm text-red-500">Could not load your invite link.</p>
+        <p className="text-sm text-red-500">{t("loadError")}</p>
       ) : (
         <div className="flex items-center gap-2 flex-wrap">
           {typeof navigator !== "undefined" && "share" in navigator && (
@@ -60,7 +62,7 @@ export function InviteFriends() {
               className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-accent/30 transition-transform active:scale-[0.98] disabled:opacity-50"
             >
               {!ready ? <Loader2 size={15} className="animate-spin" /> : <UserPlus size={15} />}
-              Share invite link
+              {t("shareButton")}
             </button>
           )}
           <button
@@ -75,13 +77,13 @@ export function InviteFriends() {
             ) : (
               <Copy size={15} />
             )}
-            {copied ? "Copied!" : "Copy link"}
+            {copied ? t("copySuccess") : t("copyButton")}
           </button>
         </div>
       )}
       {copyError && inviteUrl && (
         <p className="text-sm text-red-500">
-          Could not copy automatically — please copy manually:{" "}
+          {t("copyError")}{" "}
           <span className="select-all font-mono text-xs break-all">{inviteUrl}</span>
         </p>
       )}

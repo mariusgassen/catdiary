@@ -213,5 +213,38 @@
     "peopleHeading": "People",
     "noResults": "No results for \"{query}\"",
     "nearbyCats": "Cats near you"
+  },
+  "navigation": {
+    "backToJournal": "Back to the journal"
+  },
+  "invite": {
+    "section": {
+      "title": "Invite friends",
+      "description": "Share your personal link — anyone who joins with it follows your diary from day one.",
+      "shareButton": "Share invite link",
+      "copyButton": "Copy link",
+      "copySuccess": "Copied!",
+      "loadError": "Could not load your invite link.",
+      "copyError": "Could not copy automatically — please copy manually:",
+      "shareTitle": "Join me on Cat Diary",
+      "shareText": "I keep a diary of the cats I meet — come read along."
+    },
+    "landing": {
+      "invalidTitle": "This invitation has wandered off",
+      "invalidDescription": "The invite link doesn't match any diary — it may have been mistyped. You can still start a diary of your own.",
+      "stamp": "Invitation",
+      "startDiary": "Start your diary",
+      "alreadyHave": "I already have one — sign in",
+      "heading": "{name} invited you to Cat Diary",
+      "description": "A field journal for the cats you meet — photograph them, note where they crossed your path, and track other cat spotters.",
+      "entryCount": "{count, plural, one {# entry} other {# entries}}",
+      "footerText": "Join with this link and you'll track {name}'s diary from day one."
+    }
+  },
+  "follows": {
+    "isTracking": "{name} is tracking",
+    "notTrackingYet": "Not tracking any diaries yet.",
+    "trackers": "{name}'s trackers",
+    "noTrackers": "No one is tracking this diary yet."
   }
 }

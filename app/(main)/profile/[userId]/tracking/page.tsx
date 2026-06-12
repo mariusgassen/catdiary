@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { listFollowing } from "@/lib/follows";
@@ -13,6 +14,7 @@ export default async function TrackingPage({
   const { userId } = await params;
   const session = await auth();
   const viewerId = session?.user?.id ?? null;
+  const t = await getTranslations("follows");
 
   const profileUser = await db.user.findUnique({
     where: { id: userId },
@@ -41,14 +43,14 @@ export default async function TrackingPage({
           ←
         </Link>
         <h1 className="text-lg font-bold tracking-tight">
-          {name} is tracking{" "}
+          {t("isTracking", { name })}{" "}
           <span className="text-base font-normal text-muted">({tracking.length})</span>
         </h1>
       </header>
 
       {tracking.length === 0 ? (
         <p className="px-6 py-10 text-center text-sm text-muted">
-          Not tracking any diaries yet.
+          {t("notTrackingYet")}
         </p>
       ) : (
         <ul className="mx-3 flex flex-col gap-2">
