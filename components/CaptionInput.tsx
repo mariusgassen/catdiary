@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { parseCaption } from "@/components/HashtagCaption";
 import { displayNameFor } from "@/lib/userDisplay";
 
@@ -15,7 +16,7 @@ type UserSuggestion = {
 export function CaptionInput({
   value,
   onChange,
-  placeholder = "Add a caption… #orange @friend",
+  placeholder,
   rows = 4,
 }: {
   value: string;
@@ -23,6 +24,7 @@ export function CaptionInput({
   placeholder?: string;
   rows?: number;
 }) {
+  const t = useTranslations("captionInput");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [suggestions, setSuggestions] = useState<UserSuggestion[]>([]);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
@@ -138,7 +140,7 @@ export function CaptionInput({
           value={value}
           onChange={handleChange}
           onKeyUp={handleKeyUp}
-          placeholder={placeholder}
+          placeholder={placeholder ?? t("placeholder")}
           rows={rows}
           className="relative w-full resize-none bg-transparent px-3 py-3 text-sm leading-relaxed outline-none placeholder:text-muted overflow-hidden"
           style={{

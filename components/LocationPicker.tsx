@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { MapPin, MapPinOff, Locate, Search, X, Loader2 } from "lucide-react";
 
 export type PickedLocation = {
@@ -59,6 +60,7 @@ export function LocationPicker({
   isLocating: boolean;
   setIsLocating: (v: boolean) => void;
 }) {
+  const t = useTranslations("location");
   const [showSearch, setShowSearch] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<NominatimResult[]>([]);
@@ -122,7 +124,7 @@ export function LocationPicker({
             type="text"
             value={query}
             onChange={onQueryChange}
-            placeholder="Search for a place…"
+            placeholder={t("searchPlaceholder")}
             className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted"
           />
           {searching && <Loader2 size={14} className="animate-spin text-muted shrink-0" />}
@@ -146,7 +148,7 @@ export function LocationPicker({
           </ul>
         )}
         {query && !searching && results.length === 0 && (
-          <p className="px-3 py-3 text-sm text-muted">No places found</p>
+          <p className="px-3 py-3 text-sm text-muted">{t("noPlaces")}</p>
         )}
       </div>
     );
@@ -156,12 +158,12 @@ export function LocationPicker({
     return (
       <div className="flex items-center gap-2 rounded-xl border border-dashed border-border bg-surface px-3 py-2.5">
         <MapPinOff size={16} className="text-muted shrink-0" />
-        <span className="flex-1 text-sm text-muted">Location off — nothing is shared</span>
+        <span className="flex-1 text-sm text-muted">{t("off")}</span>
         <button
           onClick={locateMe}
           className="text-xs font-medium text-accent hover:underline"
         >
-          Turn on
+          {t("turnOn")}
         </button>
       </div>
     );
@@ -171,12 +173,12 @@ export function LocationPicker({
     <div className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2.5">
       <MapPin size={16} className="text-accent shrink-0" />
       <span className="flex-1 text-sm truncate">
-        {isLocating ? "Finding where you are…" : location?.name || "No location set"}
+        {isLocating ? t("finding") : location?.name || t("none")}
       </span>
       <button
         onClick={() => setShowSearch(true)}
         className="p-1.5 text-muted hover:text-foreground transition-colors"
-        aria-label="Search location"
+        aria-label={t("search")}
       >
         <Search size={16} />
       </button>
@@ -184,7 +186,7 @@ export function LocationPicker({
         onClick={locateMe}
         disabled={isLocating}
         className="p-1.5 text-muted hover:text-foreground transition-colors disabled:opacity-50"
-        aria-label="Use my location"
+        aria-label={t("useMyLocation")}
       >
         {isLocating ? <Loader2 size={16} className="animate-spin" /> : <Locate size={16} />}
       </button>
@@ -194,7 +196,7 @@ export function LocationPicker({
           setGeoDisabled(true);
         }}
         className="p-1.5 -mr-1 text-muted hover:text-foreground transition-colors"
-        aria-label="Turn location off"
+        aria-label={t("turnOff")}
       >
         <MapPinOff size={16} />
       </button>

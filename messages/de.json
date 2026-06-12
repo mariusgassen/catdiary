@@ -167,6 +167,20 @@
       "daysAgo": "vor {count} T."
     }
   },
+  "captionInput": {
+    "placeholder": "Bildunterschrift hinzufügen… #orange @freund"
+  },
+  "location": {
+    "searchPlaceholder": "Nach einem Ort suchen…",
+    "noPlaces": "Keine Orte gefunden",
+    "off": "Standort aus – es wird nichts geteilt",
+    "turnOn": "Einschalten",
+    "finding": "Standort wird ermittelt…",
+    "none": "Kein Standort festgelegt",
+    "search": "Ort suchen",
+    "useMyLocation": "Meinen Standort verwenden",
+    "turnOff": "Standort ausschalten"
+  },
   "notifications": {
     "title": "Benachrichtigungen",
     "markAllRead": "Alle als gelesen markieren",
