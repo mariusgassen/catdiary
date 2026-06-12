@@ -1,0 +1,228 @@
+# Feature ideas — the field journal, not "Instagram for cats"
+
+A running brainstorm for where Cat Diary goes next. The organizing question for
+every idea below is a single editorial test:
+
+> **Does this make Cat Diary a better _naturalist's field journal_, or does it
+> nudge it toward becoming a photo-sharing popularity contest?**
+
+Cat Diary's identity is a *naturalist's notebook* — you document cats you meet,
+where and when, and build a personal collection over time. The value is in
+**observation, record-keeping, identification, and quiet collection**, not in
+chasing reach. Features that reward documentation and curiosity are on-brand.
+Features that reward virality, vanity metrics, and performance are the trap we
+keep calling "Instagram for cats." This doc keeps that line bright.
+
+---
+
+## The north star (so we can say no to good-looking bad ideas)
+
+What a field journal optimizes for, and what it deliberately doesn't:
+
+| We lean into | We stay away from |
+|---|---|
+| Documenting a sighting well (who, where, when, condition) | Maximizing how many people see a post |
+| Building *your* collection / life list | Public follower-count leaderboards |
+| Re-identifying the *same cat* across sightings | Algorithmic "for you" virality feed |
+| Place, season, and time as first-class data | Beauty/cuteness ranking of cats |
+| Slow, satisfying review of your own history | Streaks/pressure that punish not posting |
+| Citizen-science value (welfare, colonies, TNR) | Influencer economy, sponsored cat posts |
+
+Whenever an idea below could be built two ways, we pick the journal way.
+
+---
+
+## Reactions to the input ideas
+
+### ✅ Custom frames (beyond polaroid) — **do it, it's perfectly on-brand**
+The polaroid is a *journal artifact*, not a filter. More artifacts deepen the
+notebook feel without becoming "filters for clout":
+- **Pressed-specimen card** — like a botanical pressing, cat on aged card stock
+  with a handwritten species/breed label.
+- **Index card / library catalog card** — monospace, ruled, with a call number.
+- **Instant-film variants** — square SX-70, wide, faded vintage.
+- **Postcard** — "Greetings from \<place name\>", reusing `locationName`.
+- **Ticket stub / luggage tag** — date + place punched in.
+- Frame choice is a *per-entry* presentation, stored on the entry; no frame is
+  "premium-only" in a way that gates documenting. (See monetization for the
+  honest way to charge.)
+- Implementation: a `frameStyle` enum on `CatEntry`; the polaroid stack
+  component already exists, so this is a render-layer change.
+
+### ✅ Short videos on entries — **yes, but framed as "field footage," capped**
+A 3–10s clip of a cat doing a cat thing is exactly what a field observer would
+capture. Keep it a *documentation* tool, not a Reels surface:
+- Hard cap (e.g. ≤ 10s, muted-by-default, no audio-driven discovery).
+- No standalone video feed, no "video" tab — clips live *inside* an entry next
+  to the photos.
+- Reuse the existing `CatEntryPhoto` ordering idea → a `CatEntryMedia` model, or
+  add `mediaType` so the polaroid stack can hold a clip.
+- Storage/processing cost is real: transcode + poster frame via the existing
+  sharp/upload path; gate behind feature flag until infra is ready.
+
+### ✅ Photo calendar — **strong fit; do it in-app first, no external service**
+A journal *wants* to be looked back on. Generate a printable/exportable
+year-in-cats:
+- "My year in cats" — a month grid built from the user's own entries (we already
+  have `listOnThisDayEntries` and date-grouping logic to lean on).
+- Export as PDF/image in-app (no third-party dependency for v1). A "send to a
+  print service" handoff can come later as an *option*, not a requirement.
+- Doubles as a lovely share/invite artifact and a natural paid feature.
+
+### ✅ Different reactions — **yes, but keep them *observational*, not a like-race**
+More paw-print variants are fine; the risk is turning reactions into a score.
+Keep them expressive and low-stakes:
+- Themed stamps instead of generic emoji: 🐾 paw, "spotted!", "handsome devil,"
+  "same cat?" (links to re-ID), "be safe."
+- **Crucially: never surface a public reaction *count leaderboard*.** Counts stay
+  on the entry for the owner; we don't rank users or cats by reactions.
+- A "**same cat?**" reaction is special — it's a data signal, not applause (feeds
+  the re-identification idea below).
+
+### ⚠️ Share within the app — **yes, but as "passing a note," not a repost engine**
+In-app sharing is useful, but "reshare to my followers" is the single biggest
+Instagram-ification lever. Do the journal version:
+- **Send an entry to a specific person** (a DM-of-one, "look at this cat") rather
+  than a broadcast reshare button.
+- No "reposted by" attribution chains, no quote-repost, no amplification of
+  someone else's sighting into your own diary as if you saw it.
+- Optionally: "**add to a shared diary**" (see Co-authored diaries below) — that's
+  collaboration, not amplification.
+
+### ⚠️ Suggest users to follow — **only place-based / overlap-based, never "popular"**
+Follow suggestions are fine *if* the basis is shared territory, not popularity:
+- "**People who document cats near you**" (we already have Haversine nearby
+  queries) — neighbours, not influencers.
+- "**You've both met this cat**" — overlap on the *same* cat is a genuinely
+  delightful, on-brand reason to connect.
+- **Never** "suggested because they're popular / have many followers." No
+  follower-count-driven ranking anywhere.
+
+### ⚠️ Monetization — **yes, but only models that don't sell reach or attention**
+Acceptable because they charge for *journal craft and storage*, not for
+visibility:
+- **Cat Diary Plus** subscription: unlimited photo/video storage, full-res
+  originals, premium frames, the printable calendar/photo-book export, longer
+  clips, data export.
+- **Print-on-demand**: calendars, a bound "year in cats" photo book, sticker
+  packs of *your own* cats. Tasteful, opt-in, you're buying *your* memories.
+- **Welfare angle**: optional "round up to support local TNR/shelter" — fits the
+  caretaker ethos.
+- ❌ Off the table: promoted posts, "boost your cat," paid follower growth,
+  sponsored-content tooling, selling user data, ad feed. These all monetize
+  *attention*, which is the thing we're protecting.
+
+### ✅ "Own" cats (cats you actually own) — **yes; introduces the Cat as an entity**
+This is the most structurally significant idea here and a great one. Today an
+"entry" is a sighting; ownership implies a *persistent cat profile*:
+- New **`Cat`** entity: a named cat with its own little page, owned/claimed by a
+  user, that **multiple entries point at** ("Mochi, over time").
+- An owned cat gets a timeline of *its* entries — a real diary *of a cat*, which
+  is more on-brand than any social feature here.
+- Distinguish **my cats** (I own them) from **cats I've met** (street cats I
+  document). Both are collectible; only the former is "claimed."
+- This is the backbone for metadata, re-ID, and health records below — worth a
+  proper design doc before building.
+
+### ✅ Metadata (chipped, vaccinated, …) — **yes, scoped to owned cats; it's a record book**
+A field journal *is* a record book. For owned cats, structured care metadata is
+squarely on-brand and genuinely useful:
+- On the `Cat` entity (not on every sighting): microchip ID, neutered/spayed,
+  vaccination dates, birthday, weight log, vet notes, allergies.
+- Quietly powerful: vaccination/vet **reminders** (re-uses the existing
+  notification + web-push plumbing).
+- Privacy: care data is private by default; owner chooses what (if anything) is
+  visible.
+
+### ⚠️ For adoption / for sitting — **yes, but as a *status flag*, hard-walled against becoming a marketplace**
+The user's own guardrail is correct and load-bearing: **this must not become a
+place to sell cats.** Safe, welfare-positive version:
+- A **status flag** on an owned `Cat`: `Looking for a sitter`, `Available for
+  adoption (via shelter)`, `Lost`, `Found`. It's a state, not a listing.
+- **No prices, no payments, no "buy/sell," no transactions in-app, ever.** Adoption
+  routes to a shelter/rescue or is explicitly "not for profit."
+- **Lost & Found** is the strongest welfare feature in this whole doc: a lost-cat
+  flag + the existing nearby/map queries = "help find this cat near you." This is
+  the kind of thing that makes the app *matter*.
+- Heavy moderation/reporting needed before shipping any of this publicly.
+
+---
+
+## New ideas in the same spirit (not in the input list)
+
+These all push *toward* the field-journal identity:
+
+### Identity & collection
+1. **Re-identification — "Have I seen this cat before?"** The killer naturalist
+   feature. We already have CLIP embeddings + pgvector for "cats that look alike."
+   Extend it: when you log a cat, surface "this looks like a cat you (or someone
+   nearby) logged before — same cat?" Confirmed matches link sightings into one
+   cat's story across people and time. This is *iNaturalist for cats*, and it's
+   the most defensible identity the app could have.
+2. **Life list / "cats I've met" collection** — a birdwatcher's life list, but
+   cats. Count of distinct cats, breeds spotted, neighbourhoods covered. Progress
+   against *your own* curiosity, never ranked against others.
+3. **Collections / "cabinets"** — let users group entries into personal
+   collections ("The bodega cats of my block," "Tortoiseshells," "Cats of
+   Lisbon 2026"). Curation is the journal-native verb.
+
+### Place, time & season (lean into data we already have)
+4. **Territory map heatmap** — where *you* tend to find cats; seasons and times of
+   day. Your personal patch.
+5. **Field notes weather/season stamp** — auto-tag an entry with season / weather
+   at capture (a journal records conditions). Cheap, atmospheric, useful for the
+   nature framing.
+6. **"On this day" already exists — extend to "this cat, a year ago"** once the
+   `Cat` entity lands.
+
+### Craft of the entry
+7. **Handwriting / annotation layer** — sketch or scribble arrows and notes *on*
+   the photo, like a real field sketch. Doubles down on "notebook, not feed."
+8. **Audio field note** — a short spoken note attached to an entry (the "purr
+   recording" everyone secretly wants). On-brand as *documentation*.
+9. **Sketch mode** — generate a pencil/ink-sketch rendering of the cat photo as an
+   alternate "specimen drawing" frame.
+
+### Quiet community (without the popularity machine)
+10. **Co-authored / shared diaries** — a household or a friend group keeps one
+    shared diary (the neighbourhood's cats, a campus's cats). Collaboration, not
+    broadcast. Pairs with the "send an entry to someone" idea.
+11. **Colony / community-cat tracking** — for TNR volunteers and feeders: track a
+    known colony, who's been fed, who's been fixed (ear-tip flag). Serious welfare
+    utility, and a wholly different audience from "cute pics."
+12. **Local "cat of the week" by neighbourhood, not global** — *if* we ever do
+    highlighting, keep it hyper-local and rotating so it can't become a
+    follower-count flywheel.
+
+---
+
+## Anti-features — things to deliberately *not* build
+
+Naming these protects the identity better than any feature list:
+- ❌ A global algorithmic "explore/for-you" virality feed.
+- ❌ Public follower-count leaderboards or "top users/cats."
+- ❌ Cuteness/beauty ranking or contests with winners.
+- ❌ Reshare/repost amplification chains.
+- ❌ Streaks that punish you for not posting (pressure ≠ journaling).
+- ❌ Promoted posts / sponsored cats / influencer monetization.
+- ❌ Any buying/selling of cats.
+
+---
+
+## Suggested sequencing
+
+1. **Custom frames** + **different reactions** — pure render-layer, on-brand,
+   cheap, immediately deepen the journal feel.
+2. **Photo calendar / "year in cats" export** — high delight, reuses existing
+   date logic, opens the honest monetization door.
+3. **The `Cat` entity** ("own" cats) — the structural unlock for metadata,
+   health reminders, status flags, and per-cat timelines. Needs a design doc.
+4. **Re-identification ("same cat?")** — the long-term defensible identity;
+   builds on the embeddings we already ship.
+5. **Lost & Found / welfare flags** — high-impact, but only after moderation and
+   the `Cat` entity are in place.
+
+---
+
+*This is a living document — append, argue with, and prune it as the app
+evolves. The test at the top is the only thing that's load-bearing.*
