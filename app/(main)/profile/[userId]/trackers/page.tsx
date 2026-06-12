@@ -43,7 +43,7 @@ export default async function TrackersPage({
           ←
         </Link>
         <h1 className="text-lg font-bold tracking-tight">
-          {t("trackers", { name })}{" "}
+          {t("trackersHeading", { name })}{" "}
           <span className="text-base font-normal text-muted">({trackers.length})</span>
         </h1>
       </header>
