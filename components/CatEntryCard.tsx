@@ -8,6 +8,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { HashtagCaption } from "@/components/HashtagCaption";
 import { DevelopingPhoto } from "@/components/DevelopingPhoto";
 import { displayNameFor } from "@/lib/userDisplay";
+import { possessiveDiaryEn, possessiveDiaryDe } from "@/lib/possessiveDiary";
 
 type CatEntryCardProps = {
   entry: {
@@ -60,7 +61,6 @@ function Avatar({ user }: { user: { displayName: string | null; username?: strin
 }
 
 export function CatEntryCard({ entry, viewerId, linkToDetail = true }: CatEntryCardProps) {
-  const t = useTranslations("card");
   const locale = useLocale();
   const router = useRouter();
   const date = new Date(entry.createdAt);
@@ -77,6 +77,11 @@ export function CatEntryCard({ entry, viewerId, linkToDetail = true }: CatEntryC
   // Single tap on the photo opens the entry; a double tap leaves a paw instead.
   // Delay the open just long enough to tell the two gestures apart.
   const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const possessiveDiary =
+    locale === "de"
+      ? possessiveDiaryDe(displayNameFor(entry.owner))
+      : possessiveDiaryEn(displayNameFor(entry.owner));
 
   function handleFilmScroll() {
     const el = filmRef.current;
@@ -151,7 +156,7 @@ export function CatEntryCard({ entry, viewerId, linkToDetail = true }: CatEntryC
         <Link href={`/profile/${entry.owner.id}`} className="flex min-w-0 items-center gap-2 group">
           <Avatar user={entry.owner} />
           <span className="truncate text-sm font-semibold text-foreground group-hover:underline">
-            {displayNameFor(entry.owner)}{t("sDiary")}
+            {possessiveDiary}
           </span>
         </Link>
         <div className="flex shrink-0 items-center gap-2">

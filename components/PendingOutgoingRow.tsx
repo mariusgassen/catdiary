@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useLocale } from "next-intl";
+import { possessiveDiaryEn, possessiveDiaryDe } from "@/lib/possessiveDiary";
 
 export function PendingOutgoingRow({
   followeeId,
@@ -11,9 +13,15 @@ export function PendingOutgoingRow({
   followeeId: string;
   displayName: string;
 }) {
+  const locale = useLocale();
   const router = useRouter();
   const [resolved, setResolved] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  const possessiveDiary =
+    locale === "de"
+      ? possessiveDiaryDe(displayName)
+      : possessiveDiaryEn(displayName);
 
   if (resolved) return null;
 
@@ -40,7 +48,7 @@ export function PendingOutgoingRow({
         href={`/profile/${followeeId}`}
         className="min-w-0 truncate text-sm font-medium hover:text-accent"
       >
-        {displayName}&rsquo;s diary
+        {possessiveDiary}
       </Link>
       <button
         onClick={cancel}
