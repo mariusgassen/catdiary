@@ -1,18 +1,7 @@
 "use client";
 
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  type ReactNode,
-} from "react";
+import { useCallback, useEffect, useRef, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
-
-// useLayoutEffect warns during SSR; fall back to useEffect on the server. The
-// transition only matters client-side, where the layout effect runs before
-// paint so the slide is applied without a flash of the page at rest.
-const useIsomorphicLayoutEffect =
-  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 // We tag each history entry with a monotonically-increasing index stored
 // alongside (not replacing) Next's own history state, so a traversal can tell
@@ -30,34 +19,34 @@ function stampHistoryIndex(index: number): void {
 }
 
 /*
- * Directional page transitions between routes.
+ * Directional page-fold transition between routes.
  *
- * Cat Diary is a field journal, so navigating reads like sliding to an adjacent
- * leaf: moving forward slides the new leaf in from the right, while moving back
- * slides it in from the left so the motion visibly reverses.
+ * Cat Diary is a field journal, so each navigation folds the new leaf into
+ * place like turning a page: moving forward folds in hinged on the right edge,
+ * moving back hinged on the left so the motion visibly reverses.
  *
- * Direction is decided by *how* you navigated. A `popstate` event fires only for
- * history traversal — the back/forward button or an edge-swipe — and never for
- * `router.push` from a tapped link or nav tab. A non-popstate change is always a
- * forward push. For a traversal we compare the landed entry's stored index to
- * the one we left: a lower index is "back", a higher one is "forward" (so the
- * forward button reverses correctly too). If an entry carries no index (Next can
- * replace its history state without ours), we fall back to "back" — the common
- * traversal — rather than guessing forward.
+ * Direction is decided by *how* you navigated. A `popstate` fires only for
+ * history traversal — the back/forward button or an edge-swipe — never for a
+ * `router.push` from a tapped link or nav tab, which is always a forward push.
+ * For a traversal we compare the landed entry's stored index to the one we
+ * left: lower is "back", higher is "forward" (so the forward button reverses
+ * correctly too). Entries with no index fall back to "back", the common
+ * traversal.
  *
- * The animation is restarted imperatively (remove class → reflow → add class) in
- * a layout effect rather than by remounting the subtree, so it runs before paint
- * with no wrong-direction flash and without tearing down page state. Query-only
- * changes (e.g. Discover's `?q=`) keep the same pathname, so search-as-you-type
- * doesn't re-trigger a transition. Purely presentational, dependency-free, and
+ * Keying the wrapper on the pathname remounts it on every navigation, so a
+ * fresh element always plays the animation — no "did the effect re-fire?"
+ * uncertainty. The fold direction is applied in a callback ref, which runs in
+ * the commit phase before paint (so there's no flash) and is where reading refs
+ * is allowed (unlike during render). Query-only changes (e.g. Discover's `?q=`)
+ * keep the same pathname, so the element isn't remounted and search-as-you-type
+ * doesn't re-trigger a fold. Purely presentational, dependency-free, and
  * collapses to a plain fade under `prefers-reduced-motion`.
  */
 export function PageTransition({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const ref = useRef<HTMLDivElement>(null);
   const popped = useRef(false);
-  const lastPath = useRef(pathname);
   const index = useRef(0);
+  const firstMount = useRef(true);
 
   useEffect(() => {
     // Adopt the current entry's index if it already has one (e.g. after a
@@ -77,9 +66,15 @@ export function PageTransition({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
-  useIsomorphicLayoutEffect(() => {
-    if (pathname === lastPath.current) return; // first mount or query-only change
-    lastPath.current = pathname;
+  // Runs each time the keyed element mounts — i.e. on every navigation — during
+  // commit, before paint. The first mount (cold page load) is skipped so the
+  // app doesn't fold itself in on arrival.
+  const applyFold = useCallback((node: HTMLDivElement | null) => {
+    if (!node) return;
+    if (firstMount.current) {
+      firstMount.current = false;
+      return;
+    }
 
     let back: boolean;
     if (popped.current) {
@@ -99,15 +94,11 @@ export function PageTransition({ children }: { children: ReactNode }) {
       back = false;
     }
 
-    const el = ref.current;
-    if (!el) return;
-    el.classList.remove("page-enter-fwd", "page-enter-back");
-    void el.offsetWidth; // force reflow so re-adding the class restarts the animation
-    el.classList.add(back ? "page-enter-back" : "page-enter-fwd");
-  }, [pathname]);
+    node.classList.add(back ? "page-fold-back" : "page-fold-fwd");
+  }, []);
 
   return (
-    <div ref={ref} className="page-enter">
+    <div key={pathname} ref={applyFold} className="page-enter">
       {children}
     </div>
   );
