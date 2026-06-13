@@ -183,6 +183,21 @@ near-term, tactical roadmap and what's already shipped.
   `GET /api/admin/insights`. User insights via `GET /api/insights/me`. Entry
   points are icons on your own profile header (chart = insights, shield =
   admin when applicable)
+- **Passive engagement metrics (feed impressions, dwell, read depth)**: the same
+  `EntryView` row also accumulates `feedImpressions` (a card scrolled ≥50% into
+  a feed), `dwellMs` (cumulative on-screen time), and `maxReadPct` (furthest
+  detail-page scroll depth). A single client `<EngagementTracker>` (mounted in
+  `(main)/layout`) watches every list card (`[data-entry-id]` — set by
+  `CatEntryCard` when it links to detail, and by `CatEntryGridCard`) with one
+  IntersectionObserver, buffers deltas, and flushes them batched to
+  `POST /api/engagement` on an interval and via `sendBeacon` on tab-hide/unload;
+  `<RecordView>` does the same for the detail page's own dwell + read depth.
+  `lib/engagement.ts#recordEngagement` is visibility-checked, skips the owner's
+  own activity, and upserts via raw SQL (increment counters, `GREATEST` for read
+  depth) — it never touches `count` (deliberate opens). Because feed-only views
+  now create rows with `count = 0`, insights distinguish **readers** (opened,
+  `count > 0`) from **reach** (saw it anywhere), and both dashboards surface
+  impressions / avg. dwell / avg. read depth
 
 ### Capture flow improvements
 - **Photo editing** — crop, basic brightness/contrast before upload

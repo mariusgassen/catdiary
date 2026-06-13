@@ -136,7 +136,12 @@ export function CatEntryCard({ entry, viewerId, linkToDetail = true }: CatEntryC
   }
 
   return (
-    <article className="relative mx-3 rounded-xl border border-border bg-surface px-4 pt-3.5 pb-3 shadow-sm">
+    <article
+      // Tagged for the EngagementTracker only as a list card; the detail page
+      // renders this with linkToDetail=false and tracks its own read depth.
+      {...(linkToDetail ? { "data-entry-id": entry.id } : {})}
+      className="relative mx-3 rounded-xl border border-border bg-surface px-4 pt-3.5 pb-3 shadow-sm"
+    >
       {/* Page header: whose diary + rubber-stamped date */}
       <div className="flex items-center justify-between gap-3 pb-3">
         <Link href={`/profile/${entry.owner.id}`} className="flex min-w-0 items-center gap-2 group">

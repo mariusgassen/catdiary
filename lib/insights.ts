@@ -8,15 +8,19 @@ type EntryCover = { id: string; name: string | null; breed: string | null; thumb
 
 export type EntryEngagement = EntryCover & {
   createdAt: Date;
-  viewers: number; // unique viewers (EntryView rows)
+  viewers: number; // people who saw it at all (feed impression or open)
   likes: number;
   comments: number;
 };
 
 export type DiaryInsights = {
   totalEntries: number;
-  totalViews: number; // sum of repeat views
-  uniqueViewers: number; // distinct people who saw any of your entries
+  totalViews: number; // detail-page opens (sum of repeats)
+  readers: number; // distinct people who opened an entry
+  reach: number; // distinct people who saw an entry (feed impression or open)
+  totalImpressions: number; // times your cards scrolled into a feed
+  avgDwellSeconds: number; // average on-screen time per engaged viewer
+  avgReadPct: number; // average furthest read depth on the detail page
   totalLikes: number;
   totalComments: number;
   topEntries: EntryEngagement[];
@@ -33,48 +37,71 @@ function coverThumb(photos: { thumbKey: string | null }[]): string | null {
 
 /**
  * Engagement insights for one user's own diary: how much of their stuff has
- * been seen, paw-ed and noted on, which entries land best, and who's been
- * reading lately. Aggregated over entries the user owns.
+ * been seen, read, paw-ed and noted on, which entries land best, and who's been
+ * reading lately. Aggregated over entries the user owns. "Readers" counts
+ * people who actually opened an entry (`count > 0`); "reach" also counts people
+ * who only saw a card scroll past in the feed.
  */
 export async function getDiaryInsights(userId: string): Promise<DiaryInsights> {
   const ownedEntries = { catEntry: { is: { ownerId: userId } } };
 
-  const [totalEntries, viewAgg, uniqueViewerRows, totalLikes, totalComments, topRaw, recentRaw] =
-    await Promise.all([
-      db.catEntry.count({ where: { ownerId: userId } }),
-      db.entryView.aggregate({ where: ownedEntries, _sum: { count: true } }),
-      db.entryView.findMany({ where: ownedEntries, distinct: ["userId"], select: { userId: true } }),
-      db.like.count({ where: ownedEntries }),
-      db.comment.count({ where: ownedEntries }),
-      db.catEntry.findMany({
-        where: { ownerId: userId },
-        orderBy: [{ views: { _count: "desc" } }, { createdAt: "desc" }],
-        take: TOP_LIMIT,
-        select: {
-          id: true,
-          name: true,
-          breed: true,
-          createdAt: true,
-          photos: { orderBy: { position: "asc" }, take: 1, select: { thumbKey: true } },
-          _count: { select: { views: true, likes: true, comments: true } },
-        },
-      }),
-      db.entryView.findMany({
-        where: ownedEntries,
-        orderBy: { lastSeenAt: "desc" },
-        take: RECENT_LIMIT,
-        select: {
-          lastSeenAt: true,
-          user: { select: { id: true, username: true, displayName: true, avatarKey: true } },
-          catEntry: { select: { id: true, name: true } },
-        },
-      }),
-    ]);
+  const [
+    totalEntries,
+    viewAgg,
+    dwellAgg,
+    readAgg,
+    readerRows,
+    reachRows,
+    totalLikes,
+    totalComments,
+    topRaw,
+    recentRaw,
+  ] = await Promise.all([
+    db.catEntry.count({ where: { ownerId: userId } }),
+    db.entryView.aggregate({ where: ownedEntries, _sum: { count: true, feedImpressions: true } }),
+    db.entryView.aggregate({ where: { ...ownedEntries, dwellMs: { gt: 0 } }, _avg: { dwellMs: true } }),
+    db.entryView.aggregate({ where: { ...ownedEntries, maxReadPct: { gt: 0 } }, _avg: { maxReadPct: true } }),
+    db.entryView.findMany({
+      where: { ...ownedEntries, count: { gt: 0 } },
+      distinct: ["userId"],
+      select: { userId: true },
+    }),
+    db.entryView.findMany({ where: ownedEntries, distinct: ["userId"], select: { userId: true } }),
+    db.like.count({ where: ownedEntries }),
+    db.comment.count({ where: ownedEntries }),
+    db.catEntry.findMany({
+      where: { ownerId: userId },
+      orderBy: [{ views: { _count: "desc" } }, { createdAt: "desc" }],
+      take: TOP_LIMIT,
+      select: {
+        id: true,
+        name: true,
+        breed: true,
+        createdAt: true,
+        photos: { orderBy: { position: "asc" }, take: 1, select: { thumbKey: true } },
+        _count: { select: { views: true, likes: true, comments: true } },
+      },
+    }),
+    db.entryView.findMany({
+      where: { ...ownedEntries, count: { gt: 0 } },
+      orderBy: { lastSeenAt: "desc" },
+      take: RECENT_LIMIT,
+      select: {
+        lastSeenAt: true,
+        user: { select: { id: true, username: true, displayName: true, avatarKey: true } },
+        catEntry: { select: { id: true, name: true } },
+      },
+    }),
+  ]);
 
   return {
     totalEntries,
     totalViews: viewAgg._sum.count ?? 0,
-    uniqueViewers: uniqueViewerRows.length,
+    readers: readerRows.length,
+    reach: reachRows.length,
+    totalImpressions: viewAgg._sum.feedImpressions ?? 0,
+    avgDwellSeconds: Math.round((dwellAgg._avg.dwellMs ?? 0) / 1000),
+    avgReadPct: Math.round(readAgg._avg.maxReadPct ?? 0),
     totalLikes,
     totalComments,
     topEntries: topRaw.map((e) => ({
@@ -99,8 +126,11 @@ export type AdminInsights = {
   totals: {
     users: number;
     entries: number;
-    views: number; // sum of repeat views
+    views: number; // detail-page opens
     seenPairs: number; // distinct (viewer, entry) rows
+    impressions: number; // feed card impressions
+    avgDwellSeconds: number;
+    avgReadPct: number;
     likes: number;
     comments: number;
     follows: number;
@@ -141,6 +171,8 @@ export async function getAdminInsights(): Promise<AdminInsights> {
     entries,
     viewAgg,
     seenPairs,
+    dwellAgg,
+    readAgg,
     likes,
     comments,
     follows,
@@ -153,8 +185,10 @@ export async function getAdminInsights(): Promise<AdminInsights> {
   ] = await Promise.all([
     db.user.count(),
     db.catEntry.count(),
-    db.entryView.aggregate({ _sum: { count: true } }),
+    db.entryView.aggregate({ _sum: { count: true, feedImpressions: true } }),
     db.entryView.count(),
+    db.entryView.aggregate({ where: { dwellMs: { gt: 0 } }, _avg: { dwellMs: true } }),
+    db.entryView.aggregate({ where: { maxReadPct: { gt: 0 } }, _avg: { maxReadPct: true } }),
     db.like.count(),
     db.comment.count(),
     db.follow.count({ where: { approved: true } }),
@@ -206,6 +240,9 @@ export async function getAdminInsights(): Promise<AdminInsights> {
       entries,
       views: viewAgg._sum.count ?? 0,
       seenPairs,
+      impressions: viewAgg._sum.feedImpressions ?? 0,
+      avgDwellSeconds: Math.round((dwellAgg._avg.dwellMs ?? 0) / 1000),
+      avgReadPct: Math.round(readAgg._avg.maxReadPct ?? 0),
       likes,
       comments,
       follows,

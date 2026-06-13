@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { BottomNav } from "@/components/BottomNav";
+import { EngagementTracker } from "@/components/EngagementTracker";
 import { PageTransition } from "@/components/PageTransition";
 import { PullToRefresh } from "@/components/PullToRefresh";
 
@@ -33,6 +34,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         )}
       </div>
       {!isFullScreen && <BottomNav />}
+      <EngagementTracker />
     </>
   );
 }

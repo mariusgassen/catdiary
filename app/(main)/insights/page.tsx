@@ -33,7 +33,11 @@ export default async function InsightsPage() {
       <section className="mx-3 grid grid-cols-2 gap-2">
         <StatCard label={t("entries")} value={insights.totalEntries} />
         <StatCard label={t("views")} value={insights.totalViews} />
-        <StatCard label={t("readers")} value={insights.uniqueViewers} />
+        <StatCard label={t("readers")} value={insights.readers} />
+        <StatCard label={t("reach")} value={insights.reach} />
+        <StatCard label={t("impressions")} value={insights.totalImpressions} />
+        <StatCard label={t("avgDwell")} value={`${insights.avgDwellSeconds}s`} />
+        <StatCard label={t("readDepth")} value={`${insights.avgReadPct}%`} />
         <StatCard label={t("paws")} value={insights.totalLikes} />
         <StatCard label={t("notes")} value={insights.totalComments} />
       </section>
