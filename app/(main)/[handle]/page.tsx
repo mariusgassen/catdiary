@@ -6,7 +6,17 @@ import { displayNameFor } from "@/lib/userDisplay";
 type Props = { params: Promise<{ handle: string }> };
 
 async function resolveHandle(rawHandle: string) {
-  const handle = rawHandle.replace(/^@/, "").toLowerCase();
+  // Next.js does not decode special characters in app-router dynamic params,
+  // so `/@username` arrives here as `%40username` (the `@` percent-encoded).
+  // Decode before stripping the leading `@`, otherwise the lookup never
+  // matches and every linked handle 404s. (vercel/next.js#48058)
+  let decoded = rawHandle;
+  try {
+    decoded = decodeURIComponent(rawHandle);
+  } catch {
+    // Malformed escape sequence — fall back to the raw value.
+  }
+  const handle = decoded.replace(/^@/, "").toLowerCase();
   return db.user.findFirst({
     where: { username: { equals: handle, mode: "insensitive" } },
     select: {
