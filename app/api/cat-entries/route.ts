@@ -42,6 +42,12 @@ const createSchema = z
     // Both null/absent when the user disabled geo data for this entry.
     latitude: z.number().min(-90).max(90).nullish(),
     longitude: z.number().min(-180).max(180).nullish(),
+    // When the cat was spotted; from photo EXIF or user-edited. Absent = now.
+    // Capped just past "now" to tolerate clock skew without far-future entries.
+    createdAt: z.coerce
+      .date()
+      .max(new Date(Date.now() + 24 * 60 * 60 * 1000), "date cannot be in the future")
+      .optional(),
   })
   .refine((v) => (v.latitude == null) === (v.longitude == null), {
     message: "latitude and longitude must be provided together",

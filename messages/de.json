@@ -90,7 +90,8 @@
       "chooseFromPhotos": "Aus deinen Fotos wählen",
       "cancel": "Abbrechen",
       "chooseFromGallery": "Aus Galerie wählen",
-      "dismiss": "Schließen"
+      "dismiss": "Schließen",
+      "zoom": "Zoom"
     },
     "details": {
       "back": "Zurück zur Kamera",
@@ -101,6 +102,7 @@
       "catNamePlaceholder": "Name der Katze (optional)",
       "breedPlaceholder": "Rasse / Farbe (optional)",
       "locationHint": "Wähle einen Ort – suche, nutze deine Position oder schalte den Standort aus.",
+      "dateLabel": "Gesehen am",
       "errorUpload": "Foto-Upload fehlgeschlagen",
       "errorSave": "Eintrag konnte nicht gespeichert werden",
       "errorGeneric": "Etwas ist schiefgelaufen"
@@ -312,6 +314,7 @@
     "namePlaceholder": "Name (optional)",
     "breedPlaceholder": "Rasse / Farbe (optional)",
     "notesPlaceholder": "Notizen (optional) — #tags und @erwähnungen",
+    "dateLabel": "Gesehen am",
     "delete": "Diesen Eintrag löschen",
     "deleting": "Wird gelöscht…",
     "deleteConfirm": "Diesen Katzeneintrag löschen? Das kann nicht rückgängig gemacht werden.",

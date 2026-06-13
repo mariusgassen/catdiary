@@ -90,7 +90,8 @@
       "chooseFromPhotos": "Choose from your photos",
       "cancel": "Cancel",
       "chooseFromGallery": "Choose from gallery",
-      "dismiss": "Dismiss"
+      "dismiss": "Dismiss",
+      "zoom": "Zoom"
     },
     "details": {
       "back": "Back to camera",
@@ -101,6 +102,7 @@
       "catNamePlaceholder": "Cat name (optional)",
       "breedPlaceholder": "Breed / color (optional)",
       "locationHint": "Pick a location — search, use your position, or switch location off.",
+      "dateLabel": "Spotted",
       "errorUpload": "Photo upload failed",
       "errorSave": "Could not save the entry",
       "errorGeneric": "Something went wrong"
@@ -312,6 +314,7 @@
     "namePlaceholder": "Name (optional)",
     "breedPlaceholder": "Breed / color (optional)",
     "notesPlaceholder": "Notes (optional) — #tags and @mentions",
+    "dateLabel": "Spotted",
     "delete": "Delete this entry",
     "deleting": "Deleting…",
     "deleteConfirm": "Delete this cat entry? This can't be undone.",
