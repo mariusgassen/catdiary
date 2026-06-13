@@ -381,7 +381,8 @@
     "privateDiary": "private diary",
     "blankPages": "These pages are still blank.",
     "trackRequests": "Track requests",
-    "pendingRequests": "Pending requests"
+    "pendingRequests": "Pending requests",
+    "yearInCats": "Year in cats"
   },
   "onThisDay": {
     "title": "On this day"
@@ -463,5 +464,19 @@
     "newEntries": "New entries",
     "topDiarists": "Most-read diarists",
     "byOwner": "by {name}"
+  },
+  "yearInCats": {
+    "title": "{name}'s Year in Cats",
+    "subtitle": "A calendar of every cat documented",
+    "catsLogged": "Cats logged",
+    "namedCats": "Named cats",
+    "breeds": "Breeds",
+    "places": "Places",
+    "busiestMonth": "Busiest month",
+    "entriesCount": "{count, plural, one {# entry} other {# entries}}",
+    "daySightings": "Day {day}: {count, plural, one {# sighting} other {# sightings}}",
+    "emptyYear": "No cats logged this year yet.",
+    "untitled": "A cat",
+    "close": "Close"
   }
 }

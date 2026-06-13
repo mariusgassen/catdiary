@@ -169,6 +169,17 @@ near-term, tactical roadmap and what's already shipped.
 - **Public profile URL**: `/@username` route resolves username → `/profile/{id}`
 - **"On This Day"**: `listOnThisDayEntries` queries same month/day in prior years;
   `<OnThisDayStrip>` horizontal scroll above the feed
+- **"Year in Cats" calendar review**: a year-at-a-glance look back at a diary at
+  `/profile/[userId]/year` (calendar icon on every profile header).
+  `lib/yearInCats.ts#getYearInCats` is visibility-checked and buckets the owner's
+  entries for one year by UTC day, plus headline figures (cats logged, distinct
+  named cats / breeds / places, busiest month) and the list of years with
+  entries for the year switcher; served at `GET /api/cat-entries/year?ownerId=&year=`.
+  `components/YearCalendar.tsx` renders twelve Monday-first month grids whose
+  day cells show the cover thumbnail and open a bottom sheet of that day's
+  sightings. A slow, satisfying review of your own history — never a ranking;
+  the honest stepping stone toward the printable/exportable calendar + Plus
+  monetization in `docs/feature-ideas.md`
 - **Page fade transitions**: each navigation fades the new page in (a short
   opacity-only `.page-enter` animation in `globals.css`). `components/PageTransition.tsx`
   keys the wrapper on the pathname so a fresh element remounts and replays the

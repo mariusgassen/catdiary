@@ -379,7 +379,8 @@
     "privateDiary": "privates Tagebuch",
     "blankPages": "Diese Seiten sind noch leer.",
     "trackRequests": "Leseanfragen",
-    "pendingRequests": "Ausstehende Anfragen"
+    "pendingRequests": "Ausstehende Anfragen",
+    "yearInCats": "Jahr in Katzen"
   },
   "onThisDay": {
     "title": "An diesem Tag"
@@ -461,5 +462,19 @@
     "newEntries": "Neue Einträge",
     "topDiarists": "Meistgelesene Tagebuchführer",
     "byOwner": "von {name}"
+  },
+  "yearInCats": {
+    "title": "{name}s Jahr in Katzen",
+    "subtitle": "Ein Kalender aller dokumentierten Katzen",
+    "catsLogged": "Katzen erfasst",
+    "namedCats": "Benannte Katzen",
+    "breeds": "Rassen",
+    "places": "Orte",
+    "busiestMonth": "Aktivster Monat",
+    "entriesCount": "{count, plural, one {# Eintrag} other {# Einträge}}",
+    "daySightings": "Tag {day}: {count, plural, one {# Sichtung} other {# Sichtungen}}",
+    "emptyYear": "Dieses Jahr noch keine Katzen erfasst.",
+    "untitled": "Eine Katze",
+    "close": "Schließen"
   }
 }
