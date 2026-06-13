@@ -73,36 +73,52 @@ body {
   background-size: 22px 22px;
 }
 
-/* Page-turn between routes: the incoming page flips in around the spine on the
-   left and settles flat, like turning to a fresh leaf in the journal. Applied
-   by components/PageTransition.tsx, which remounts on each navigation so the
-   animation replays. Short and composited (transform + opacity only) to stay
-   smooth on mobile. */
-.page-turn {
+/* Page transitions between routes. Cat Diary is a field journal, so navigating
+   reads like sliding to an adjacent leaf: forward navigations slide the new
+   page in from the right; back navigations (history traversal — the back button
+   or edge-swipe, detected in components/PageTransition.tsx) slide it in from the
+   left, so going back visibly reverses the motion. The wrapper remounts on each
+   navigation to replay the animation; composited (transform + opacity only) to
+   stay smooth on mobile. */
+.page-enter {
   /* full width so it's layout-neutral inside centered (items-center) parents
      like the auth screen as well as the width-capped main column */
   display: block;
   width: 100%;
-  transform-origin: left center;
-  backface-visibility: hidden;
-  animation: page-turn-in 0.34s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
-@keyframes page-turn-in {
+.page-enter-fwd {
+  animation: page-enter-fwd 0.3s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+.page-enter-back {
+  animation: page-enter-back 0.3s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+@keyframes page-enter-fwd {
   from {
     opacity: 0;
-    transform: perspective(1600px) rotateY(-4deg) translate3d(6px, 2px, 0);
+    transform: translate3d(22px, 0, 0);
   }
   to {
     opacity: 1;
-    transform: perspective(1400px) rotateY(0deg) translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
   }
 }
-/* Honour reduced-motion: drop the flip, keep a gentle fade. */
-@media (prefers-reduced-motion: reduce) {
-  .page-turn {
-    animation: page-turn-fade 0.2s ease-out both;
+@keyframes page-enter-back {
+  from {
+    opacity: 0;
+    transform: translate3d(-22px, 0, 0);
   }
-  @keyframes page-turn-fade {
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+/* Honour reduced-motion: drop the slide, keep a gentle fade. */
+@media (prefers-reduced-motion: reduce) {
+  .page-enter-fwd,
+  .page-enter-back {
+    animation: page-fade 0.2s ease-out both;
+  }
+  @keyframes page-fade {
     from {
       opacity: 0;
     }
