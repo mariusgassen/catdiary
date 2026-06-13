@@ -14,9 +14,9 @@ import { storeCatEntryEmbedding } from "@/lib/catEntries";
 async function main() {
   // Embed the cover photo (lowest position) of each entry missing an embedding.
   const entries = await db.$queryRaw<Array<{ id: string; photoKey: string }>>`
-    SELECT DISTINCT ON (ce.id) ce.id, p."photoKey"
-    FROM "CatEntry" ce
-    JOIN "CatEntryPhoto" p ON p."catEntryId" = ce.id
+    SELECT DISTINCT ON (ce.id) ce.id, p.photo_key AS "photoKey"
+    FROM cat_entries ce
+    JOIN cat_entry_photos p ON p.cat_entry_id = ce.id
     WHERE ce.embedding IS NULL
     ORDER BY ce.id, p.position ASC
   `;

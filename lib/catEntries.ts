@@ -182,7 +182,7 @@ export async function getCatEntryForViewer(entryId: string, viewerId: string | n
 
 export async function storeCatEntryEmbedding(entryId: string, embedding: number[]): Promise<void> {
   const vec = `[${embedding.join(",")}]`;
-  await db.$executeRaw`UPDATE "CatEntry" SET embedding = ${vec}::vector WHERE id = ${entryId}`;
+  await db.$executeRaw`UPDATE cat_entries SET embedding = ${vec}::vector WHERE id = ${entryId}`;
 }
 
 type SimilarEntry = {
@@ -204,7 +204,7 @@ export async function getSimilarCatEntries(
   viewerId: string | null,
 ): Promise<SimilarEntry[]> {
   const source = await db.$queryRaw<Array<{ embedding: string | null }>>`
-    SELECT embedding::text FROM "CatEntry" WHERE id = ${entryId}
+    SELECT embedding::text FROM cat_entries WHERE id = ${entryId}
   `;
   const embeddingStr = source[0]?.embedding;
   if (!embeddingStr) return [];
@@ -215,29 +215,29 @@ export async function getSimilarCatEntries(
   return db.$queryRaw<SimilarEntry[]>`
     SELECT
       ce.id,
-      ce."ownerId",
-      cover."photoKey",
-      cover."thumbKey",
+      ce.owner_id      AS "ownerId",
+      cover.photo_key  AS "photoKey",
+      cover.thumb_key  AS "thumbKey",
       ce.name,
       ce.breed,
-      ce."createdAt",
-      u."displayName" AS "ownerDisplayName",
-      u.username      AS "ownerUsername",
-      u."avatarKey"   AS "ownerAvatarKey",
-      u.image         AS "ownerImage"
-    FROM "CatEntry" ce
-    JOIN "User" u ON u.id = ce."ownerId"
+      ce.created_at    AS "createdAt",
+      u.display_name   AS "ownerDisplayName",
+      u.username       AS "ownerUsername",
+      u.avatar_key     AS "ownerAvatarKey",
+      u.image          AS "ownerImage"
+    FROM cat_entries ce
+    JOIN users u ON u.id = ce.owner_id
     LEFT JOIN LATERAL (
-      SELECT p."photoKey", p."thumbKey"
-      FROM "CatEntryPhoto" p
-      WHERE p."catEntryId" = ce.id
+      SELECT p.photo_key, p.thumb_key
+      FROM cat_entry_photos p
+      WHERE p.cat_entry_id = ce.id
       ORDER BY p.position ASC
       LIMIT 1
     ) cover ON TRUE
     WHERE ce.id != ${entryId}
-      AND ce."ownerId" = ANY(${ownerIds}::text[])
+      AND ce.owner_id = ANY(${ownerIds}::text[])
       AND ce.embedding IS NOT NULL
-    -- cosine distance: matches the metric of CatEntry_embedding_hnsw_idx
+    -- cosine distance: matches the metric of cat_entries_embedding_hnsw_idx
     ORDER BY ce.embedding <=> ${embeddingStr}::vector
     LIMIT 6
   `;
@@ -378,12 +378,12 @@ export async function listOnThisDayEntries(viewerId: string | null, limit = 6) {
   const currentYear = now.getFullYear();
 
   const rows = await db.$queryRaw<{ id: string }[]>`
-    SELECT id FROM "CatEntry"
-    WHERE "ownerId" = ANY(${ownerIds}::text[])
-      AND EXTRACT(MONTH FROM "createdAt")::int = ${month}
-      AND EXTRACT(DAY FROM "createdAt")::int = ${day}
-      AND EXTRACT(YEAR FROM "createdAt")::int < ${currentYear}
-    ORDER BY "createdAt" DESC
+    SELECT id FROM cat_entries
+    WHERE owner_id = ANY(${ownerIds}::text[])
+      AND EXTRACT(MONTH FROM created_at)::int = ${month}
+      AND EXTRACT(DAY FROM created_at)::int = ${day}
+      AND EXTRACT(YEAR FROM created_at)::int < ${currentYear}
+    ORDER BY created_at DESC
     LIMIT 6
   `;
 
@@ -441,8 +441,8 @@ export async function listNearbyCatEntries(opts: {
         COS(RADIANS(latitude)) * COS(RADIANS(${lat}::double precision)) *
         POWER(SIN(RADIANS((${lng}::double precision - longitude) / 2.0)), 2)
       )))::double precision AS distance_km
-    FROM "CatEntry"
-    WHERE "ownerId" = ANY(${ownerIds}::text[])
+    FROM cat_entries
+    WHERE owner_id = ANY(${ownerIds}::text[])
       AND latitude IS NOT NULL
       AND longitude IS NOT NULL
       AND (6371.0 * 2.0 * ASIN(SQRT(
@@ -488,8 +488,8 @@ export async function listRandomCatEntries(viewerId: string | null, limit = 24) 
   if (ownerIds.length === 0) return [];
 
   const rows = await db.$queryRaw<{ id: string }[]>`
-    SELECT id FROM "CatEntry"
-    WHERE "ownerId" = ANY(${ownerIds}::text[])
+    SELECT id FROM cat_entries
+    WHERE owner_id = ANY(${ownerIds}::text[])
     ORDER BY RANDOM()
     LIMIT ${limit}
   `;

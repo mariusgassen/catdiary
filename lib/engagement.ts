@@ -69,13 +69,13 @@ export async function recordEngagement(viewerId: string, events: EngagementEvent
     if (d.impressions === 0 && d.dwellMs === 0 && d.readPct === 0) return [];
     return [
       db.$executeRaw`
-        INSERT INTO "EntryView" ("userId", "catEntryId", "count", "feedImpressions", "dwellMs", "maxReadPct", "firstSeenAt", "lastSeenAt")
+        INSERT INTO entry_views (user_id, cat_entry_id, count, feed_impressions, dwell_ms, max_read_pct, first_seen_at, last_seen_at)
         VALUES (${viewerId}, ${entry.id}, 0, ${d.impressions}, ${d.dwellMs}, ${d.readPct}, now(), now())
-        ON CONFLICT ("userId", "catEntryId") DO UPDATE SET
-          "feedImpressions" = "EntryView"."feedImpressions" + ${d.impressions},
-          "dwellMs" = "EntryView"."dwellMs" + ${d.dwellMs},
-          "maxReadPct" = GREATEST("EntryView"."maxReadPct", ${d.readPct}),
-          "lastSeenAt" = now()
+        ON CONFLICT (user_id, cat_entry_id) DO UPDATE SET
+          feed_impressions = entry_views.feed_impressions + ${d.impressions},
+          dwell_ms = entry_views.dwell_ms + ${d.dwellMs},
+          max_read_pct = GREATEST(entry_views.max_read_pct, ${d.readPct}),
+          last_seen_at = now()
       `,
     ];
   });
