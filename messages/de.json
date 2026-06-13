@@ -324,8 +324,18 @@
     "sDiary": "s Tagebuch",
     "aCatIMet": "Eine Katze, die ich getroffen habe",
     "pinnedOnMap": "Auf der Karte markiert",
-    "removePaw": "Pfote entfernen",
-    "leaveAPaw": "Pfote hinterlassen",
+    "reactions": {
+      "react": "Stempel hinterlassen",
+      "changeReaction": "Stempel ändern",
+      "summaryTitle": "Stempel auf diesem Eintrag",
+      "label": {
+        "PAW": "Pfote",
+        "SPOTTED": "Gesichtet!",
+        "HANDSOME": "Hübscher Kerl",
+        "SAME_CAT": "Dieselbe Katze?",
+        "SAFE": "Pass auf dich auf"
+      }
+    },
     "marginNotes": "Randnotizen",
     "share": "Teilen",
     "copied": "Kopiert",

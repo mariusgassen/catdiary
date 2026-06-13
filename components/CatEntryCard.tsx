@@ -7,7 +7,9 @@ import { PawPrint, MessageSquareText, Share2, MapPin, SquarePen, Check } from "l
 import { useTranslations, useLocale } from "next-intl";
 import { HashtagCaption } from "@/components/HashtagCaption";
 import { EntryFrame } from "@/components/EntryFrame";
+import { REACTION_ICON } from "@/components/ReactionStamp";
 import { asFrameStyle } from "@/lib/frames";
+import { asReactionKind, DEFAULT_REACTION_KIND, REACTION_KINDS, type ReactionKind } from "@/lib/reactions";
 import { displayNameFor } from "@/lib/userDisplay";
 import { possessiveDiaryEn, possessiveDiaryDe } from "@/lib/possessiveDiary";
 
@@ -31,7 +33,7 @@ type CatEntryCardProps = {
       image?: string | null;
     };
     _count?: { likes: number; comments: number };
-    likes?: { userId: string }[]; // the viewer's own like row, if any
+    likes?: { userId: string; kind?: string | null }[]; // the viewer's own reaction row, if any
   };
   viewerId?: string | null;
   /** In the feed the card opens the entry on tap; on the detail page itself it
@@ -60,8 +62,10 @@ export function CatEntryCard({ entry, viewerId, linkToDetail = true }: CatEntryC
   const date = new Date(entry.createdAt);
   const stampDate = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short" });
   const isOwner = viewerId != null && viewerId === entry.owner.id;
-  const [liked, setLiked] = useState((entry.likes?.length ?? 0) > 0);
-  const [likeCount, setLikeCount] = useState(entry._count?.likes ?? 0);
+  const initialReaction = entry.likes?.[0] ? asReactionKind(entry.likes[0].kind) : null;
+  const [reaction, setReaction] = useState<ReactionKind | null>(initialReaction);
+  const [reactionTotal, setReactionTotal] = useState(entry._count?.likes ?? 0);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [shared, setShared] = useState(false);
   const commentCount = entry._count?.comments ?? 0;
 
@@ -89,7 +93,8 @@ export function CatEntryCard({ entry, viewerId, linkToDetail = true }: CatEntryC
       clearTimeout(openTimer.current);
       openTimer.current = null;
     }
-    handleLike();
+    // Double-tap is the quick gesture — it always leaves (or lifts) the plain paw.
+    react(DEFAULT_REACTION_KIND);
   }
 
   // Place name in the UI — never raw coordinates. Entries that have a pin but
@@ -97,25 +102,35 @@ export function CatEntryCard({ entry, viewerId, linkToDetail = true }: CatEntryC
   const hasPin = entry.latitude != null && entry.longitude != null;
   const placeLabel = entry.locationName ?? (hasPin ? t("pinnedOnMap") : null);
 
-  async function handleLike() {
+  // Leave / change / lift a reaction. Tapping the stamp you already left removes
+  // it; picking a different one swaps it (total unchanged).
+  async function react(kind: ReactionKind) {
     if (!viewerId) {
       router.push(`/sign-in?callbackUrl=/cat-entries/${entry.id}`);
       return;
     }
+    setPickerOpen(false);
     navigator.vibrate?.([10]);
-    // Optimistic toggle; reconcile with (or revert to) the server's answer.
-    const prev = { liked, likeCount };
-    setLiked(!liked);
-    setLikeCount((c) => (liked ? c - 1 : c + 1));
+
+    const prev = { reaction, reactionTotal };
+    const removing = reaction === kind;
+    const switching = reaction != null && !removing;
+    setReaction(removing ? null : kind);
+    setReactionTotal((c) => (removing ? c - 1 : switching ? c : c + 1));
+
     try {
-      const res = await fetch(`/api/cat-entries/${entry.id}/like`, { method: "POST" });
+      const res = await fetch(`/api/cat-entries/${entry.id}/like`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind }),
+      });
       if (!res.ok) throw new Error();
-      const data: { liked: boolean; likeCount: number } = await res.json();
-      setLiked(data.liked);
-      setLikeCount(data.likeCount);
+      const data: { reacted: boolean; kind: string | null; total: number } = await res.json();
+      setReaction(data.reacted ? asReactionKind(data.kind) : null);
+      setReactionTotal(data.total);
     } catch {
-      setLiked(prev.liked);
-      setLikeCount(prev.likeCount);
+      setReaction(prev.reaction);
+      setReactionTotal(prev.reactionTotal);
     }
   }
 
@@ -212,16 +227,60 @@ export function CatEntryCard({ entry, viewerId, linkToDetail = true }: CatEntryC
           <span aria-hidden />
         )}
         <div className="flex shrink-0 items-center gap-0.5">
-          <button
-            onClick={handleLike}
-            className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium transition-all active:scale-90 ${
-              liked ? "text-accent" : "hover:text-foreground"
-            }`}
-            aria-label={liked ? t("removePaw") : t("leaveAPaw")}
-          >
-            <PawPrint size={16} strokeWidth={1.75} fill={liked ? "currentColor" : "none"} />
-            {likeCount > 0 && <span>{likeCount}</span>}
-          </button>
+          <div className="relative">
+            {pickerOpen && (
+              <>
+                {/* Tap-away backdrop so the picker closes on an outside tap. */}
+                <button
+                  type="button"
+                  aria-hidden
+                  tabIndex={-1}
+                  className="fixed inset-0 z-10 cursor-default"
+                  onClick={() => setPickerOpen(false)}
+                />
+                <div
+                  role="menu"
+                  className="absolute bottom-full right-0 z-20 mb-1.5 flex items-center gap-0.5 rounded-full border border-border bg-surface px-1.5 py-1 shadow-md"
+                >
+                  {REACTION_KINDS.map((kind) => {
+                    const Icon = REACTION_ICON[kind];
+                    const active = reaction === kind;
+                    return (
+                      <button
+                        key={kind}
+                        type="button"
+                        role="menuitemradio"
+                        onClick={() => react(kind)}
+                        className={`rounded-full p-1.5 transition-all active:scale-90 ${
+                          active ? "bg-accent-soft text-accent" : "text-muted hover:text-foreground"
+                        }`}
+                        aria-label={t(`reactions.label.${kind}`)}
+                        aria-checked={active}
+                        title={t(`reactions.label.${kind}`)}
+                      >
+                        <Icon size={18} strokeWidth={1.75} fill={active ? "currentColor" : "none"} />
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+            <button
+              onClick={() => setPickerOpen((o) => !o)}
+              className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium transition-all active:scale-90 ${
+                reaction ? "text-accent" : "hover:text-foreground"
+              }`}
+              aria-label={reaction ? t("reactions.changeReaction") : t("reactions.react")}
+              aria-haspopup="menu"
+              aria-expanded={pickerOpen}
+            >
+              {(() => {
+                const Icon = reaction ? REACTION_ICON[reaction] : PawPrint;
+                return <Icon size={16} strokeWidth={1.75} fill={reaction ? "currentColor" : "none"} />;
+              })()}
+              {reactionTotal > 0 && <span>{reactionTotal}</span>}
+            </button>
+          </div>
           {linkToDetail ? (
             <Link
               href={`/cat-entries/${entry.id}`}

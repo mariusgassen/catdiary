@@ -74,15 +74,20 @@ year-in-cats:
   print service" handoff can come later as an *option*, not a requirement.
 - Doubles as a lovely share/invite artifact and a natural paid feature.
 
-### ✅ Different reactions — **yes, but keep them *observational*, not a like-race**
+### ✅ Different reactions — **SHIPPED** (observational stamps, not a like-race)
 More paw-print variants are fine; the risk is turning reactions into a score.
-Keep them expressive and low-stakes:
-- Themed stamps instead of generic emoji: 🐾 paw, "spotted!", "handsome devil,"
-  "same cat?" (links to re-ID), "be safe."
-- **Crucially: never surface a public reaction *count leaderboard*.** Counts stay
-  on the entry for the owner; we don't rank users or cats by reactions.
-- A "**same cat?**" reaction is special — it's a data signal, not applause (feeds
-  the re-identification idea below).
+Shipped as a `ReactionKind` enum on the `Like` row (`lib/reactions.ts` catalog,
+`components/ReactionStamp.tsx` icons), one reaction per (user, entry), picked
+from a small popover on the entry footer:
+- ✅ Themed stamps instead of generic emoji: 🐾 PAW (default), "spotted!"
+  (SPOTTED), "handsome devil" (HANDSOME), "same cat?" (SAME_CAT), "be safe"
+  (SAFE). Double-tap on the photo still leaves the plain paw.
+- ✅ **Never a public reaction *count leaderboard*.** A public entry shows one
+  total count only; the per-stamp breakdown (`listReactionBreakdown`,
+  `<ReactionSummary>`) is the entry owner's alone, and nothing ranks users or
+  cats by reactions.
+- ✅ A "**same cat?**" reaction is special — recorded as a re-identification
+  *data signal*, not applause (a hook for the re-identification idea below).
 
 ### ⚠️ Share within the app — **yes, but as "passing a note," not a repost engine**
 In-app sharing is useful, but "reshare to my followers" is the single biggest
@@ -216,8 +221,8 @@ Naming these protects the identity better than any feature list:
 
 ## Suggested sequencing
 
-1. ~~**Custom frames**~~ (✅ shipped) + **different reactions** — pure
-   render-layer, on-brand, cheap, immediately deepen the journal feel.
+1. ~~**Custom frames**~~ (✅ shipped) + ~~**different reactions**~~ (✅ shipped) —
+   pure render-layer, on-brand, cheap, immediately deepen the journal feel.
 2. **Photo calendar / "year in cats" export** — high delight, reuses existing
    date logic, opens the honest monetization door.
 3. **The `Cat` entity** ("own" cats) — the structural unlock for metadata,

@@ -326,6 +326,18 @@
     "pinnedOnMap": "Pinned on the map",
     "removePaw": "Remove paw",
     "leaveAPaw": "Leave a paw",
+    "reactions": {
+      "react": "Leave a stamp",
+      "changeReaction": "Change your stamp",
+      "summaryTitle": "Stamps on this entry",
+      "label": {
+        "PAW": "Paw",
+        "SPOTTED": "Spotted!",
+        "HANDSOME": "Handsome devil",
+        "SAME_CAT": "Same cat?",
+        "SAFE": "Be safe"
+      }
+    },
     "marginNotes": "Margin notes",
     "share": "Share",
     "copied": "Copied",
