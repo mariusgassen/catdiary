@@ -8,6 +8,8 @@ import { BackLink } from "@/components/BackLink";
 import { StatCard } from "@/components/StatCard";
 import { YearCalendar } from "@/components/YearCalendar";
 import { displayNameFor } from "@/lib/userDisplay";
+import { possessiveName } from "@/lib/possessiveDiary";
+import { CalendarPlus } from "lucide-react";
 
 export default async function YearInCatsPage({
   params,
@@ -37,6 +39,7 @@ export default async function YearInCatsPage({
   if (!data) notFound();
 
   const name = displayNameFor(profileUser);
+  const possessive = possessiveName(locale, name);
   const monthLabel =
     data.busiestMonth !== null
       ? new Intl.DateTimeFormat(locale, { month: "long", timeZone: "UTC" }).format(
@@ -49,8 +52,16 @@ export default async function YearInCatsPage({
       <BackLink fallbackHref={`/profile/${profileUser.id}`} />
 
       <header className="mx-3 rounded-xl border border-border bg-surface px-5 py-4 shadow-sm">
-        <h1 className="text-lg font-bold tracking-tight">{t("title", { name })}</h1>
+        <h1 className="text-lg font-bold tracking-tight">{t("title", { possessive })}</h1>
         <p className="text-xs text-muted">{t("subtitle")}</p>
+
+        <Link
+          href={`/profile/${profileUser.id}/calendar`}
+          className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-accent bg-accent px-3 py-1 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-accent/90"
+        >
+          <CalendarPlus size={14} />
+          {t("createCalendar")}
+        </Link>
 
         {data.availableYears.length > 1 && (
           <div className="flex flex-wrap gap-1.5 pt-3">

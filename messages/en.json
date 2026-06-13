@@ -469,7 +469,7 @@
     "byOwner": "by {name}"
   },
   "yearInCats": {
-    "title": "{name}'s Year in Cats",
+    "title": "{possessive} Year in Cats",
     "subtitle": "A calendar of every cat documented",
     "catsLogged": "Cats logged",
     "namedCats": "Named cats",
@@ -478,8 +478,25 @@
     "busiestMonth": "Busiest month",
     "entriesCount": "{count, plural, one {# entry} other {# entries}}",
     "daySightings": "Day {day}: {count, plural, one {# sighting} other {# sightings}}",
+    "monthEntries": "{count, plural, one {# cat} other {# cats}}",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
+    "noEntriesThisMonth": "No cats logged this month.",
     "emptyYear": "No cats logged this year yet.",
     "untitled": "A cat",
-    "close": "Close"
+    "close": "Close",
+    "createCalendar": "Create photo calendar"
+  },
+  "catCalendar": {
+    "title": "{possessive} {year} Calendar",
+    "subtitle": "A wall calendar from your diary — one cat for every month",
+    "intro": "We picked a cat for each month of {year} from your sightings. Tap any month to choose a different one, then print or save it.",
+    "print": "Print / Save PDF",
+    "choosePhoto": "Choose a cat for {month}",
+    "change": "Change",
+    "noPhotos": "Add a few cats to your diary first, then come back to build a calendar.",
+    "empty": "No suggestion yet — tap to pick a cat.",
+    "back": "Back to Year in Cats",
+    "credit": "Made with Cat Diary"
   }
 }

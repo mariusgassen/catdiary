@@ -116,62 +116,70 @@ export default async function ProfilePage({
     <div className="paper-grid min-h-dvh flex flex-col gap-5 py-4">
       {/* Diary cover */}
       <header className="mx-3 rounded-xl border border-border bg-surface px-5 py-5 shadow-sm">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex flex-1 min-w-0 items-center gap-3">
-            {(() => {
-              const src = profileUser.avatarKey
-                ? `/api/photos/${profileUser.avatarKey}`
-                : (profileUser.image ?? null);
-              return src ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={src} alt={name} className="h-14 w-14 shrink-0 rounded-full object-cover ring-2 ring-border" />
-              ) : (
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-accent-soft text-xl font-semibold text-accent ring-2 ring-border select-none">
-                  {name[0]?.toUpperCase() ?? "?"}
-                </div>
-              );
-            })()}
-          <div className="min-w-0">
+        <div className="flex items-start gap-3">
+          {(() => {
+            const src = profileUser.avatarKey
+              ? `/api/photos/${profileUser.avatarKey}`
+              : (profileUser.image ?? null);
+            return src ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={src} alt={name} className="h-14 w-14 shrink-0 rounded-full object-cover ring-2 ring-border" />
+            ) : (
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-accent-soft text-xl font-semibold text-accent ring-2 ring-border select-none">
+                {name[0]?.toUpperCase() ?? "?"}
+              </div>
+            );
+          })()}
+          <div className="min-w-0 flex-1">
             <h1 className="text-2xl font-bold tracking-tight break-words">{diaryTitle}</h1>
             <p className="pt-0.5 text-sm text-muted">
-              {withPhotos.length} {withPhotos.length === 1 ? "entry" : "entries"}
+              {t("entries", { count: withPhotos.length })}
               {" · "}
               <Link
                 href={`/profile/${profileUser.id}/trackers`}
                 className="transition-colors hover:text-foreground"
               >
-                {followCounts.trackers} {followCounts.trackers === 1 ? "tracker" : "trackers"}
+                {t("trackers", { count: followCounts.trackers })}
               </Link>
               {" · "}
               <Link
                 href={`/profile/${profileUser.id}/tracking`}
                 className="transition-colors hover:text-foreground"
               >
-                tracking {followCounts.tracking}
+                {t("tracking", { count: followCounts.tracking })}
               </Link>
-              {profileUser.isPrivate && " · private diary"}
+              {profileUser.isPrivate && ` · ${t("privateDiary")}`}
             </p>
             {profileUser.bio && <p className="pt-2 text-sm text-foreground/80">{profileUser.bio}</p>}
           </div>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <Link
-              href={`/profile/${profileUser.id}/year`}
-              className="rounded-xl border border-border p-2 text-muted transition-colors hover:text-foreground"
-              aria-label={t("yearInCats")}
-            >
-              <CalendarDays size={18} />
-            </Link>
-            {isOwnProfile && session?.user?.isAdmin && (
-              <Link
-                href="/admin/insights"
-                className="rounded-xl border border-border p-2 text-muted transition-colors hover:text-foreground"
-                aria-label="Admin insights"
-              >
-                <ShieldCheck size={18} />
-              </Link>
-            )}
-            {isOwnProfile && (
+          {!isOwnProfile && viewerId && (
+            <div className="shrink-0">
+              <FollowButton followeeId={profileUser.id} initialStatus={followStatus} />
+            </div>
+          )}
+        </div>
+
+        {/* Action toolbar — kept on its own row so the icons never squeeze the
+            diary title on narrow screens */}
+        <div className="mt-4 flex items-center gap-2 border-t border-border pt-3">
+          <Link
+            href={`/profile/${profileUser.id}/year`}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs font-medium text-muted transition-colors hover:text-foreground"
+          >
+            <CalendarDays size={15} />
+            {t("yearInCats")}
+          </Link>
+          {isOwnProfile && (
+            <div className="ml-auto flex items-center gap-1.5">
+              {session?.user?.isAdmin && (
+                <Link
+                  href="/admin/insights"
+                  className="rounded-xl border border-border p-2 text-muted transition-colors hover:text-foreground"
+                  aria-label="Admin insights"
+                >
+                  <ShieldCheck size={18} />
+                </Link>
+              )}
               <Link
                 href="/insights"
                 className="rounded-xl border border-border p-2 text-muted transition-colors hover:text-foreground"
@@ -179,8 +187,6 @@ export default async function ProfilePage({
               >
                 <BarChart3 size={18} />
               </Link>
-            )}
-            {isOwnProfile && (
               <Link
                 href="/settings"
                 className="rounded-xl border border-border p-2 text-muted transition-colors hover:text-foreground"
@@ -188,11 +194,8 @@ export default async function ProfilePage({
               >
                 <Settings size={18} />
               </Link>
-            )}
-            {!isOwnProfile && viewerId && (
-              <FollowButton followeeId={profileUser.id} initialStatus={followStatus} />
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </header>
 

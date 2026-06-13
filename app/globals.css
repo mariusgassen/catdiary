@@ -318,3 +318,34 @@ body {
   background: #fff;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
+
+/* Photo-calendar print: isolate the calendar so "Print / Save PDF" produces a
+   clean wall calendar — one month per page — without the app chrome. The
+   visibility trick keeps layout intact while hiding everything outside the
+   calendar region. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .calendar-print,
+  .calendar-print * {
+    visibility: visible;
+  }
+  .calendar-print {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+  }
+  .calendar-print .no-print {
+    display: none !important;
+  }
+  .calendar-page {
+    break-after: page;
+    page-break-after: always;
+    break-inside: avoid;
+  }
+  .calendar-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+}
