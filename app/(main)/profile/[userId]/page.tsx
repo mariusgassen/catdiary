@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BarChart3, ShieldCheck, Settings } from "lucide-react";
+import { BarChart3, CalendarDays, ShieldCheck, Settings } from "lucide-react";
 import { getTranslations, getLocale } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -154,20 +154,24 @@ export default async function ProfilePage({
             {profileUser.bio && <p className="pt-2 text-sm text-foreground/80">{profileUser.bio}</p>}
           </div>
           </div>
-          {!isOwnProfile && viewerId && (
-            <FollowButton followeeId={profileUser.id} initialStatus={followStatus} />
-          )}
-          {isOwnProfile && (
-            <div className="flex shrink-0 items-center gap-2">
-              {session?.user?.isAdmin && (
-                <Link
-                  href="/admin/insights"
-                  className="rounded-xl border border-border p-2 text-muted transition-colors hover:text-foreground"
-                  aria-label="Admin insights"
-                >
-                  <ShieldCheck size={18} />
-                </Link>
-              )}
+          <div className="flex shrink-0 items-center gap-2">
+            <Link
+              href={`/profile/${profileUser.id}/year`}
+              className="rounded-xl border border-border p-2 text-muted transition-colors hover:text-foreground"
+              aria-label={t("yearInCats")}
+            >
+              <CalendarDays size={18} />
+            </Link>
+            {isOwnProfile && session?.user?.isAdmin && (
+              <Link
+                href="/admin/insights"
+                className="rounded-xl border border-border p-2 text-muted transition-colors hover:text-foreground"
+                aria-label="Admin insights"
+              >
+                <ShieldCheck size={18} />
+              </Link>
+            )}
+            {isOwnProfile && (
               <Link
                 href="/insights"
                 className="rounded-xl border border-border p-2 text-muted transition-colors hover:text-foreground"
@@ -175,6 +179,8 @@ export default async function ProfilePage({
               >
                 <BarChart3 size={18} />
               </Link>
+            )}
+            {isOwnProfile && (
               <Link
                 href="/settings"
                 className="rounded-xl border border-border p-2 text-muted transition-colors hover:text-foreground"
@@ -182,8 +188,11 @@ export default async function ProfilePage({
               >
                 <Settings size={18} />
               </Link>
-            </div>
-          )}
+            )}
+            {!isOwnProfile && viewerId && (
+              <FollowButton followeeId={profileUser.id} initialStatus={followStatus} />
+            )}
+          </div>
         </div>
       </header>
 

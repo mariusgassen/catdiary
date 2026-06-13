@@ -65,14 +65,19 @@ capture. Keep it a *documentation* tool, not a Reels surface:
 - Storage/processing cost is real: transcode + poster frame via the existing
   sharp/upload path; gate behind feature flag until infra is ready.
 
-### ✅ Photo calendar — **strong fit; do it in-app first, no external service**
-A journal *wants* to be looked back on. Generate a printable/exportable
-year-in-cats:
-- "My year in cats" — a month grid built from the user's own entries (we already
-  have `listOnThisDayEntries` and date-grouping logic to lean on).
-- Export as PDF/image in-app (no third-party dependency for v1). A "send to a
-  print service" handoff can come later as an *option*, not a requirement.
-- Doubles as a lovely share/invite artifact and a natural paid feature.
+### ✅ Photo calendar — **SHIPPED (in-app review); export still open**
+A journal *wants* to be looked back on. The "Year in Cats" calendar review has
+landed:
+- ✅ "Year in Cats" — twelve month grids built from a diary's entries at
+  `/profile/[userId]/year`, day cells showing the cover thumbnail and opening a
+  sheet of that day's sightings, with headline figures (cats logged, distinct
+  named cats / breeds / places, busiest month) and a year switcher.
+  `lib/yearInCats.ts` + `components/YearCalendar.tsx` + `GET /api/cat-entries/year`;
+  reuses the UTC date-bucketing convention from `listOnThisDayEntries`. Works for
+  any diary the viewer can already see (visibility-checked).
+- Still open: **export as PDF/image** in-app (no third-party dependency for v1)
+  and a later "send to a print service" handoff — the natural paid feature and a
+  lovely share/invite artifact, now that the on-screen review exists to render.
 
 ### ✅ Different reactions — **SHIPPED** (observational stamps, not a like-race)
 More paw-print variants are fine; the risk is turning reactions into a score.
@@ -223,8 +228,9 @@ Naming these protects the identity better than any feature list:
 
 1. ~~**Custom frames**~~ (✅ shipped) + ~~**different reactions**~~ (✅ shipped) —
    pure render-layer, on-brand, cheap, immediately deepen the journal feel.
-2. **Photo calendar / "year in cats" export** — high delight, reuses existing
-   date logic, opens the honest monetization door.
+2. ~~**Photo calendar / "year in cats"**~~ (✅ in-app review shipped; PDF/image
+   export still open) — high delight, reuses existing date logic, opens the
+   honest monetization door.
 3. **The `Cat` entity** ("own" cats) — the structural unlock for metadata,
    health reminders, status flags, and per-cat timelines. Needs a design doc.
 4. **Re-identification ("same cat?")** — the long-term defensible identity;
