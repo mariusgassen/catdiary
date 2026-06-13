@@ -90,7 +90,7 @@ body {
 @keyframes page-turn-in {
   from {
     opacity: 0;
-    transform: perspective(1400px) rotateY(-9deg) translate3d(10px, 3px, 0);
+    transform: perspective(1600px) rotateY(-4deg) translate3d(6px, 2px, 0);
   }
   to {
     opacity: 1;
