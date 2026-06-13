@@ -156,21 +156,14 @@ near-term, tactical roadmap and what's already shipped.
 - **Public profile URL**: `/@username` route resolves username → `/profile/{id}`
 - **"On This Day"**: `listOnThisDayEntries` queries same month/day in prior years;
   `<OnThisDayStrip>` horizontal scroll above the feed
-- **Directional page-fold transitions**: each navigation folds the new page
-  into place like turning a leaf in the journal — forward navigations fold in
-  hinged on the right edge, back navigations on the left so the motion reverses
-  (a pronounced 40° `rotateY`, not a subtle slide). `components/PageTransition.tsx`
-  decides direction from *how* you navigated: a `popstate` (the back/forward
-  button or edge-swipe) is a history traversal whose direction is read from a
-  per-entry index stamped into `history.state` (lower index = back, higher =
-  forward); a tapped link/nav tab is a forward push. The wrapper is keyed on the
-  pathname so a fresh element remounts and always plays the CSS `.page-fold-*`
-  animation (in `globals.css`); the direction class is set in a callback ref,
-  which runs in the commit phase before paint so there's no flash. Applied to the
-  standard pages in `(main)/layout.tsx` (inside `PullToRefresh`, so only the page
-  folds) and to the auth screens; skipped for the map (Leaflet sizing) and the
-  full-screen capture/edit dialogs. Composited (transform + opacity) and collapses to a
-  plain fade under `prefers-reduced-motion`
+- **Page fade transitions**: each navigation fades the new page in (a short
+  opacity-only `.page-enter` animation in `globals.css`). `components/PageTransition.tsx`
+  keys the wrapper on the pathname so a fresh element remounts and replays the
+  fade; query-only changes (e.g. Discover's `?q=`) keep the same pathname and
+  don't re-trigger it. Applied to the standard pages in `(main)/layout.tsx`
+  (inside `PullToRefresh`, so only the page fades) and to the auth screens;
+  skipped for the map (Leaflet sizing) and the full-screen capture/edit dialogs.
+  Collapses to no animation under `prefers-reduced-motion`
 - **Haptic feedback**: `navigator.vibrate?.([10])` on like and follow actions
 - **Nearby cats**: Haversine raw-SQL query in `listNearbyCatEntries`; "Cats near
   you" section in Discover requests geolocation and shows pins within 5 km

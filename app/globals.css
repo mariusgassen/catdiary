@@ -73,62 +73,29 @@ body {
   background-size: 22px 22px;
 }
 
-/* Page transitions between routes. Cat Diary is a field journal, so each
-   navigation folds the new leaf into place like turning a page: forward
-   navigations fold in hinged on the right edge, back navigations (history
-   traversal — the back/forward button or edge-swipe, decided in
-   components/PageTransition.tsx) hinged on the left, so going back visibly
-   reverses the motion. Composited (transform + opacity) to stay smooth on
-   mobile; the perspective + edge-anchored rotateY keeps the page within the
-   viewport so there's no horizontal overflow. */
+/* Page transitions between routes: a simple fade in on each navigation
+   (the wrapper is keyed on the pathname in components/PageTransition.tsx, so a
+   fresh element remounts and replays this animation). Opacity-only to stay
+   smooth on mobile. */
 .page-enter {
   /* full width so it's layout-neutral inside centered (items-center) parents
      like the auth screen as well as the width-capped main column */
   display: block;
   width: 100%;
-  backface-visibility: hidden;
+  animation: page-fade 0.2s ease-out both;
 }
-.page-fold-fwd {
-  transform-origin: right center;
-  animation: page-fold-fwd 0.42s cubic-bezier(0.22, 0.61, 0.36, 1) both;
-}
-.page-fold-back {
-  transform-origin: left center;
-  animation: page-fold-back 0.42s cubic-bezier(0.22, 0.61, 0.36, 1) both;
-}
-@keyframes page-fold-fwd {
+@keyframes page-fade {
   from {
     opacity: 0;
-    transform: perspective(1500px) rotateY(40deg);
   }
   to {
     opacity: 1;
-    transform: perspective(1500px) rotateY(0deg);
   }
 }
-@keyframes page-fold-back {
-  from {
-    opacity: 0;
-    transform: perspective(1500px) rotateY(-40deg);
-  }
-  to {
-    opacity: 1;
-    transform: perspective(1500px) rotateY(0deg);
-  }
-}
-/* Honour reduced-motion: drop the fold, keep a gentle fade. */
+/* Honour reduced-motion: drop the fade entirely. */
 @media (prefers-reduced-motion: reduce) {
-  .page-fold-fwd,
-  .page-fold-back {
-    animation: page-fade 0.2s ease-out both;
-  }
-  @keyframes page-fade {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
+  .page-enter {
+    animation: none;
   }
 }
 
