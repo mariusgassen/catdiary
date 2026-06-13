@@ -100,6 +100,7 @@
       "addOptional": "Add cat name & breed ↓",
       "hideOptional": "Hide optional fields ↑",
       "catNamePlaceholder": "Cat name (optional)",
+      "catNone": "Not one of my cats",
       "breedPlaceholder": "Breed / color (optional)",
       "locationHint": "Pick a location — search, use your position, or switch location off.",
       "dateLabel": "Spotted",
@@ -231,6 +232,8 @@
       "follow": "{actor} is now reading your diary",
       "followPlural": "{actor} are now reading your diary",
       "mention": "{actor} mentioned you",
+      "catLinkRequest": "{actor} thinks they met {cat}",
+      "catLinkApproved": "{actor} confirmed it's {cat}",
       "default": "{actor} interacted with your diary"
     }
   },
@@ -526,6 +529,17 @@
     "ownedHint": "A cat you keep, not just one you've met",
     "errorName": "Give this cat a name.",
     "errorSave": "Could not save the cat.",
-    "errorDelete": "Could not delete the cat."
+    "errorDelete": "Could not delete the cat.",
+    "suggestTitle": "Might this be a cat you know?",
+    "suggestYours": "Your cat",
+    "suggestBy": "{name}'s cat",
+    "suggestFileButton": "This is them",
+    "suggestAskButton": "Ask to link",
+    "suggestFiled": "Filed",
+    "suggestRequested": "Requested",
+    "requestsTitle": "Same cat? Requests",
+    "requestBody": "{name} thinks they met this cat",
+    "requestApprove": "Approve",
+    "requestDecline": "Decline"
   }
 }

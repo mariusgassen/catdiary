@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Bell, Heart, MessageCircle, UserPlus, AtSign, ArrowLeft, CheckCheck } from "lucide-react";
+import { Bell, Heart, MessageCircle, UserPlus, AtSign, ArrowLeft, CheckCheck, PawPrint } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import type { GroupedNotification, NotificationActor } from "@/lib/notifications";
 import { displayNameFor } from "@/lib/userDisplay";
@@ -52,6 +52,10 @@ function useGroupedText() {
           : t("types.followPlural", { actor });
       case "MENTION":
         return t("types.mention", { actor });
+      case "CAT_LINK_REQUEST":
+        return t("types.catLinkRequest", { actor, cat: g.cat?.name ?? "" });
+      case "CAT_LINK_APPROVED":
+        return t("types.catLinkApproved", { actor, cat: g.cat?.name ?? "" });
       default:
         return t("types.default", { actor });
     }
@@ -64,6 +68,8 @@ const TYPE_ICON = {
   REPLY: MessageCircle,
   FOLLOW: UserPlus,
   MENTION: AtSign,
+  CAT_LINK_REQUEST: PawPrint,
+  CAT_LINK_APPROVED: PawPrint,
 } as const;
 
 const TYPE_COLOR = {
@@ -72,11 +78,17 @@ const TYPE_COLOR = {
   REPLY: "text-accent",
   FOLLOW: "text-emerald-500",
   MENTION: "text-accent",
+  CAT_LINK_REQUEST: "text-accent",
+  CAT_LINK_APPROVED: "text-emerald-500",
 } as const;
 
 function groupedHref(g: GroupedNotification): string {
   if (g.type === "FOLLOW" && g.actors.length === 1) return `/profile/${g.actors[0]!.id}`;
   if (g.type === "FOLLOW") return "/notifications";
+  // Re-identification claims point at the cat (its owner reviews there).
+  if ((g.type === "CAT_LINK_REQUEST" || g.type === "CAT_LINK_APPROVED") && g.catId) {
+    return `/cats/${g.catId}`;
+  }
   if (g.catEntryId) return `/cat-entries/${g.catEntryId}`;
   return "/notifications";
 }

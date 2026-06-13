@@ -4,9 +4,10 @@ import { notFound } from "next/navigation";
 import { SquarePen, PawPrint, Home } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { auth } from "@/lib/auth";
-import { getCatForViewer, listEntriesForCat } from "@/lib/cats";
+import { getCatForViewer, listEntriesForCat, listPendingCatLinks } from "@/lib/cats";
 import { photoUrlsFor } from "@/lib/photo-urls";
 import { CatEntryGridCard } from "@/components/CatEntryGridCard";
+import { CatLinkRequests } from "@/components/CatLinkRequests";
 import { BackLink } from "@/components/BackLink";
 
 type Props = { params: Promise<{ id: string }> };
@@ -43,9 +44,12 @@ export default async function CatPage({ params }: Props) {
     notFound();
   }
 
-  const entries = await listEntriesForCat(id, viewerId);
-  const withPhotos = entries.map((entry) => ({ ...entry, photoUrls: photoUrlsFor(entry.photos) }));
   const isOwner = viewerId === cat.ownerId;
+  const [entries, pendingLinks] = await Promise.all([
+    listEntriesForCat(id, viewerId),
+    isOwner ? listPendingCatLinks(id, cat.ownerId) : Promise.resolve([]),
+  ]);
+  const withPhotos = entries.map((entry) => ({ ...entry, photoUrls: photoUrlsFor(entry.photos) }));
   const coverUrl = cat.coverThumbKey
     ? `/api/photos/${cat.coverThumbKey}`
     : cat.coverPhotoKey
@@ -99,6 +103,8 @@ export default async function CatPage({ params }: Props) {
         </div>
         {cat.description && <p className="pt-3 text-sm text-foreground/80">{cat.description}</p>}
       </header>
+
+      {isOwner && pendingLinks.length > 0 && <CatLinkRequests requests={pendingLinks} />}
 
       {withPhotos.length === 0 ? (
         <p className="px-6 py-10 text-center text-sm text-muted">{t("noSightings")}</p>

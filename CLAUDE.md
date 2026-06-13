@@ -255,6 +255,24 @@ near-term, tactical roadmap and what's already shipped.
   `<CatShelf>` of a diary's cats on the profile page (own profile gets a "New
   cat" tile). Deliberately lean for now — the backbone for per-cat metadata,
   re-identification and welfare flags later (see `docs/feature-ideas.md`)
+- **Re-identification — "Might this be cat X?" + cross-person linking**: builds
+  on the CLIP embeddings ("Cats that look alike") and the `Cat` entity. On your
+  own sighting's detail page, `<SuggestCats>` surfaces the nearest *already
+  profiled* cats by cover-photo embedding (`suggestCatsForEntry`, cosine
+  distance over **visible** diaries, collapsed to distinct cats, owner-only) —
+  your cats **and** other people's. Filing under **your own** cat is one tap;
+  claiming **someone else's** cat sends a `CatLink` request the cat's owner
+  approves (`requestCatLink`/`respondToCatLink`). On approval the sighting's
+  `catId` is repointed at that cat, so a single cat's timeline gathers sightings
+  from many people — `listEntriesForCat` therefore visibility-filters each entry
+  by *its own* owner. New `CatLink` model + `CatLinkStatus` enum;
+  `Notification.catId` + `CAT_LINK_REQUEST`/`CAT_LINK_APPROVED` types (push +
+  in-app, routing to the cat page). API: `GET /api/cat-entries/[id]/suggest-cats`,
+  `POST /api/cat-entries/[id]/link`, `POST /api/cat-links/[id]`. The cat owner
+  reviews pending claims via `<CatLinkRequests>` on the cat page; a cat picker
+  also appears in the capture flow (`GET /api/cats` with no `ownerId` returns
+  your own cats). Same-owner links never need approval. Distance threshold is a
+  tunable heuristic; suggestions only appear once the background embedding lands
 
 ### Capture flow improvements
 - **Photo editing** — crop, basic brightness/contrast before upload

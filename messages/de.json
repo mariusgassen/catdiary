@@ -100,6 +100,7 @@
       "addOptional": "Name & Rasse der Katze hinzufügen ↓",
       "hideOptional": "Optionale Felder ausblenden ↑",
       "catNamePlaceholder": "Name der Katze (optional)",
+      "catNone": "Keine meiner Katzen",
       "breedPlaceholder": "Rasse / Farbe (optional)",
       "locationHint": "Wähle einen Ort – suche, nutze deine Position oder schalte den Standort aus.",
       "dateLabel": "Gesehen am",
@@ -231,6 +232,8 @@
       "follow": "{actor} liest jetzt dein Tagebuch",
       "followPlural": "{actor} lesen jetzt dein Tagebuch",
       "mention": "{actor} hat dich erwähnt",
+      "catLinkRequest": "{actor} glaubt, {cat} getroffen zu haben",
+      "catLinkApproved": "{actor} hat bestätigt: es ist {cat}",
       "default": "{actor} hat mit deinem Tagebuch interagiert"
     }
   },
@@ -524,6 +527,17 @@
     "ownedHint": "Eine Katze, die du hältst, nicht nur getroffen hast",
     "errorName": "Gib dieser Katze einen Namen.",
     "errorSave": "Katze konnte nicht gespeichert werden.",
-    "errorDelete": "Katze konnte nicht gelöscht werden."
+    "errorDelete": "Katze konnte nicht gelöscht werden.",
+    "suggestTitle": "Könnte das eine Katze sein, die du kennst?",
+    "suggestYours": "Deine Katze",
+    "suggestBy": "{name}s Katze",
+    "suggestFileButton": "Das ist sie",
+    "suggestAskButton": "Verknüpfung anfragen",
+    "suggestFiled": "Zugeordnet",
+    "suggestRequested": "Angefragt",
+    "requestsTitle": "Gleiche Katze? Anfragen",
+    "requestBody": "{name} glaubt, diese Katze getroffen zu haben",
+    "requestApprove": "Bestätigen",
+    "requestDecline": "Ablehnen"
   }
 }

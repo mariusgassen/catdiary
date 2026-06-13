@@ -37,6 +37,7 @@ const createSchema = z
     name: z.string().max(120).optional(),
     breed: z.string().max(120).optional(),
     notes: z.string().max(2000).optional(),
+    catId: z.string().min(1).optional(),
     frameStyle: z.enum(FRAME_STYLES).optional(),
     locationName: z.string().max(200).nullish(),
     // Both null/absent when the user disabled geo data for this entry.

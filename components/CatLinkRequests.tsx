@@ -1,0 +1,86 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { Check, Loader2, X } from "lucide-react";
+import { displayNameFor } from "@/lib/userDisplay";
+
+export type PendingLink = {
+  id: string;
+  requester: { id: string; username: string | null; displayName: string | null; avatarKey: string | null; image: string | null };
+  catEntry: { id: string; name: string | null; photos: { photoKey: string; thumbKey: string | null }[] };
+};
+
+/**
+ * Pending "same cat?" claims on a cat the viewer owns — approve to add the
+ * other person's sighting to this cat's timeline, or decline. Shown only to the
+ * cat's owner on the cat page.
+ */
+export function CatLinkRequests({ requests }: { requests: PendingLink[] }) {
+  const t = useTranslations("cats");
+  const router = useRouter();
+  const [pending, setPending] = useState(requests);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  async function respond(linkId: string, approve: boolean) {
+    setBusy(linkId);
+    try {
+      const res = await fetch(`/api/cat-links/${linkId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ approve }),
+      });
+      if (!res.ok) return;
+      setPending((prev) => prev.filter((r) => r.id !== linkId));
+      if (approve) router.refresh(); // the new sighting joins the timeline
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  if (pending.length === 0) return null;
+
+  return (
+    <section className="mx-3 flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 shadow-sm">
+      <h2 className="text-sm font-semibold">{t("requestsTitle")}</h2>
+      {pending.map((r) => {
+        const cover = r.catEntry.photos[0]?.thumbKey ?? r.catEntry.photos[0]?.photoKey;
+        const name = displayNameFor(r.requester);
+        return (
+          <div key={r.id} className="flex items-center gap-3">
+            {cover ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={`/api/photos/${cover}`} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover ring-1 ring-border" />
+            ) : (
+              <span className="flex h-12 w-12 shrink-0 select-none items-center justify-center rounded-lg bg-accent-soft text-xl ring-1 ring-border">
+                🐱
+              </span>
+            )}
+            <p className="min-w-0 flex-1 text-sm text-foreground/80">{t("requestBody", { name })}</p>
+            <div className="flex shrink-0 items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => respond(r.id, true)}
+                disabled={busy === r.id}
+                aria-label={t("requestApprove")}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-white transition-opacity disabled:opacity-50"
+              >
+                {busy === r.id ? <Loader2 size={14} className="animate-spin" aria-hidden /> : <Check size={15} aria-hidden />}
+              </button>
+              <button
+                type="button"
+                onClick={() => respond(r.id, false)}
+                disabled={busy === r.id}
+                aria-label={t("requestDecline")}
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted transition-colors hover:text-foreground disabled:opacity-50"
+              >
+                <X size={15} aria-hidden />
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </section>
+  );
+}

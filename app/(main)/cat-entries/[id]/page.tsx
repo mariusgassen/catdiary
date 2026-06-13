@@ -13,6 +13,7 @@ import { CommentsSection } from "@/components/CommentsSection";
 import { RecordView } from "@/components/RecordView";
 import { ReactionSummary } from "@/components/ReactionStamp";
 import { SimilarCats } from "@/components/SimilarCats";
+import { SuggestCats } from "@/components/SuggestCats";
 import { EntryMap } from "@/components/EntryMap";
 import { displayNameFor } from "@/lib/userDisplay";
 import { possessiveDiaryEn, possessiveDiaryDe } from "@/lib/possessiveDiary";
@@ -78,6 +79,7 @@ export default async function CatEntryPage({ params }: Props) {
           <span>{t("entryLink", { name: entry.cat.name })}</span>
         </Link>
       )}
+      {viewerId === entry.ownerId && !entry.cat && <SuggestCats entryId={entry.id} />}
       {entry.reactionBreakdown && <ReactionSummary breakdown={entry.reactionBreakdown} />}
       {entry.latitude != null && entry.longitude != null && (
         <EntryMap lat={entry.latitude} lng={entry.longitude} locationName={entry.locationName} />

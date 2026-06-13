@@ -44,6 +44,7 @@ model User {
   sentNotifications Notification[]     @relation("NotificationsSent")
   pushSubscriptions PushSubscription[]
   entryViews        EntryView[]
+  catLinkRequests   CatLink[]          @relation("CatLinkRequester")
 
   @@map("users")
 }
@@ -115,6 +116,7 @@ model CatEntry {
   comments      Comment[]
   notifications Notification[]
   views         EntryView[]
+  catLinks      CatLink[]
 
   @@index([ownerId, createdAt])
   @@index([catId])
@@ -142,10 +144,45 @@ model Cat {
   isOwned     Boolean  @default(false) @map("is_owned")
   createdAt   DateTime @default(now()) @map("created_at")
 
-  entries CatEntry[]
+  entries       CatEntry[]
+  links         CatLink[]
+  notifications Notification[]
 
   @@index([ownerId, createdAt])
   @@map("cats")
+}
+
+// A re-identification claim: a proposal that one user's sighting (`catEntry`) is
+// the same animal as another user's `Cat`. This is the cross-person bridge for
+// "might this be cat X?" — when the cat belongs to someone else, the sighting
+// owner files a request and the cat's owner approves or declines. On approval
+// the sighting's `catId` is repointed at the cat, so a single cat's timeline can
+// gather sightings from many people (iNaturalist-style). Same-owner links skip
+// this entirely (they're set directly and no row is created).
+enum CatLinkStatus {
+  PENDING
+  APPROVED
+  DECLINED
+
+  @@map("cat_link_status")
+}
+
+model CatLink {
+  id          String        @id @default(cuid())
+  catId       String        @map("cat_id") // the target cat (owned by the approver)
+  catEntryId  String        @map("cat_entry_id") // the sighting being linked (owned by the requester)
+  requesterId String        @map("requester_id") // who proposed the link (the sighting's owner)
+  status      CatLinkStatus @default(PENDING)
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  cat       Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
+  catEntry  CatEntry @relation(fields: [catEntryId], references: [id], onDelete: Cascade)
+  requester User     @relation("CatLinkRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+
+  @@unique([catId, catEntryId])
+  @@index([catId, status])
+  @@index([requesterId])
+  @@map("cat_links")
 }
 
 // A logged-in viewer's "seen" record for an entry — the audience side of the
@@ -255,6 +292,8 @@ enum NotificationType {
   REPLY
   FOLLOW
   MENTION
+  CAT_LINK_REQUEST // someone thinks their sighting is your cat — awaiting your approval
+  CAT_LINK_APPROVED // the cat's owner accepted your "same cat?" link
 
   @@map("notification_type")
 }
@@ -266,6 +305,7 @@ model Notification {
   type       NotificationType
   catEntryId String?          @map("cat_entry_id")
   commentId  String?          @map("comment_id")
+  catId      String?          @map("cat_id") // target cat for re-identification (CAT_LINK_*) notifications
   read       Boolean          @default(false)
   createdAt  DateTime         @default(now()) @map("created_at")
 
@@ -273,6 +313,7 @@ model Notification {
   actor    User      @relation("NotificationsSent", fields: [actorId], references: [id], onDelete: Cascade)
   catEntry CatEntry? @relation(fields: [catEntryId], references: [id], onDelete: Cascade)
   comment  Comment?  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  cat      Cat?      @relation(fields: [catId], references: [id], onDelete: Cascade)
 
   @@index([userId, read, createdAt])
   @@index([userId, createdAt])

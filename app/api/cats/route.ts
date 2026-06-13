@@ -13,12 +13,15 @@ const createSchema = z.object({
 });
 
 export async function GET(request: Request) {
-  const ownerId = new URL(request.url).searchParams.get("ownerId");
-  if (!ownerId) {
-    return NextResponse.json({ error: "INVALID_INPUT" }, { status: 400 });
-  }
   const session = await auth();
-  const cats = await listCatsForOwner(ownerId, session?.user?.id ?? null);
+  const viewerId = session?.user?.id ?? null;
+  // `ownerId` lists a given diary's cats; omitting it returns the signed-in
+  // user's own cats (used by the capture/edit cat pickers).
+  const ownerId = new URL(request.url).searchParams.get("ownerId") ?? viewerId;
+  if (!ownerId) {
+    return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+  }
+  const cats = await listCatsForOwner(ownerId, viewerId);
   return NextResponse.json({ cats });
 }
 
