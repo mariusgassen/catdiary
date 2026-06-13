@@ -9,8 +9,11 @@ import {
   FRAME_TILT_MIN,
   FRAME_TILT_MAX,
   MAX_FRAME_CAPTION,
+  MAX_FRAME_LABEL,
   frameInk,
+  framePaperSwatch,
   frameHasCaption,
+  frameHasLabel,
   type FrameStyle,
   type FrameColorKey,
 } from "@/lib/frames";
@@ -20,12 +23,18 @@ type FramePickerProps = {
   onChange: (frame: FrameStyle) => void;
   color: FrameColorKey;
   onColorChange: (color: FrameColorKey) => void;
+  /** Paper-tint preset; DEFAULT = the frame's own card stock. */
+  paper: FrameColorKey;
+  onPaperChange: (paper: FrameColorKey) => void;
   /** Hand-set tilt in degrees; null = the automatic, id-hashed tilt. */
   tilt: number | null;
   onTiltChange: (tilt: number | null) => void;
-  /** Custom text for the selected frame's label field; "" = the auto default. */
+  /** Custom text for the selected frame's value field; "" = the auto default. */
   caption: string;
   onCaptionChange: (caption: string) => void;
+  /** Custom header label (index card only); "" = the default ("Call no."). */
+  label: string;
+  onLabelChange: (label: string) => void;
   /** A sample photo to preview each frame on — the entry's cover. */
   sampleUrl?: string | null;
   name?: string | null;
@@ -34,21 +43,25 @@ type FramePickerProps = {
 };
 
 /**
- * The frame customizer: a horizontal strip of frame choices (each previewing
- * the chosen style + color on the user's cover photo), plus controls to recolor
- * the chrome, hand-set the tilt, and rename the frame's label field. Everything
- * here is presentation only, so it never blocks posting — it just deepens the
- * notebook feel.
+ * The frame customizer: a large live preview of the selected frame, a strip of
+ * frame choices, and controls to recolor the chrome, tint the paper, hand-set
+ * the tilt, and rename the frame's label/value text. Everything here is
+ * presentation only, so it never blocks posting — it just deepens the notebook
+ * feel.
  */
 export function FramePicker({
   value,
   onChange,
   color,
   onColorChange,
+  paper,
+  onPaperChange,
   tilt,
   onTiltChange,
   caption,
   onCaptionChange,
+  label,
+  onLabelChange,
   sampleUrl,
   name,
   breed,
@@ -57,16 +70,43 @@ export function FramePicker({
   const t = useTranslations("card");
   const sample = sampleUrl ? [sampleUrl] : [];
   const hasCaption = frameHasCaption(value);
+  const hasLabel = frameHasLabel(value);
 
   function selectFrame(frame: FrameStyle) {
-    // The caption means a different thing per frame (call number vs ticket line
-    // vs greeting), so a custom one doesn't carry over when the style changes.
-    if (frame !== value && caption) onCaptionChange("");
+    if (frame === value) return;
+    // The label/value text means a different thing per frame (call number vs
+    // ticket line vs greeting), so a custom one doesn't carry to another style.
+    if (caption) onCaptionChange("");
+    if (label) onLabelChange("");
     onChange(frame);
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      {/* Live preview of the selected frame, with all customizations applied */}
+      <div>
+        <p className="px-1 pb-2 text-xs font-medium uppercase tracking-wide text-muted">{t("framePreviewLabel")}</p>
+        <div className="flex justify-center rounded-xl border border-border bg-background py-5">
+          <div className="w-full max-w-[260px]">
+            <EntryFrame
+              frameStyle={value}
+              photoUrls={sample}
+              name={name ?? null}
+              breed={breed ?? null}
+              locationName={locationName}
+              date={new Date()}
+              entryId="frame-preview"
+              frameColor={color}
+              framePaper={paper}
+              frameTilt={tilt}
+              frameCaption={caption}
+              frameLabel={label}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Choose the frame style */}
       <div>
         <p className="px-1 pb-2 text-xs font-medium uppercase tracking-wide text-muted">{t("chooseFrame")}</p>
         <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -78,10 +118,10 @@ export function FramePicker({
                 type="button"
                 onClick={() => selectFrame(frame)}
                 aria-pressed={selected}
-                className="flex w-[112px] shrink-0 flex-col items-center gap-1.5 outline-none"
+                className="flex w-[96px] shrink-0 flex-col items-center gap-1.5 outline-none"
               >
                 <span
-                  className={`relative block w-full rounded-lg border-2 bg-background p-2 transition-colors ${
+                  className={`relative block w-full rounded-lg border-2 bg-background p-1.5 transition-colors ${
                     selected ? "border-accent" : "border-transparent"
                   }`}
                 >
@@ -90,20 +130,21 @@ export function FramePicker({
                       <Check size={12} strokeWidth={3} />
                     </span>
                   )}
-                  <EntryFrame
-                    frameStyle={frame}
-                    photoUrls={sample}
-                    name={name ?? null}
-                    breed={breed ?? null}
-                    locationName={locationName}
-                    date={new Date()}
-                    entryId={frame}
-                    frameColor={color}
-                    // Tilt + custom caption only preview on the selected style.
-                    frameTilt={selected ? tilt : null}
-                    frameCaption={selected ? caption : null}
-                    preview
-                  />
+                  {/* Uniform square tile so the strip stays tidy across styles. */}
+                  <span className="flex aspect-square items-center justify-center overflow-hidden">
+                    <EntryFrame
+                      frameStyle={frame}
+                      photoUrls={sample}
+                      name={name ?? null}
+                      breed={breed ?? null}
+                      locationName={locationName}
+                      date={new Date()}
+                      entryId={frame}
+                      frameColor={color}
+                      framePaper={paper}
+                      preview
+                    />
+                  </span>
                 </span>
                 <span className={`text-[11px] font-medium ${selected ? "text-accent" : "text-muted"}`}>
                   {t(`frames.name.${frame}`)}
@@ -114,37 +155,23 @@ export function FramePicker({
         </div>
       </div>
 
-      {/* Chrome color */}
-      <div>
-        <p className="px-1 pb-1.5 text-xs font-medium uppercase tracking-wide text-muted">{t("frameColorLabel")}</p>
-        <div className="flex flex-wrap gap-2 px-1">
-          {FRAME_COLOR_KEYS.map((key) => {
-            const ink = frameInk(key);
-            const selected = key === color;
-            return (
-              <button
-                key={key}
-                type="button"
-                onClick={() => onColorChange(key)}
-                aria-pressed={selected}
-                aria-label={t(`colors.${key}`)}
-                title={t(`colors.${key}`)}
-                className={`flex h-8 w-8 items-center justify-center rounded-full border-2 transition-colors ${
-                  selected ? "border-accent" : "border-border"
-                }`}
-                style={ink ? { backgroundColor: ink } : undefined}
-              >
-                {/* DEFAULT shows a small dash; chosen colors show a check when active. */}
-                {ink ? (
-                  selected && <Check size={14} strokeWidth={3} className="text-white" />
-                ) : (
-                  <span className="text-[10px] font-semibold uppercase text-muted">{selected ? "✓" : "—"}</span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      {/* Chrome (border) color */}
+      <ColorSwatches
+        title={t("frameColorLabel")}
+        selected={color}
+        onSelect={onColorChange}
+        swatch={(key) => frameInk(key)}
+        ariaFor={(key) => t(`colors.${key}`)}
+      />
+
+      {/* Paper tint */}
+      <ColorSwatches
+        title={t("framePaperLabel")}
+        selected={paper}
+        onSelect={onPaperChange}
+        swatch={(key) => framePaperSwatch(key)}
+        ariaFor={(key) => t(`colors.${key}`)}
+      />
 
       {/* Tilt */}
       <div className="px-1">
@@ -175,7 +202,23 @@ export function FramePicker({
         )}
       </div>
 
-      {/* Custom label — only for frames that have one */}
+      {/* Custom header label — index card only */}
+      {hasLabel && (
+        <label className="block px-1">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted">{t("frameLabelTitle")}</span>
+          <input
+            type="text"
+            value={label}
+            onChange={(e) => onLabelChange(e.target.value)}
+            placeholder={t("frameLabelPlaceholder")}
+            maxLength={MAX_FRAME_LABEL}
+            className="mt-1 w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-accent placeholder:text-muted"
+          />
+          <span className="mt-1 block text-[11px] leading-snug text-muted">{t("frameLabelHelp")}</span>
+        </label>
+      )}
+
+      {/* Custom value text — frames that carry a label/banner */}
       {hasCaption && (
         <label className="block px-1">
           <span className="text-xs font-medium uppercase tracking-wide text-muted">
@@ -192,6 +235,58 @@ export function FramePicker({
           <span className="mt-1 block text-[11px] leading-snug text-muted">{t(`captionHelp.${value}`)}</span>
         </label>
       )}
+    </div>
+  );
+}
+
+type ColorSwatchesProps = {
+  title: string;
+  selected: FrameColorKey;
+  onSelect: (key: FrameColorKey) => void;
+  /** The fill color to show for a key, or null for the DEFAULT (no fill). */
+  swatch: (key: FrameColorKey) => string | null;
+  ariaFor: (key: FrameColorKey) => string;
+};
+
+/** A row of round color choices (shared by the chrome-color and paper pickers). */
+function ColorSwatches({ title, selected, onSelect, swatch, ariaFor }: ColorSwatchesProps) {
+  return (
+    <div>
+      <p className="px-1 pb-1.5 text-xs font-medium uppercase tracking-wide text-muted">{title}</p>
+      <div className="flex flex-wrap gap-2 px-1">
+        {FRAME_COLOR_KEYS.map((key) => {
+          const fill = swatch(key);
+          const isSelected = key === selected;
+          // A check reads clearly on a strong chrome ink but is invisible on the
+          // pale paper wash, so paper swatches show a ring + dash instead.
+          const strong = fill && fill.startsWith("#");
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => onSelect(key)}
+              aria-pressed={isSelected}
+              aria-label={ariaFor(key)}
+              title={ariaFor(key)}
+              className={`flex h-8 w-8 items-center justify-center rounded-full border-2 transition-colors ${
+                isSelected ? "border-accent" : "border-border"
+              }`}
+              style={fill ? { backgroundColor: fill } : undefined}
+            >
+              {fill ? (
+                isSelected &&
+                (strong ? (
+                  <Check size={14} strokeWidth={3} className="text-white" />
+                ) : (
+                  <Check size={14} strokeWidth={3} className="text-foreground" />
+                ))
+              ) : (
+                <span className="text-[10px] font-semibold uppercase text-muted">{isSelected ? "✓" : "—"}</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

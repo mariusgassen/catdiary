@@ -24,8 +24,10 @@ export type CreateCatEntryInput = {
   longitude?: number | null;
   frameStyle?: FrameStyle;
   frameColor?: string | null; // frame chrome color preset key (null = default palette)
+  framePaper?: string | null; // frame paper-tint preset key (null = default stock)
   frameTilt?: number | null; // hand-set tilt in degrees (null = auto, id-hashed)
-  frameCaption?: string | null; // custom text for the frame's label field
+  frameCaption?: string | null; // custom text for the frame's value field
+  frameLabel?: string | null; // custom header label (index card)
   catId?: string | null; // file this sighting under one of the owner's cats
   // When the cat was actually spotted. Defaults to "now"; set from photo EXIF
   // or edited by the user (e.g. logging an old photo from the gallery).
@@ -44,8 +46,10 @@ export type UpdateCatEntryInput = {
   longitude?: number | null;
   frameStyle?: FrameStyle;
   frameColor?: string | null;
+  framePaper?: string | null;
   frameTilt?: number | null;
   frameCaption?: string | null;
+  frameLabel?: string | null;
   catId?: string | null; // link this sighting to one of the owner's cats (null = unlink)
   createdAt?: Date; // the date the cat was spotted
 };
@@ -75,8 +79,10 @@ export async function createCatEntry(input: CreateCatEntryInput) {
       longitude: input.longitude ?? null,
       frameStyle: input.frameStyle ?? "POLAROID",
       frameColor: input.frameColor ?? null,
+      framePaper: input.framePaper ?? null,
       frameTilt: input.frameTilt ?? null,
       frameCaption: input.frameCaption ?? null,
+      frameLabel: input.frameLabel ?? null,
       catId,
       // Omit when absent so Prisma applies the `now()` default.
       ...(input.createdAt ? { createdAt: input.createdAt } : {}),

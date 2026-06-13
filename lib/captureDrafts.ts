@@ -21,8 +21,10 @@ export type CaptureDraft = {
   breed: string;
   frameStyle?: string; // chosen journal frame; absent on older drafts
   frameColor?: string; // chosen frame chrome color preset; absent on older drafts
+  framePaper?: string; // chosen frame paper-tint preset; absent on older drafts
   frameTilt?: number | null; // hand-set tilt in degrees; absent/null = auto tilt
-  frameCaption?: string; // custom frame label text; absent on older drafts
+  frameCaption?: string; // custom frame value text; absent on older drafts
+  frameLabel?: string; // custom frame header label; absent on older drafts
   capturedAt?: number | null; // ms since epoch of the spotted date; absent = "now"
   location: DraftLocation;
   geoDisabled: boolean;

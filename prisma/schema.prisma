@@ -108,8 +108,10 @@ model CatEntry {
   longitude    Float?
   frameStyle   FrameStyle @default(POLAROID) @map("frame_style")
   frameColor   String?    @map("frame_color") // optional chrome-color preset key; null = the frame's default palette
+  framePaper   String?    @map("frame_paper") // optional paper-tint preset key; null = the frame's default stock
   frameTilt    Int?       @map("frame_tilt") // optional hand-set tilt in degrees; null = the auto, id-hashed tilt
-  frameCaption String?    @map("frame_caption") // optional custom text for the frame's label field (call no. / ticket line / greeting)
+  frameCaption String?    @map("frame_caption") // optional custom text for the frame's value field (call number / ticket line / greeting)
+  frameLabel   String?    @map("frame_label") // optional custom header label (the index card's "Call no.")
   createdAt    DateTime   @default(now()) @map("created_at")
 
   embedding Unsupported("vector(512)")?

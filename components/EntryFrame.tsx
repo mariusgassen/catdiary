@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { DevelopingPhoto } from "@/components/DevelopingPhoto";
-import { callNumber, frameInk, type FrameStyle } from "@/lib/frames";
+import { callNumber, frameInk, framePaperWash, type FrameStyle } from "@/lib/frames";
 
 type EntryFrameProps = {
   frameStyle: FrameStyle;
@@ -18,8 +18,12 @@ type EntryFrameProps = {
   frameColor?: string | null;
   /** Hand-set tilt in degrees; null/absent = the auto, id-hashed tilt. */
   frameTilt?: number | null;
-  /** Custom text for the frame's label (call no. / ticket line / greeting). */
+  /** Paper-tint preset key; null/absent = the frame's default card stock. */
+  framePaper?: string | null;
+  /** Custom text for the frame's value field (call number / ticket line / greeting). */
   frameCaption?: string | null;
+  /** Custom header label (the index card's "Call no."); null/absent = default. */
+  frameLabel?: string | null;
   /** When set, the caption name links to the entry detail page. */
   captionHref?: string;
   onPhotoClick?: () => void;
@@ -53,8 +57,10 @@ export function EntryFrame({
   date,
   entryId,
   frameColor,
+  framePaper,
   frameTilt,
   frameCaption,
+  frameLabel,
   captionHref,
   onPhotoClick,
   onPhotoDoubleClick,
@@ -78,6 +84,11 @@ export function EntryFrame({
   // inline overrides the frame's `ring-[...]` class while keeping ring width.
   const ringStyle = ink ? ({ "--tw-ring-color": ink } as CSSProperties) : undefined;
   const caption = frameCaption?.trim() || null;
+  const label = frameLabel?.trim() || null;
+  // A paper tint is a translucent wash layered over the frame's own background,
+  // so it reads on both the light and dark card stock.
+  const wash = framePaperWash(framePaper);
+  const paperStyle: CSSProperties | undefined = wash ? { backgroundImage: wash } : undefined;
 
   function handleFilmScroll() {
     const el = filmRef.current;
@@ -162,7 +173,7 @@ export function EntryFrame({
           {multi && (
             <span className="frame-specimen absolute inset-0 translate-x-1.5 translate-y-1 -rotate-1 shadow-sm" aria-hidden />
           )}
-          <div className="frame-specimen relative p-3 pb-3.5 shadow-md ring-1 ring-[#d8cbac] dark:ring-[#3a352c]" style={ringStyle}>
+          <div className="frame-specimen relative p-3 pb-3.5 shadow-md ring-1 ring-[#d8cbac] dark:ring-[#3a352c]" style={{ ...ringStyle, ...paperStyle }}>
             <div className="relative">
               {film}
               {counterBadge}
@@ -195,12 +206,12 @@ export function EntryFrame({
       const tiltClass = customTilt || preview ? "" : tiltFor(entryId, ["-rotate-[0.5deg]", "rotate-[0.5deg]", "rotate-0"]);
       return (
         <figure className={`relative mx-auto w-[88%] ${tiltClass}`} style={tiltStyle}>
-          <div className="relative overflow-hidden bg-[#fbf7ec] shadow-md ring-1 ring-[#e0d8c4] dark:bg-[#23262d] dark:ring-[#343842]" style={ringStyle}>
+          <div className="relative overflow-hidden bg-[#fbf7ec] shadow-md ring-1 ring-[#e0d8c4] dark:bg-[#23262d] dark:ring-[#343842]" style={{ ...ringStyle, ...paperStyle }}>
             <div
               className="flex items-center justify-between border-b-2 border-[#d9534f]/45 px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider text-[#9a8f78] dark:text-[#8c93a1]"
               style={ink ? { borderColor: ink } : undefined}
             >
-              <span>{t("frames.callNo")}</span>
+              <span>{label ?? t("frames.callNo")}</span>
               <span className="text-[#5a5240] dark:text-[#c2c7d0]" style={ink ? { color: ink } : undefined}>
                 {caption ?? callNumber(entryId)}
               </span>
@@ -231,7 +242,7 @@ export function EntryFrame({
         caption ?? (locationName ? t("frames.greetingsFrom", { place: locationName }) : t("frames.greetings"));
       return (
         <figure className={`relative mx-auto w-[90%] ${tiltClass}`} style={tiltStyle}>
-          <div className="relative overflow-hidden bg-[#fffdf6] shadow-md ring-1 ring-[#e6dcc4] dark:bg-[#23262d] dark:ring-[#343842]" style={ringStyle}>
+          <div className="relative overflow-hidden bg-[#fffdf6] shadow-md ring-1 ring-[#e6dcc4] dark:bg-[#23262d] dark:ring-[#343842]" style={{ ...ringStyle, ...paperStyle }}>
             <div className="relative">
               {film}
               {counterBadge}
@@ -269,7 +280,7 @@ export function EntryFrame({
       const tiltClass = customTilt || preview ? "" : tiltFor(entryId, ["-rotate-1", "rotate-1", "rotate-[0.5deg]"]);
       return (
         <figure className={`relative mx-auto w-[88%] ${tiltClass}`} style={tiltStyle}>
-          <div className="relative overflow-hidden rounded-md bg-[#fbf6ea] shadow-md ring-1 ring-[#e0d6bf] dark:bg-[#23262d] dark:ring-[#343842]" style={ringStyle}>
+          <div className="relative overflow-hidden rounded-md bg-[#fbf6ea] shadow-md ring-1 ring-[#e0d6bf] dark:bg-[#23262d] dark:ring-[#343842]" style={{ ...ringStyle, ...paperStyle }}>
             <div
               className="flex items-center justify-between bg-[#3a3128] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-[#f4ead3]"
               style={ink ? { backgroundColor: ink } : undefined}
@@ -311,7 +322,10 @@ export function EntryFrame({
           {/* The polaroid is white card stock; a chosen ink shows as a keyline mat. */}
           <div
             className="relative bg-white p-2 pb-2.5 shadow-md dark:bg-[#efe8da]"
-            style={ink ? { borderColor: ink, borderWidth: 2, borderStyle: "solid" } : undefined}
+            style={{
+              ...(ink ? { borderColor: ink, borderWidth: 2, borderStyle: "solid" } : {}),
+              ...paperStyle,
+            }}
           >
             <span className="tape-strip" aria-hidden />
             <div className="relative">

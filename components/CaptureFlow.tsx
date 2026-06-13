@@ -21,9 +21,11 @@ import { MAX_PHOTOS_PER_ENTRY } from "@/lib/photo-urls";
 import {
   asFrameStyle,
   asFrameColor,
+  asFramePaper,
   clampTilt,
   DEFAULT_FRAME_STYLE,
   DEFAULT_FRAME_COLOR,
+  DEFAULT_FRAME_PAPER,
   type FrameStyle,
   type FrameColorKey,
 } from "@/lib/frames";
@@ -90,8 +92,10 @@ export function CaptureFlow() {
   const [breed, setBreed] = useState("");
   const [frameStyle, setFrameStyle] = useState<FrameStyle>(DEFAULT_FRAME_STYLE);
   const [frameColor, setFrameColor] = useState<FrameColorKey>(DEFAULT_FRAME_COLOR);
+  const [framePaper, setFramePaper] = useState<FrameColorKey>(DEFAULT_FRAME_PAPER);
   const [frameTilt, setFrameTilt] = useState<number | null>(null);
   const [frameCaption, setFrameCaption] = useState("");
+  const [frameLabel, setFrameLabel] = useState("");
   const [showOptional, setShowOptional] = useState(false);
   // Optionally file this sighting under one of the user's existing cats.
   const [catId, setCatId] = useState("");
@@ -150,8 +154,10 @@ export function CaptureFlow() {
         breed,
         frameStyle,
         frameColor,
+        framePaper,
         frameTilt,
         frameCaption,
+        frameLabel,
         capturedAt: capturedAt ? capturedAt.getTime() : null,
         location: location ? { name: location.name, lat: location.lat, lng: location.lng } : null,
         geoDisabled,
@@ -160,7 +166,7 @@ export function CaptureFlow() {
     }, 500);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [caption, catName, breed, frameStyle, frameColor, frameTilt, frameCaption, capturedAt, location, geoDisabled, shots, submitting, currentDraftId]);
+  }, [caption, catName, breed, frameStyle, frameColor, framePaper, frameTilt, frameCaption, frameLabel, capturedAt, location, geoDisabled, shots, submitting, currentDraftId]);
 
   const slotsLeft = MAX_PHOTOS_PER_ENTRY - shots.length;
 
@@ -397,8 +403,10 @@ export function CaptureFlow() {
     setBreed(draft.breed);
     setFrameStyle(asFrameStyle(draft.frameStyle));
     setFrameColor(asFrameColor(draft.frameColor));
+    setFramePaper(asFramePaper(draft.framePaper));
     setFrameTilt(clampTilt(draft.frameTilt));
     setFrameCaption(draft.frameCaption ?? "");
+    setFrameLabel(draft.frameLabel ?? "");
     setCapturedAt(draft.capturedAt ? new Date(draft.capturedAt) : null);
     setShowOptional(!!(draft.catName || draft.breed));
     setLocation(draft.location);
@@ -442,8 +450,10 @@ export function CaptureFlow() {
           catId: catId || undefined,
           frameStyle,
           frameColor,
+          framePaper,
           frameTilt,
           frameCaption: frameCaption.trim() || null,
+          frameLabel: frameLabel.trim() || null,
           locationName: location?.name ?? null,
           latitude: location?.lat ?? null,
           longitude: location?.lng ?? null,
@@ -744,10 +754,14 @@ export function CaptureFlow() {
               onChange={setFrameStyle}
               color={frameColor}
               onColorChange={setFrameColor}
+              paper={framePaper}
+              onPaperChange={setFramePaper}
               tilt={frameTilt}
               onTiltChange={setFrameTilt}
               caption={frameCaption}
               onCaptionChange={setFrameCaption}
+              label={frameLabel}
+              onLabelChange={setFrameLabel}
               sampleUrl={shots[0]?.previewUrl}
               name={catName.trim() || null}
               breed={breed.trim() || null}
