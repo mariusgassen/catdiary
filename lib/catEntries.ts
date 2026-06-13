@@ -23,6 +23,9 @@ export type CreateCatEntryInput = {
   latitude?: number | null; // null = user disabled geo data for this entry
   longitude?: number | null;
   frameStyle?: FrameStyle;
+  // When the cat was actually spotted. Defaults to "now"; set from photo EXIF
+  // or edited by the user (e.g. logging an old photo from the gallery).
+  createdAt?: Date;
 };
 
 export class CatEntryNotFoundError extends Error {}
@@ -36,6 +39,7 @@ export type UpdateCatEntryInput = {
   latitude?: number | null;
   longitude?: number | null;
   frameStyle?: FrameStyle;
+  createdAt?: Date; // the date the cat was spotted
 };
 
 export class CatEntryPhotoCountError extends Error {}
@@ -55,6 +59,8 @@ export async function createCatEntry(input: CreateCatEntryInput) {
       latitude: input.latitude ?? null,
       longitude: input.longitude ?? null,
       frameStyle: input.frameStyle ?? "POLAROID",
+      // Omit when absent so Prisma applies the `now()` default.
+      ...(input.createdAt ? { createdAt: input.createdAt } : {}),
       photos: {
         create: input.photos.map((photo, position) => ({
           photoKey: photo.photoKey,

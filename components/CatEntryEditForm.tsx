@@ -3,11 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
-import { Loader2, Trash2, X } from "lucide-react";
+import { CalendarDays, Loader2, Trash2, X } from "lucide-react";
 import { LocationPicker, type PickedLocation } from "@/components/LocationPicker";
 import { CaptionInput } from "@/components/CaptionInput";
 import { FramePicker } from "@/components/FramePicker";
 import { asFrameStyle, type FrameStyle } from "@/lib/frames";
+import { toLocalDateTimeInput } from "@/lib/localDateTime";
 
 type CatEntryEditFormProps = {
   entry: {
@@ -19,6 +20,7 @@ type CatEntryEditFormProps = {
     latitude: number | null;
     longitude: number | null;
     frameStyle?: string | null;
+    createdAt: string | Date;
   };
   coverUrl?: string | null;
 };
@@ -35,6 +37,7 @@ export function CatEntryEditForm({ entry, coverUrl }: CatEntryEditFormProps) {
   const [breed, setBreed] = useState(entry.breed ?? "");
   const [notes, setNotes] = useState(entry.notes ?? "");
   const [frameStyle, setFrameStyle] = useState<FrameStyle>(asFrameStyle(entry.frameStyle));
+  const [capturedAt, setCapturedAt] = useState<Date>(new Date(entry.createdAt));
   const [location, setLocation] = useState<PickedLocation | null>(
     entry.latitude != null && entry.longitude != null
       ? { name: entry.locationName ?? t("pinnedOnMap"), lat: entry.latitude, lng: entry.longitude }
@@ -72,6 +75,7 @@ export function CatEntryEditForm({ entry, coverUrl }: CatEntryEditFormProps) {
           locationName: location?.name ?? null,
           latitude: location?.lat ?? null,
           longitude: location?.lng ?? null,
+          createdAt: capturedAt.toISOString(),
         }),
       });
       if (!res.ok) {
@@ -153,6 +157,20 @@ export function CatEntryEditForm({ entry, coverUrl }: CatEntryEditFormProps) {
           placeholder={t("notesPlaceholder")}
           rows={3}
         />
+        <label className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2.5 text-sm">
+          <CalendarDays size={16} className="shrink-0 text-muted" aria-hidden />
+          <span className="text-muted">{t("dateLabel")}</span>
+          <input
+            type="datetime-local"
+            value={toLocalDateTimeInput(capturedAt)}
+            max={toLocalDateTimeInput(new Date())}
+            onChange={(e) => {
+              const v = e.target.value ? new Date(e.target.value) : null;
+              if (v && !Number.isNaN(v.getTime())) setCapturedAt(v);
+            }}
+            className="ml-auto bg-transparent text-right outline-none"
+          />
+        </label>
         <FramePicker
           value={frameStyle}
           onChange={setFrameStyle}
