@@ -147,15 +147,21 @@ Keep this document in sync with reality as the app evolves.
 - **Public profile URL**: `/@username` route resolves username → `/profile/{id}`
 - **"On This Day"**: `listOnThisDayEntries` queries same month/day in prior years;
   `<OnThisDayStrip>` horizontal scroll above the feed
-- **Page-turn transitions**: navigating between routes flips the incoming page
-  in around the spine on the left like turning to a fresh leaf in the journal —
-  `components/PageTransition.tsx` keys a wrapper on the pathname so each
-  navigation remounts and replays the CSS `.page-turn` animation (in
-  `globals.css`). Applied to the standard pages in `(main)/layout.tsx` (inside
-  `PullToRefresh`, so only the page turns) and to the auth screens; skipped for
-  the map (Leaflet sizing) and the full-screen capture/edit dialogs.
-  Composited (transform + opacity) and collapses to a plain fade under
-  `prefers-reduced-motion`
+- **Directional page transitions**: navigating between routes slides the
+  incoming page in like turning to an adjacent leaf in the journal — forward
+  navigations slide in from the right, back navigations from the left so the
+  motion reverses. `components/PageTransition.tsx` decides direction from *how*
+  you navigated: a `popstate` (the back/forward button or edge-swipe) is a
+  history traversal whose direction is read from a per-entry index stamped into
+  `history.state` (lower index = back, higher = forward); a tapped link/nav tab
+  is a forward push. It restarts the CSS `.page-enter-*` animation (in
+  `globals.css`) imperatively in a layout effect (remove class → reflow → add)
+  rather than remounting, so it runs before paint with no flash and keeps page
+  state. Applied to the standard pages in
+  `(main)/layout.tsx` (inside `PullToRefresh`, so only the page slides) and to
+  the auth screens; skipped for the map (Leaflet sizing) and the full-screen
+  capture/edit dialogs. Composited (transform + opacity) and collapses to a
+  plain fade under `prefers-reduced-motion`
 - **Haptic feedback**: `navigator.vibrate?.([10])` on like and follow actions
 - **Nearby cats**: Haversine raw-SQL query in `listNearbyCatEntries`; "Cats near
   you" section in Discover requests geolocation and shows pins within 5 km
