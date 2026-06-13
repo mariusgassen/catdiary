@@ -18,6 +18,7 @@ model User {
   avatarKey     String? // MinIO object key
   image         String? // adapter convention: avatar URL from OAuth profile
   isPrivate     Boolean   @default(false)
+  isAdmin       Boolean   @default(false) // grants access to the admin insights dashboard
   inviteCode    String?   @unique // personal invite-link code, generated on first share
   invitedById   String? // who invited this user, set once at registration
   createdAt     DateTime  @default(now())
@@ -41,6 +42,7 @@ model User {
   notifications     Notification[]   @relation("NotificationsReceived")
   sentNotifications Notification[]   @relation("NotificationsSent")
   pushSubscriptions PushSubscription[]
+  entryViews        EntryView[]
 }
 
 // Auth.js (next-auth) adapter models. `Session` is intentionally omitted:
@@ -103,8 +105,29 @@ model CatEntry {
   likes         Like[]
   comments      Comment[]
   notifications Notification[]
+  views         EntryView[]
 
   @@index([ownerId, createdAt])
+}
+
+// A logged-in viewer's "seen" record for an entry — the audience side of the
+// engagement picture (likes/comments are the active interactions). One row per
+// (user, entry), deduped: `firstSeenAt` is the first view, `lastSeenAt`/`count`
+// track repeat visits. The entry owner's own views are never recorded, so
+// insights measure the audience rather than the author.
+model EntryView {
+  userId      String
+  catEntryId  String
+  count       Int      @default(1)
+  firstSeenAt DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  catEntry CatEntry @relation(fields: [catEntryId], references: [id], onDelete: Cascade)
+
+  @@id([userId, catEntryId])
+  @@index([catEntryId])
+  @@index([userId, lastSeenAt])
 }
 
 // One photo of an entry (up to MAX_PHOTOS_PER_ENTRY, ordered by position;

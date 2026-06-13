@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Settings } from "lucide-react";
+import { BarChart3, ShieldCheck, Settings } from "lucide-react";
 import { getTranslations, getLocale } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -158,13 +158,31 @@ export default async function ProfilePage({
             <FollowButton followeeId={profileUser.id} initialStatus={followStatus} />
           )}
           {isOwnProfile && (
-            <Link
-              href="/settings"
-              className="shrink-0 rounded-xl border border-border p-2 text-muted transition-colors hover:text-foreground"
-              aria-label="Settings"
-            >
-              <Settings size={18} />
-            </Link>
+            <div className="flex shrink-0 items-center gap-2">
+              {session?.user?.isAdmin && (
+                <Link
+                  href="/admin/insights"
+                  className="rounded-xl border border-border p-2 text-muted transition-colors hover:text-foreground"
+                  aria-label="Admin insights"
+                >
+                  <ShieldCheck size={18} />
+                </Link>
+              )}
+              <Link
+                href="/insights"
+                className="rounded-xl border border-border p-2 text-muted transition-colors hover:text-foreground"
+                aria-label="Diary insights"
+              >
+                <BarChart3 size={18} />
+              </Link>
+              <Link
+                href="/settings"
+                className="rounded-xl border border-border p-2 text-muted transition-colors hover:text-foreground"
+                aria-label="Settings"
+              >
+                <Settings size={18} />
+              </Link>
+            </div>
           )}
         </div>
       </header>
