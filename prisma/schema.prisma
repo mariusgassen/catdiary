@@ -107,6 +107,9 @@ model CatEntry {
   latitude     Float? // null when the user disabled geo data for this entry
   longitude    Float?
   frameStyle   FrameStyle @default(POLAROID) @map("frame_style")
+  frameColor   String?    @map("frame_color") // optional chrome-color preset key; null = the frame's default palette
+  frameTilt    Int?       @map("frame_tilt") // optional hand-set tilt in degrees; null = the auto, id-hashed tilt
+  frameCaption String?    @map("frame_caption") // optional custom text for the frame's label field (call no. / ticket line / greeting)
   createdAt    DateTime   @default(now()) @map("created_at")
 
   embedding Unsupported("vector(512)")?

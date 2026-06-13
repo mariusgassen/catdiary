@@ -7,7 +7,13 @@ import { CalendarDays, Loader2, Trash2, X } from "lucide-react";
 import { LocationPicker, type PickedLocation } from "@/components/LocationPicker";
 import { CaptionInput } from "@/components/CaptionInput";
 import { FramePicker } from "@/components/FramePicker";
-import { asFrameStyle, type FrameStyle } from "@/lib/frames";
+import {
+  asFrameStyle,
+  asFrameColor,
+  clampTilt,
+  type FrameStyle,
+  type FrameColorKey,
+} from "@/lib/frames";
 import { toLocalDateTimeInput } from "@/lib/localDateTime";
 
 type CatEntryEditFormProps = {
@@ -20,6 +26,9 @@ type CatEntryEditFormProps = {
     latitude: number | null;
     longitude: number | null;
     frameStyle?: string | null;
+    frameColor?: string | null;
+    frameTilt?: number | null;
+    frameCaption?: string | null;
     catId?: string | null;
     createdAt: string | Date;
   };
@@ -41,6 +50,9 @@ export function CatEntryEditForm({ entry, coverUrl, cats = [] }: CatEntryEditFor
   const [notes, setNotes] = useState(entry.notes ?? "");
   const [catId, setCatId] = useState(entry.catId ?? "");
   const [frameStyle, setFrameStyle] = useState<FrameStyle>(asFrameStyle(entry.frameStyle));
+  const [frameColor, setFrameColor] = useState<FrameColorKey>(asFrameColor(entry.frameColor));
+  const [frameTilt, setFrameTilt] = useState<number | null>(clampTilt(entry.frameTilt));
+  const [frameCaption, setFrameCaption] = useState(entry.frameCaption ?? "");
   const [capturedAt, setCapturedAt] = useState<Date>(new Date(entry.createdAt));
   const [location, setLocation] = useState<PickedLocation | null>(
     entry.latitude != null && entry.longitude != null
@@ -77,6 +89,9 @@ export function CatEntryEditForm({ entry, coverUrl, cats = [] }: CatEntryEditFor
           notes: notes.trim() || null,
           catId: catId || null,
           frameStyle,
+          frameColor,
+          frameTilt,
+          frameCaption: frameCaption.trim() || null,
           locationName: location?.name ?? null,
           latitude: location?.lat ?? null,
           longitude: location?.lng ?? null,
@@ -196,6 +211,12 @@ export function CatEntryEditForm({ entry, coverUrl, cats = [] }: CatEntryEditFor
         <FramePicker
           value={frameStyle}
           onChange={setFrameStyle}
+          color={frameColor}
+          onColorChange={setFrameColor}
+          tilt={frameTilt}
+          onTiltChange={setFrameTilt}
+          caption={frameCaption}
+          onCaptionChange={setFrameCaption}
           sampleUrl={coverUrl}
           name={name.trim() || null}
           breed={breed.trim() || null}

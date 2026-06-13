@@ -10,7 +10,7 @@ import {
   updateCatEntry,
 } from "@/lib/catEntries";
 import { deleteObject } from "@/lib/storage";
-import { FRAME_STYLES } from "@/lib/frames";
+import { FRAME_STYLES, FRAME_COLOR_KEYS, FRAME_TILT_MIN, FRAME_TILT_MAX, MAX_FRAME_CAPTION } from "@/lib/frames";
 
 const updateSchema = z
   .object({
@@ -19,6 +19,9 @@ const updateSchema = z
     notes: z.string().max(2000).nullable().optional(),
     catId: z.string().nullable().optional(),
     frameStyle: z.enum(FRAME_STYLES).optional(),
+    frameColor: z.enum(FRAME_COLOR_KEYS).nullable().optional(),
+    frameTilt: z.number().int().min(FRAME_TILT_MIN).max(FRAME_TILT_MAX).nullable().optional(),
+    frameCaption: z.string().max(MAX_FRAME_CAPTION).nullable().optional(),
     locationName: z.string().max(200).nullable().optional(),
     latitude: z.number().min(-90).max(90).nullable().optional(),
     longitude: z.number().min(-180).max(180).nullable().optional(),

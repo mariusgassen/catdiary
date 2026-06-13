@@ -15,6 +15,9 @@ export type FeedEntry = {
   latitude: number | null;
   longitude: number | null;
   frameStyle?: string | null;
+  frameColor?: string | null;
+  frameTilt?: number | null;
+  frameCaption?: string | null;
   createdAt: string | Date;
   photoUrls: string[];
   photos?: { photoKey: string; thumbKey: string | null }[];

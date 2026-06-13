@@ -18,7 +18,15 @@ import {
 import { toLocalDateTimeInput } from "@/lib/localDateTime";
 import { LocationPicker, reverseGeocode, type PickedLocation } from "@/components/LocationPicker";
 import { MAX_PHOTOS_PER_ENTRY } from "@/lib/photo-urls";
-import { asFrameStyle, DEFAULT_FRAME_STYLE, type FrameStyle } from "@/lib/frames";
+import {
+  asFrameStyle,
+  asFrameColor,
+  clampTilt,
+  DEFAULT_FRAME_STYLE,
+  DEFAULT_FRAME_COLOR,
+  type FrameStyle,
+  type FrameColorKey,
+} from "@/lib/frames";
 import { CaptionInput } from "@/components/CaptionInput";
 import { FramePicker } from "@/components/FramePicker";
 import { PhotoEditor } from "@/components/PhotoEditor";
@@ -81,6 +89,9 @@ export function CaptureFlow() {
   const [catName, setCatName] = useState("");
   const [breed, setBreed] = useState("");
   const [frameStyle, setFrameStyle] = useState<FrameStyle>(DEFAULT_FRAME_STYLE);
+  const [frameColor, setFrameColor] = useState<FrameColorKey>(DEFAULT_FRAME_COLOR);
+  const [frameTilt, setFrameTilt] = useState<number | null>(null);
+  const [frameCaption, setFrameCaption] = useState("");
   const [showOptional, setShowOptional] = useState(false);
   // Optionally file this sighting under one of the user's existing cats.
   const [catId, setCatId] = useState("");
@@ -138,6 +149,9 @@ export function CaptureFlow() {
         catName,
         breed,
         frameStyle,
+        frameColor,
+        frameTilt,
+        frameCaption,
         capturedAt: capturedAt ? capturedAt.getTime() : null,
         location: location ? { name: location.name, lat: location.lat, lng: location.lng } : null,
         geoDisabled,
@@ -146,7 +160,7 @@ export function CaptureFlow() {
     }, 500);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [caption, catName, breed, frameStyle, capturedAt, location, geoDisabled, shots, submitting, currentDraftId]);
+  }, [caption, catName, breed, frameStyle, frameColor, frameTilt, frameCaption, capturedAt, location, geoDisabled, shots, submitting, currentDraftId]);
 
   const slotsLeft = MAX_PHOTOS_PER_ENTRY - shots.length;
 
@@ -382,6 +396,9 @@ export function CaptureFlow() {
     setCatName(draft.catName);
     setBreed(draft.breed);
     setFrameStyle(asFrameStyle(draft.frameStyle));
+    setFrameColor(asFrameColor(draft.frameColor));
+    setFrameTilt(clampTilt(draft.frameTilt));
+    setFrameCaption(draft.frameCaption ?? "");
     setCapturedAt(draft.capturedAt ? new Date(draft.capturedAt) : null);
     setShowOptional(!!(draft.catName || draft.breed));
     setLocation(draft.location);
@@ -424,6 +441,9 @@ export function CaptureFlow() {
           notes: caption.trim() || undefined,
           catId: catId || undefined,
           frameStyle,
+          frameColor,
+          frameTilt,
+          frameCaption: frameCaption.trim() || null,
           locationName: location?.name ?? null,
           latitude: location?.lat ?? null,
           longitude: location?.lng ?? null,
@@ -722,6 +742,12 @@ export function CaptureFlow() {
             <FramePicker
               value={frameStyle}
               onChange={setFrameStyle}
+              color={frameColor}
+              onColorChange={setFrameColor}
+              tilt={frameTilt}
+              onTiltChange={setFrameTilt}
+              caption={frameCaption}
+              onCaptionChange={setFrameCaption}
               sampleUrl={shots[0]?.previewUrl}
               name={catName.trim() || null}
               breed={breed.trim() || null}

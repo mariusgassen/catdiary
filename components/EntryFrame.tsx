@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { DevelopingPhoto } from "@/components/DevelopingPhoto";
-import { callNumber, type FrameStyle } from "@/lib/frames";
+import { callNumber, frameInk, type FrameStyle } from "@/lib/frames";
 
 type EntryFrameProps = {
   frameStyle: FrameStyle;
@@ -14,6 +14,12 @@ type EntryFrameProps = {
   locationName?: string | null;
   date: Date;
   entryId: string;
+  /** Color preset key for the frame chrome; null/absent = the frame's palette. */
+  frameColor?: string | null;
+  /** Hand-set tilt in degrees; null/absent = the auto, id-hashed tilt. */
+  frameTilt?: number | null;
+  /** Custom text for the frame's label (call no. / ticket line / greeting). */
+  frameCaption?: string | null;
   /** When set, the caption name links to the entry detail page. */
   captionHref?: string;
   onPhotoClick?: () => void;
@@ -46,6 +52,9 @@ export function EntryFrame({
   locationName,
   date,
   entryId,
+  frameColor,
+  frameTilt,
+  frameCaption,
   captionHref,
   onPhotoClick,
   onPhotoDoubleClick,
@@ -55,6 +64,20 @@ export function EntryFrame({
   const locale = useLocale();
   const [photoIndex, setPhotoIndex] = useState(0);
   const filmRef = useRef<HTMLDivElement>(null);
+
+  // Customizations: a chosen ink recolors the frame's signature chrome; a
+  // hand-set tilt overrides the id-hashed one (and shows even in the picker
+  // preview, so the tilt slider is live). Custom-vs-auto tilt is decided here so
+  // each frame just consumes `tiltClass`/`tiltStyle`.
+  const ink = frameInk(frameColor);
+  const customTilt = typeof frameTilt === "number";
+  const tiltStyle: CSSProperties | undefined = customTilt
+    ? { transform: `rotate(${frameTilt}deg)` }
+    : undefined;
+  // Tailwind's ring color is the `--tw-ring-color` custom property — setting it
+  // inline overrides the frame's `ring-[...]` class while keeping ring width.
+  const ringStyle = ink ? ({ "--tw-ring-color": ink } as CSSProperties) : undefined;
+  const caption = frameCaption?.trim() || null;
 
   function handleFilmScroll() {
     const el = filmRef.current;
@@ -133,13 +156,13 @@ export function EntryFrame({
   // ── Frame chrome ───────────────────────────────────────────────────────────
   switch (frameStyle) {
     case "SPECIMEN": {
-      const tilt = preview ? "" : tiltFor(entryId, ["-rotate-1", "rotate-1", "rotate-[0.75deg]"]);
+      const tiltClass = customTilt || preview ? "" : tiltFor(entryId, ["-rotate-1", "rotate-1", "rotate-[0.75deg]"]);
       return (
-        <figure className={`relative mx-auto w-[88%] ${tilt}`}>
+        <figure className={`relative mx-auto w-[88%] ${tiltClass}`} style={tiltStyle}>
           {multi && (
             <span className="frame-specimen absolute inset-0 translate-x-1.5 translate-y-1 -rotate-1 shadow-sm" aria-hidden />
           )}
-          <div className="frame-specimen relative p-3 pb-3.5 shadow-md ring-1 ring-[#d8cbac] dark:ring-[#3a352c]">
+          <div className="frame-specimen relative p-3 pb-3.5 shadow-md ring-1 ring-[#d8cbac] dark:ring-[#3a352c]" style={ringStyle}>
             <div className="relative">
               {film}
               {counterBadge}
@@ -169,13 +192,18 @@ export function EntryFrame({
     }
 
     case "INDEX_CARD": {
-      const tilt = preview ? "" : tiltFor(entryId, ["-rotate-[0.5deg]", "rotate-[0.5deg]", "rotate-0"]);
+      const tiltClass = customTilt || preview ? "" : tiltFor(entryId, ["-rotate-[0.5deg]", "rotate-[0.5deg]", "rotate-0"]);
       return (
-        <figure className={`relative mx-auto w-[88%] ${tilt}`}>
-          <div className="relative overflow-hidden bg-[#fbf7ec] shadow-md ring-1 ring-[#e0d8c4] dark:bg-[#23262d] dark:ring-[#343842]">
-            <div className="flex items-center justify-between border-b-2 border-[#d9534f]/45 px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider text-[#9a8f78] dark:text-[#8c93a1]">
+        <figure className={`relative mx-auto w-[88%] ${tiltClass}`} style={tiltStyle}>
+          <div className="relative overflow-hidden bg-[#fbf7ec] shadow-md ring-1 ring-[#e0d8c4] dark:bg-[#23262d] dark:ring-[#343842]" style={ringStyle}>
+            <div
+              className="flex items-center justify-between border-b-2 border-[#d9534f]/45 px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider text-[#9a8f78] dark:text-[#8c93a1]"
+              style={ink ? { borderColor: ink } : undefined}
+            >
               <span>{t("frames.callNo")}</span>
-              <span className="text-[#5a5240] dark:text-[#c2c7d0]">{callNumber(entryId)}</span>
+              <span className="text-[#5a5240] dark:text-[#c2c7d0]" style={ink ? { color: ink } : undefined}>
+                {caption ?? callNumber(entryId)}
+              </span>
             </div>
             <div className="relative">
               {film}
@@ -198,11 +226,12 @@ export function EntryFrame({
     }
 
     case "POSTCARD": {
-      const tilt = preview ? "" : tiltFor(entryId, ["-rotate-[0.75deg]", "rotate-[0.75deg]", "rotate-0"]);
-      const greeting = locationName ? t("frames.greetingsFrom", { place: locationName }) : t("frames.greetings");
+      const tiltClass = customTilt || preview ? "" : tiltFor(entryId, ["-rotate-[0.75deg]", "rotate-[0.75deg]", "rotate-0"]);
+      const greeting =
+        caption ?? (locationName ? t("frames.greetingsFrom", { place: locationName }) : t("frames.greetings"));
       return (
-        <figure className={`relative mx-auto w-[90%] ${tilt}`}>
-          <div className="relative overflow-hidden bg-[#fffdf6] shadow-md ring-1 ring-[#e6dcc4] dark:bg-[#23262d] dark:ring-[#343842]">
+        <figure className={`relative mx-auto w-[90%] ${tiltClass}`} style={tiltStyle}>
+          <div className="relative overflow-hidden bg-[#fffdf6] shadow-md ring-1 ring-[#e6dcc4] dark:bg-[#23262d] dark:ring-[#343842]" style={ringStyle}>
             <div className="relative">
               {film}
               {counterBadge}
@@ -237,12 +266,15 @@ export function EntryFrame({
     }
 
     case "TICKET": {
-      const tilt = preview ? "" : tiltFor(entryId, ["-rotate-1", "rotate-1", "rotate-[0.5deg]"]);
+      const tiltClass = customTilt || preview ? "" : tiltFor(entryId, ["-rotate-1", "rotate-1", "rotate-[0.5deg]"]);
       return (
-        <figure className={`relative mx-auto w-[88%] ${tilt}`}>
-          <div className="relative overflow-hidden rounded-md bg-[#fbf6ea] shadow-md ring-1 ring-[#e0d6bf] dark:bg-[#23262d] dark:ring-[#343842]">
-            <div className="flex items-center justify-between bg-[#3a3128] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-[#f4ead3]">
-              <span>{t("frames.admitOne")}</span>
+        <figure className={`relative mx-auto w-[88%] ${tiltClass}`} style={tiltStyle}>
+          <div className="relative overflow-hidden rounded-md bg-[#fbf6ea] shadow-md ring-1 ring-[#e0d6bf] dark:bg-[#23262d] dark:ring-[#343842]" style={ringStyle}>
+            <div
+              className="flex items-center justify-between bg-[#3a3128] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-[#f4ead3]"
+              style={ink ? { backgroundColor: ink } : undefined}
+            >
+              <span>{caption ?? t("frames.admitOne")}</span>
               <span className="inline-block h-2.5 w-2.5 rounded-full ring-2 ring-[#f4ead3]/70" aria-hidden />
             </div>
             <div className="relative">
@@ -267,16 +299,20 @@ export function EntryFrame({
 
     // POLAROID — the default journal artifact
     default: {
-      const tilt = preview ? "" : tiltFor(entryId, ["-rotate-1", "rotate-1", "-rotate-[1.5deg]", "rotate-[0.75deg]"]);
+      const tiltClass = customTilt || preview ? "" : tiltFor(entryId, ["-rotate-1", "rotate-1", "-rotate-[1.5deg]", "rotate-[0.75deg]"]);
       return (
-        <figure className={`relative mx-auto w-[88%] ${tilt}`}>
+        <figure className={`relative mx-auto w-[88%] ${tiltClass}`} style={tiltStyle}>
           {multi && (
             <span
               className="absolute inset-0 translate-x-1.5 translate-y-1 rotate-1 bg-white shadow-sm dark:bg-[#e4dccb]"
               aria-hidden
             />
           )}
-          <div className="relative bg-white p-2 pb-2.5 shadow-md dark:bg-[#efe8da]">
+          {/* The polaroid is white card stock; a chosen ink shows as a keyline mat. */}
+          <div
+            className="relative bg-white p-2 pb-2.5 shadow-md dark:bg-[#efe8da]"
+            style={ink ? { borderColor: ink, borderWidth: 2, borderStyle: "solid" } : undefined}
+          >
             <span className="tape-strip" aria-hidden />
             <div className="relative">
               {film}
