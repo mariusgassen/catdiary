@@ -16,7 +16,7 @@ export function CatEntryGridCard({ entry }: CatEntryGridCardProps) {
   const likeCount = entry._count?.likes ?? 0;
 
   return (
-    <Link href={`/cat-entries/${entry.id}`} className="group block">
+    <Link href={`/cat-entries/${entry.id}`} className="group block" data-entry-id={entry.id}>
       <div className="relative bg-white p-1.5 pb-6 shadow-sm transition-shadow group-hover:shadow-md dark:bg-[#efe8da]">
         {coverUrl ? (
           <DevelopingPhoto

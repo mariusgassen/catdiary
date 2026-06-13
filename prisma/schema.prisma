@@ -116,11 +116,14 @@ model CatEntry {
 // track repeat visits. The entry owner's own views are never recorded, so
 // insights measure the audience rather than the author.
 model EntryView {
-  userId      String
-  catEntryId  String
-  count       Int      @default(1)
-  firstSeenAt DateTime @default(now())
-  lastSeenAt  DateTime @default(now())
+  userId          String
+  catEntryId      String
+  count           Int      @default(1) // detail-page opens ("seen")
+  feedImpressions Int      @default(0) // times the card scrolled into view in a list/feed
+  dwellMs         Int      @default(0) // cumulative ms the entry was on-screen (feed + detail)
+  maxReadPct      Int      @default(0) // furthest scroll depth reached on the detail page (0–100)
+  firstSeenAt     DateTime @default(now())
+  lastSeenAt      DateTime @default(now())
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   catEntry CatEntry @relation(fields: [catEntryId], references: [id], onDelete: Cascade)

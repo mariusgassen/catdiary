@@ -32,6 +32,9 @@ export default async function AdminInsightsPage() {
         <StatCard label={t("users")} value={insights.totals.users} />
         <StatCard label={t("entries")} value={insights.totals.entries} />
         <StatCard label={t("views")} value={insights.totals.views} hint={`${insights.totals.seenPairs} ${t("seenRecords")}`} />
+        <StatCard label={t("impressions")} value={insights.totals.impressions} />
+        <StatCard label={t("avgDwell")} value={`${insights.totals.avgDwellSeconds}s`} />
+        <StatCard label={t("readDepth")} value={`${insights.totals.avgReadPct}%`} />
         <StatCard label={t("paws")} value={insights.totals.likes} />
         <StatCard label={t("notes")} value={insights.totals.comments} />
         <StatCard label={t("follows")} value={insights.totals.follows} />
