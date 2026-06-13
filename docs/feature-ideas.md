@@ -127,17 +127,23 @@ visibility:
   sponsored-content tooling, selling user data, ad feed. These all monetize
   *attention*, which is the thing we're protecting.
 
-### ✅ "Own" cats (cats you actually own) — **yes; introduces the Cat as an entity**
-This is the most structurally significant idea here and a great one. Today an
-"entry" is a sighting; ownership implies a *persistent cat profile*:
-- New **`Cat`** entity: a named cat with its own little page, owned/claimed by a
-  user, that **multiple entries point at** ("Mochi, over time").
-- An owned cat gets a timeline of *its* entries — a real diary *of a cat*, which
-  is more on-brand than any social feature here.
-- Distinguish **my cats** (I own them) from **cats I've met** (street cats I
-  document). Both are collectible; only the former is "claimed."
-- This is the backbone for metadata, re-ID, and health records below — worth a
-  proper design doc before building.
+### ✅ "Own" cats (cats you actually own) — **SHIPPED (MVP); introduces the Cat as an entity**
+The most structurally significant idea here, and the backbone the rest of this
+section builds on. The lean MVP has landed:
+- ✅ New **`Cat`** entity (`lib/cats.ts`): a named cat with its own page at
+  `/cats/[id]`, owned/claimed by its creator, that **multiple sightings point
+  at** via `CatEntry.catId` ("Mochi, over time").
+- ✅ The cat's page is a timeline of *its* sightings — a real diary *of a cat*.
+  Visibility reuses `canViewCatEntry` (a cat is visible exactly when its owner's
+  diary is); the cat's photo is the cover of its most recent sighting (no
+  separate avatar upload).
+- ✅ `isOwned` distinguishes **my cats** (claimed) from **cats I've met** (street
+  cats I document). Both are collectible; only the former is "claimed."
+- ✅ Filed under a cat from the entry edit screen (a selector on the existing
+  entry `PATCH`); a `<CatShelf>` of a diary's cats sits on the profile page.
+- Still open (the part that *did* need a design doc): structured **care
+  metadata**, **per-cat re-ID**, and welfare **status flags** below — all hang
+  off this `Cat` entity now that it exists.
 
 ### ✅ Metadata (chipped, vaccinated, …) — **yes, scoped to owned cats; it's a record book**
 A field journal *is* a record book. For owned cats, structured care metadata is
@@ -231,10 +237,12 @@ Naming these protects the identity better than any feature list:
 2. ~~**Photo calendar / "year in cats"**~~ (✅ in-app review shipped; PDF/image
    export still open) — high delight, reuses existing date logic, opens the
    honest monetization door.
-3. **The `Cat` entity** ("own" cats) — the structural unlock for metadata,
-   health reminders, status flags, and per-cat timelines. Needs a design doc.
+3. ~~**The `Cat` entity** ("own" cats)~~ (✅ MVP shipped) — the structural unlock
+   for metadata, health reminders, status flags, and per-cat timelines. The
+   persistent cat profile + per-cat timeline now exist; metadata/flags build on
+   it next.
 4. **Re-identification ("same cat?")** — the long-term defensible identity;
-   builds on the embeddings we already ship.
+   builds on the embeddings we already ship (and now on the `Cat` entity).
 5. **Lost & Found / welfare flags** — high-impact, but only after moderation and
    the `Cat` entity are in place.
 

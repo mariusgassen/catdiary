@@ -318,7 +318,9 @@
     "errorLocation": "Wähle einen Ort oder schalte den Standort aus.",
     "errorSave": "Änderungen konnten nicht gespeichert werden.",
     "errorDelete": "Eintrag konnte nicht gelöscht werden.",
-    "pinnedOnMap": "Auf der Karte markiert"
+    "pinnedOnMap": "Auf der Karte markiert",
+    "catLabel": "Welche Katze?",
+    "catNone": "Keiner Katze zugeordnet"
   },
   "card": {
     "sDiary": "s Tagebuch",
@@ -476,5 +478,32 @@
     "emptyYear": "Dieses Jahr noch keine Katzen erfasst.",
     "untitled": "Eine Katze",
     "close": "Schließen"
+  },
+  "cats": {
+    "heading": "Katzen",
+    "newCat": "Neue Katze",
+    "owned": "Meine Katze",
+    "met": "Eine Katze, die ich getroffen habe",
+    "sightings": "{count, plural, one {# Sichtung} other {# Sichtungen}}",
+    "noSightings": "Noch keine Sichtungen für diese Katze erfasst.",
+    "editCat": "Katze bearbeiten",
+    "entryLink": "Teil von {name}s Geschichte",
+    "createTitle": "Neue Katze",
+    "editTitle": "Katze bearbeiten",
+    "save": "Speichern",
+    "saving": "Wird gespeichert…",
+    "cancel": "Abbrechen",
+    "delete": "Diese Katze löschen",
+    "deleting": "Wird gelöscht…",
+    "deleteConfirm": "Dieses Katzenprofil löschen? Die Sichtungen bleiben erhalten und werden nur entkoppelt.",
+    "namePlaceholder": "Name",
+    "breedPlaceholder": "Rasse (optional)",
+    "colorPlaceholder": "Farbe / Zeichnung (optional)",
+    "descriptionPlaceholder": "Über diese Katze (optional)",
+    "ownedToggle": "Das ist meine Katze",
+    "ownedHint": "Eine Katze, die du hältst, nicht nur getroffen hast",
+    "errorName": "Gib dieser Katze einen Namen.",
+    "errorSave": "Katze konnte nicht gespeichert werden.",
+    "errorDelete": "Katze konnte nicht gelöscht werden."
   }
 }

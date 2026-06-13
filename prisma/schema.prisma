@@ -35,6 +35,7 @@ model User {
 
   accounts          Account[]
   catEntries        CatEntry[]
+  cats              Cat[]
   following         Follow[]           @relation("Follower")
   followers         Follow[]           @relation("Followee")
   likes             Like[]
@@ -96,6 +97,8 @@ model CatEntry {
   id           String     @id @default(cuid())
   ownerId      String     @map("owner_id")
   owner        User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  catId        String?    @map("cat_id") // optional link to a persistent Cat profile this sighting is of
+  cat          Cat?       @relation(fields: [catId], references: [id], onDelete: SetNull)
   name         String?
   breed        String?
   notes        String?
@@ -114,7 +117,35 @@ model CatEntry {
   views         EntryView[]
 
   @@index([ownerId, createdAt])
+  @@index([catId])
   @@map("cat_entries")
+}
+
+// A persistent cat profile — a named cat that one or more sightings
+// (`CatEntry`) point at, building a timeline of that single cat over time
+// ("Mochi, across the months"). `isOwned` distinguishes *my cats* (claimed,
+// cats the user keeps) from *cats I've met* (street cats I document); both are
+// collectible, only the former is "claimed". A cat belongs to the user who
+// created it and its visibility follows that owner's profile visibility (the
+// same rule as their entries). The cat's photo is drawn from its linked
+// entries — there is no separate cat avatar upload. This is the structural
+// backbone for per-cat metadata, re-identification and welfare flags later
+// (see docs/feature-ideas.md); kept deliberately lean for now.
+model Cat {
+  id          String   @id @default(cuid())
+  ownerId     String   @map("owner_id")
+  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name        String
+  breed       String?
+  color       String?
+  description String?
+  isOwned     Boolean  @default(false) @map("is_owned")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  entries CatEntry[]
+
+  @@index([ownerId, createdAt])
+  @@map("cats")
 }
 
 // A logged-in viewer's "seen" record for an entry — the audience side of the

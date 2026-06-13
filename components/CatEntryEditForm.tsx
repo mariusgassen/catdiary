@@ -19,8 +19,11 @@ type CatEntryEditFormProps = {
     latitude: number | null;
     longitude: number | null;
     frameStyle?: string | null;
+    catId?: string | null;
   };
   coverUrl?: string | null;
+  /** The owner's cat profiles, for filing this sighting under one of them. */
+  cats?: { id: string; name: string }[];
 };
 
 /*
@@ -28,12 +31,13 @@ type CatEntryEditFormProps = {
  * right (like a native modal sheet), the fields below, and Delete demoted to
  * a destructive action at the very bottom — backing out is always one tap.
  */
-export function CatEntryEditForm({ entry, coverUrl }: CatEntryEditFormProps) {
+export function CatEntryEditForm({ entry, coverUrl, cats = [] }: CatEntryEditFormProps) {
   const router = useRouter();
   const t = useTranslations("editEntry");
   const [name, setName] = useState(entry.name ?? "");
   const [breed, setBreed] = useState(entry.breed ?? "");
   const [notes, setNotes] = useState(entry.notes ?? "");
+  const [catId, setCatId] = useState(entry.catId ?? "");
   const [frameStyle, setFrameStyle] = useState<FrameStyle>(asFrameStyle(entry.frameStyle));
   const [location, setLocation] = useState<PickedLocation | null>(
     entry.latitude != null && entry.longitude != null
@@ -68,6 +72,7 @@ export function CatEntryEditForm({ entry, coverUrl }: CatEntryEditFormProps) {
           name: name.trim() || null,
           breed: breed.trim() || null,
           notes: notes.trim() || null,
+          catId: catId || null,
           frameStyle,
           locationName: location?.name ?? null,
           latitude: location?.lat ?? null,
@@ -153,6 +158,23 @@ export function CatEntryEditForm({ entry, coverUrl }: CatEntryEditFormProps) {
           placeholder={t("notesPlaceholder")}
           rows={3}
         />
+        {cats.length > 0 && (
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="text-xs font-medium text-muted">{t("catLabel")}</span>
+            <select
+              value={catId}
+              onChange={(e) => setCatId(e.target.value)}
+              className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:ring-1 focus:ring-accent"
+            >
+              <option value="">{t("catNone")}</option>
+              {cats.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <FramePicker
           value={frameStyle}
           onChange={setFrameStyle}

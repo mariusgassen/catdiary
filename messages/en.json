@@ -318,7 +318,9 @@
     "errorLocation": "Pick a location or switch location off.",
     "errorSave": "Could not save the changes.",
     "errorDelete": "Could not delete the entry.",
-    "pinnedOnMap": "Pinned on the map"
+    "pinnedOnMap": "Pinned on the map",
+    "catLabel": "Which cat?",
+    "catNone": "Not linked to a cat"
   },
   "card": {
     "sDiary": "'s diary",
@@ -478,5 +480,32 @@
     "emptyYear": "No cats logged this year yet.",
     "untitled": "A cat",
     "close": "Close"
+  },
+  "cats": {
+    "heading": "Cats",
+    "newCat": "New cat",
+    "owned": "My cat",
+    "met": "A cat I've met",
+    "sightings": "{count, plural, one {# sighting} other {# sightings}}",
+    "noSightings": "No sightings filed under this cat yet.",
+    "editCat": "Edit cat",
+    "entryLink": "Part of {name}'s story",
+    "createTitle": "New cat",
+    "editTitle": "Edit cat",
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "delete": "Delete this cat",
+    "deleting": "Deleting…",
+    "deleteConfirm": "Delete this cat profile? Its sightings are kept and simply unlinked.",
+    "namePlaceholder": "Name",
+    "breedPlaceholder": "Breed (optional)",
+    "colorPlaceholder": "Color / markings (optional)",
+    "descriptionPlaceholder": "About this cat (optional)",
+    "ownedToggle": "This is my cat",
+    "ownedHint": "A cat you keep, not just one you've met",
+    "errorName": "Give this cat a name.",
+    "errorSave": "Could not save the cat.",
+    "errorDelete": "Could not delete the cat."
   }
 }
