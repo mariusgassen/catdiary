@@ -355,8 +355,13 @@ Treat this as a sketch to refine during implementation, not a final schema.
   `CatEntry` or profile must check the viewer's relationship to the owner
   (self, follower, or public) before returning data
 - **Naming**: route folders and React components in `PascalCase`/`kebab-case`
-  per Next.js conventions; database fields in `camelCase` (Prisma maps to
-  `snake_case` columns if needed)
+  per Next.js conventions; Prisma model/field names are `camelCase` in the
+  schema, but every model and field carries an `@@map`/`@map` so the **physical
+  Postgres tables and columns are lowercase `snake_case`** (and tables are
+  plural — e.g. `User` → `users`, `catEntryId` → `cat_entry_id`). This keeps raw
+  SQL (`$queryRaw`/`$executeRaw` in `lib/`) quote-free; when adding a model or
+  field, always map it to snake_case and reference the snake_case name in any
+  raw SQL
 - **Commits**: short, imperative subject lines describing the *why* over the *what*
 
 ## Local development

@@ -214,12 +214,12 @@ export async function getAdminInsights(): Promise<AdminInsights> {
     db.$queryRaw<
       { id: string; views: bigint; entries: bigint }[]
     >`
-      SELECT e."ownerId" AS id,
-             COALESCE(SUM(ev."count"), 0) AS views,
-             COUNT(DISTINCT e."id") AS entries
-      FROM "CatEntry" e
-      JOIN "EntryView" ev ON ev."catEntryId" = e."id"
-      GROUP BY e."ownerId"
+      SELECT e.owner_id AS id,
+             COALESCE(SUM(ev.count), 0) AS views,
+             COUNT(DISTINCT e.id) AS entries
+      FROM cat_entries e
+      JOIN entry_views ev ON ev.cat_entry_id = e.id
+      GROUP BY e.owner_id
       ORDER BY views DESC
       LIMIT ${TOP_LIMIT}
     `,

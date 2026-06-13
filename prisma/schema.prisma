@@ -11,22 +11,22 @@ model User {
   id            String    @id @default(cuid())
   email         String    @unique
   username      String?   @unique // nullable: OAuth-only users may not have picked one yet
-  emailVerified DateTime?
-  passwordHash  String? // nullable: OAuth-only users have no password
-  displayName   String? // nullable: the username is the display fallback
+  emailVerified DateTime? @map("email_verified")
+  passwordHash  String?   @map("password_hash") // nullable: OAuth-only users have no password
+  displayName   String?   @map("display_name") // nullable: the username is the display fallback
   bio           String?
-  avatarKey     String? // MinIO object key
+  avatarKey     String?   @map("avatar_key") // MinIO object key
   image         String? // adapter convention: avatar URL from OAuth profile
-  isPrivate     Boolean   @default(false)
-  isAdmin       Boolean   @default(false) // grants access to the admin insights dashboard
-  inviteCode    String?   @unique // personal invite-link code, generated on first share
-  invitedById   String? // who invited this user, set once at registration
-  createdAt     DateTime  @default(now())
+  isPrivate     Boolean   @default(false) @map("is_private")
+  isAdmin       Boolean   @default(false) @map("is_admin") // grants access to the admin insights dashboard
+  inviteCode    String?   @unique @map("invite_code") // personal invite-link code, generated on first share
+  invitedById   String?   @map("invited_by_id") // who invited this user, set once at registration
+  createdAt     DateTime  @default(now()) @map("created_at")
 
-  notifyLikes    Boolean @default(true)
-  notifyComments Boolean @default(true)
-  notifyFollows  Boolean @default(true)
-  notifyMentions Boolean @default(true)
+  notifyLikes    Boolean @default(true) @map("notify_likes")
+  notifyComments Boolean @default(true) @map("notify_comments")
+  notifyFollows  Boolean @default(true) @map("notify_follows")
+  notifyMentions Boolean @default(true) @map("notify_mentions")
 
   locale String? // preferred UI language (e.g. "en", "de"); null = auto-detect
 
@@ -35,14 +35,16 @@ model User {
 
   accounts          Account[]
   catEntries        CatEntry[]
-  following         Follow[]         @relation("Follower")
-  followers         Follow[]         @relation("Followee")
+  following         Follow[]           @relation("Follower")
+  followers         Follow[]           @relation("Followee")
   likes             Like[]
   comments          Comment[]
-  notifications     Notification[]   @relation("NotificationsReceived")
-  sentNotifications Notification[]   @relation("NotificationsSent")
+  notifications     Notification[]     @relation("NotificationsReceived")
+  sentNotifications Notification[]     @relation("NotificationsSent")
   pushSubscriptions PushSubscription[]
   entryViews        EntryView[]
+
+  @@map("users")
 }
 
 // Auth.js (next-auth) adapter models. `Session` is intentionally omitted:
@@ -50,10 +52,10 @@ model User {
 // `Account` (OAuth identity linking) and `VerificationToken` are needed.
 model Account {
   id                String  @id @default(cuid())
-  userId            String
+  userId            String  @map("user_id")
   type              String
   provider          String
-  providerAccountId String
+  providerAccountId String  @map("provider_account_id")
   refresh_token     String? @db.Text
   access_token      String? @db.Text
   expires_at        Int?
@@ -65,6 +67,7 @@ model Account {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@map("accounts")
 }
 
 model VerificationToken {
@@ -73,6 +76,7 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+  @@map("verification_tokens")
 }
 
 // The journal artifact an entry's photos are presented as. Purely a render
@@ -84,20 +88,22 @@ enum FrameStyle {
   INDEX_CARD
   POSTCARD
   TICKET
+
+  @@map("frame_style")
 }
 
 model CatEntry {
   id           String     @id @default(cuid())
-  ownerId      String
+  ownerId      String     @map("owner_id")
   owner        User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   name         String?
   breed        String?
   notes        String?
-  locationName String? // human-readable place name shown in the UI
+  locationName String?    @map("location_name") // human-readable place name shown in the UI
   latitude     Float? // null when the user disabled geo data for this entry
   longitude    Float?
-  frameStyle   FrameStyle @default(POLAROID)
-  createdAt    DateTime   @default(now())
+  frameStyle   FrameStyle @default(POLAROID) @map("frame_style")
+  createdAt    DateTime   @default(now()) @map("created_at")
 
   embedding Unsupported("vector(512)")?
 
@@ -108,6 +114,7 @@ model CatEntry {
   views         EntryView[]
 
   @@index([ownerId, createdAt])
+  @@map("cat_entries")
 }
 
 // A logged-in viewer's "seen" record for an entry — the audience side of the
@@ -116,14 +123,14 @@ model CatEntry {
 // track repeat visits. The entry owner's own views are never recorded, so
 // insights measure the audience rather than the author.
 model EntryView {
-  userId          String
-  catEntryId      String
+  userId          String   @map("user_id")
+  catEntryId      String   @map("cat_entry_id")
   count           Int      @default(1) // detail-page opens ("seen")
-  feedImpressions Int      @default(0) // times the card scrolled into view in a list/feed
-  dwellMs         Int      @default(0) // cumulative ms the entry was on-screen (feed + detail)
-  maxReadPct      Int      @default(0) // furthest scroll depth reached on the detail page (0–100)
-  firstSeenAt     DateTime @default(now())
-  lastSeenAt      DateTime @default(now())
+  feedImpressions Int      @default(0) @map("feed_impressions") // times the card scrolled into view in a list/feed
+  dwellMs         Int      @default(0) @map("dwell_ms") // cumulative ms the entry was on-screen (feed + detail)
+  maxReadPct      Int      @default(0) @map("max_read_pct") // furthest scroll depth reached on the detail page (0–100)
+  firstSeenAt     DateTime @default(now()) @map("first_seen_at")
+  lastSeenAt      DateTime @default(now()) @map("last_seen_at")
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   catEntry CatEntry @relation(fields: [catEntryId], references: [id], onDelete: Cascade)
@@ -131,52 +138,56 @@ model EntryView {
   @@id([userId, catEntryId])
   @@index([catEntryId])
   @@index([userId, lastSeenAt])
+  @@map("entry_views")
 }
 
 // One photo of an entry (up to MAX_PHOTOS_PER_ENTRY, ordered by position;
 // position 0 is the cover used for thumbnails, OG images and embeddings).
 model CatEntryPhoto {
   id         String  @id @default(cuid())
-  catEntryId String
-  photoKey   String // MinIO object key (original)
-  thumbKey   String? // MinIO object key (sharp-generated thumbnail)
+  catEntryId String  @map("cat_entry_id")
+  photoKey   String  @map("photo_key") // MinIO object key (original)
+  thumbKey   String? @map("thumb_key") // MinIO object key (sharp-generated thumbnail)
   position   Int     @default(0)
 
   catEntry CatEntry @relation(fields: [catEntryId], references: [id], onDelete: Cascade)
 
   @@index([catEntryId, position])
+  @@map("cat_entry_photos")
 }
 
 model Follow {
-  followerId String
-  followeeId String
+  followerId String   @map("follower_id")
+  followeeId String   @map("followee_id")
   approved   Boolean  @default(true) // false while pending, for private profiles
-  createdAt  DateTime @default(now())
+  createdAt  DateTime @default(now()) @map("created_at")
 
   follower User @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
   followee User @relation("Followee", fields: [followeeId], references: [id], onDelete: Cascade)
 
   @@id([followerId, followeeId])
+  @@map("follows")
 }
 
 model Like {
-  userId     String
-  catEntryId String
-  createdAt  DateTime @default(now())
+  userId     String   @map("user_id")
+  catEntryId String   @map("cat_entry_id")
+  createdAt  DateTime @default(now()) @map("created_at")
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   catEntry CatEntry @relation(fields: [catEntryId], references: [id], onDelete: Cascade)
 
   @@id([userId, catEntryId])
+  @@map("likes")
 }
 
 model Comment {
   id         String   @id @default(cuid())
-  userId     String
-  catEntryId String
-  parentId   String? // null = top-level note; set = reply within that note's thread
+  userId     String   @map("user_id")
+  catEntryId String   @map("cat_entry_id")
+  parentId   String?  @map("parent_id") // null = top-level note; set = reply within that note's thread
   body       String
-  createdAt  DateTime @default(now())
+  createdAt  DateTime @default(now()) @map("created_at")
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   catEntry      CatEntry       @relation(fields: [catEntryId], references: [id], onDelete: Cascade)
@@ -186,6 +197,7 @@ model Comment {
 
   @@index([catEntryId, createdAt])
   @@index([parentId])
+  @@map("comments")
 }
 
 enum NotificationType {
@@ -194,17 +206,19 @@ enum NotificationType {
   REPLY
   FOLLOW
   MENTION
+
+  @@map("notification_type")
 }
 
 model Notification {
   id         String           @id @default(cuid())
-  userId     String
-  actorId    String
+  userId     String           @map("user_id")
+  actorId    String           @map("actor_id")
   type       NotificationType
-  catEntryId String?
-  commentId  String?
+  catEntryId String?          @map("cat_entry_id")
+  commentId  String?          @map("comment_id")
   read       Boolean          @default(false)
-  createdAt  DateTime         @default(now())
+  createdAt  DateTime         @default(now()) @map("created_at")
 
   user     User      @relation("NotificationsReceived", fields: [userId], references: [id], onDelete: Cascade)
   actor    User      @relation("NotificationsSent", fields: [actorId], references: [id], onDelete: Cascade)
@@ -213,17 +227,19 @@ model Notification {
 
   @@index([userId, read, createdAt])
   @@index([userId, createdAt])
+  @@map("notifications")
 }
 
 model PushSubscription {
   id        String   @id @default(cuid())
-  userId    String
+  userId    String   @map("user_id")
   endpoint  String   @unique
   p256dh    String
   auth      String
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@map("push_subscriptions")
 }
