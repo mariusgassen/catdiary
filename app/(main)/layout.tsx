@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { BottomNav } from "@/components/BottomNav";
+import { PageTransition } from "@/components/PageTransition";
 import { PullToRefresh } from "@/components/PullToRefresh";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
@@ -23,7 +24,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             : { paddingBottom: "calc(3.5rem + env(safe-area-inset-bottom, 0px))" }
         }
       >
-        {isFullScreen || isMap ? children : <PullToRefresh>{children}</PullToRefresh>}
+        {isFullScreen || isMap ? (
+          children
+        ) : (
+          <PullToRefresh>
+            <PageTransition>{children}</PageTransition>
+          </PullToRefresh>
+        )}
       </div>
       {!isFullScreen && <BottomNav />}
     </>

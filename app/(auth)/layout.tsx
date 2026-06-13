@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PawPrint } from "lucide-react";
 import { getTranslations } from "next-intl/server";
+import { PageTransition } from "@/components/PageTransition";
 
 export default async function AuthLayout({ children }: { children: React.ReactNode }) {
   const t = await getTranslations("authLayout");
@@ -12,7 +13,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
         <span className="text-2xl font-bold tracking-tight">{t("title")}</span>
         <span className="text-sm text-muted">{t("tagline")}</span>
       </Link>
-      {children}
+      <PageTransition>{children}</PageTransition>
     </main>
   );
 }
