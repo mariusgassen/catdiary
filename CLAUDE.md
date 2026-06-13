@@ -237,6 +237,24 @@ near-term, tactical roadmap and what's already shipped.
   now create rows with `count = 0`, insights distinguish **readers** (opened,
   `count > 0`) from **reach** (saw it anywhere), and both dashboards surface
   impressions / avg. dwell / avg. read depth
+- **The `Cat` entity (persistent cat profiles)**: the structural unlock from
+  the roadmap — a named `Cat` that multiple sightings point at, building a
+  timeline of one cat over time. `Cat` model (`lib/cats.ts`) is owned by its
+  creator and `isOwned` distinguishes **my cats** (claimed) from **cats I've
+  met** (street cats I document); visibility reuses `canViewCatEntry` (a cat is
+  visible exactly when its owner's diary is). A cat has **no avatar upload** —
+  its photo is the cover of its most recent linked sighting. `CatEntry.catId`
+  (nullable, `onDelete: SetNull`) links a sighting to a cat; deleting a cat
+  keeps the sightings and just unlinks them. CRUD via `POST/GET /api/cats` +
+  `GET/PATCH/DELETE /api/cats/[id]`; a sighting is filed under a cat through the
+  existing entry `PATCH` (`catId`, validated to one of your own cats) with a
+  selector in the edit screen (`components/CatEntryEditForm`). UI: cat profile
+  page `/cats/[id]` (cover, owned badge, sighting grid; shareable while signed
+  out via `proxy.ts`), create/edit sheet `/cats/new` + `/cats/[id]/edit`
+  (`components/CatForm`, full-screen dialog like the entry editor), and a
+  `<CatShelf>` of a diary's cats on the profile page (own profile gets a "New
+  cat" tile). Deliberately lean for now — the backbone for per-cat metadata,
+  re-identification and welfare flags later (see `docs/feature-ideas.md`)
 
 ### Capture flow improvements
 - **Photo editing** — crop, basic brightness/contrast before upload

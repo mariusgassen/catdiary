@@ -6,6 +6,7 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { listCatEntriesForViewer } from "@/lib/catEntries";
+import { listCatsForOwner } from "@/lib/cats";
 import { photoUrlsFor } from "@/lib/photo-urls";
 import {
   listPendingFollowRequests,
@@ -15,6 +16,7 @@ import {
 } from "@/lib/follows";
 import { CatEntryCard } from "@/components/CatEntryCard";
 import { CatEntryGridCard } from "@/components/CatEntryGridCard";
+import { CatShelf } from "@/components/CatShelf";
 import { ProfileViewToggle } from "@/components/ProfileViewToggle";
 import { FollowButton } from "@/components/FollowButton";
 import { FollowRequestRow } from "@/components/FollowRequestRow";
@@ -90,9 +92,10 @@ export default async function ProfilePage({
 
   const isOwnProfile = viewerId === profileUser.id;
 
-  const [{ entries }, followStatus, followCounts, incomingRequests, outgoingRequests] =
+  const [{ entries }, cats, followStatus, followCounts, incomingRequests, outgoingRequests] =
     await Promise.all([
       listCatEntriesForViewer({ viewerId, ownerId: profileUser.id }),
+      listCatsForOwner(profileUser.id, viewerId),
       viewerId && !isOwnProfile
         ? getFollowStatus(viewerId, profileUser.id)
         : Promise.resolve("not-tracking" as const),
@@ -232,6 +235,8 @@ export default async function ProfilePage({
           ))}
         </section>
       )}
+
+      <CatShelf cats={cats} isOwnProfile={isOwnProfile} />
 
       {withPhotos.length === 0 ? (
         <p className="px-6 py-10 text-center text-sm text-muted">{t("blankPages")}</p>

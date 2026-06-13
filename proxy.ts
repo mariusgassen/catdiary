@@ -13,11 +13,14 @@ export default auth((req) => {
   // signed-in users to /feed itself).
   const isLandingPage = pathname === "/";
 
-  // Entry detail pages and invite landing pages are shareable links: leave
-  // them open to signed-out visitors (the entry page 404s anything the viewer
-  // isn't allowed to see; the invite page only shows public profile bits).
+  // Entry detail pages, cat profile pages and invite landing pages are
+  // shareable links: leave them open to signed-out visitors (these pages 404
+  // anything the viewer isn't allowed to see; the invite page only shows
+  // public profile bits). Excludes the auth-only /cats/new and /cats/{id}/edit.
   const isShareablePage =
-    /^\/cat-entries\/(?!new$)[^/]+$/.test(pathname) || /^\/invite\/[^/]+$/.test(pathname);
+    /^\/cat-entries\/(?!new$)[^/]+$/.test(pathname) ||
+    /^\/cats\/(?!new$)[^/]+$/.test(pathname) ||
+    /^\/invite\/[^/]+$/.test(pathname);
 
   if (!isSignedIn && !isAuthPage && !isLandingPage && !isShareablePage) {
     const signInUrl = new URL("/sign-in", req.nextUrl.origin);

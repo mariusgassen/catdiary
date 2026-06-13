@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getLocale } from "next-intl/server";
+import { PawPrint } from "lucide-react";
+import { getLocale, getTranslations } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { getCatEntryForViewer } from "@/lib/catEntries";
 import { photoUrlsFor } from "@/lib/photo-urls";
@@ -53,7 +55,10 @@ export default async function CatEntryPage({ params }: Props) {
     notFound();
   }
 
-  const comments = await listComments(entry.id, viewerId);
+  const [comments, t] = await Promise.all([
+    listComments(entry.id, viewerId),
+    getTranslations("cats"),
+  ]);
 
   return (
     <div className="paper-grid min-h-dvh flex flex-col gap-4 py-4">
@@ -64,6 +69,15 @@ export default async function CatEntryPage({ params }: Props) {
         viewerId={viewerId}
         linkToDetail={false}
       />
+      {entry.cat && (
+        <Link
+          href={`/cats/${entry.cat.id}`}
+          className="mx-3 flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm shadow-sm transition-colors hover:text-accent"
+        >
+          <PawPrint size={15} className="text-accent" aria-hidden />
+          <span>{t("entryLink", { name: entry.cat.name })}</span>
+        </Link>
+      )}
       {entry.reactionBreakdown && <ReactionSummary breakdown={entry.reactionBreakdown} />}
       {entry.latitude != null && entry.longitude != null && (
         <EntryMap lat={entry.latitude} lng={entry.longitude} locationName={entry.locationName} />

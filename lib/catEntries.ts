@@ -39,6 +39,7 @@ export type UpdateCatEntryInput = {
   latitude?: number | null;
   longitude?: number | null;
   frameStyle?: FrameStyle;
+  catId?: string | null; // link this sighting to one of the owner's cats (null = unlink)
   createdAt?: Date; // the date the cat was spotted
 };
 
@@ -110,6 +111,12 @@ export async function updateCatEntry(entryId: string, ownerId: string, input: Up
   if (!entry) throw new CatEntryNotFoundError();
   if (entry.ownerId !== ownerId) throw new CatEntryForbiddenError();
 
+  // You may only file a sighting under one of your own cats.
+  if (input.catId) {
+    const cat = await db.cat.findUnique({ where: { id: input.catId }, select: { ownerId: true } });
+    if (!cat || cat.ownerId !== ownerId) throw new CatEntryForbiddenError();
+  }
+
   return db.catEntry.update({ where: { id: entryId }, data: input });
 }
 
@@ -178,6 +185,7 @@ export async function getCatEntryForViewer(entryId: string, viewerId: string | n
     include: {
       photos: { orderBy: { position: "asc" } },
       owner: { select: { id: true, username: true, displayName: true, avatarKey: true, image: true } },
+      cat: { select: { id: true, name: true, isOwned: true } },
       _count: { select: { likes: true, comments: true } },
       likes: viewerId ? { where: { userId: viewerId }, select: { userId: true, kind: true } } : false,
     },

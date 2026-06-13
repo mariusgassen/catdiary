@@ -17,6 +17,7 @@ const updateSchema = z
     name: z.string().max(120).nullable().optional(),
     breed: z.string().max(120).nullable().optional(),
     notes: z.string().max(2000).nullable().optional(),
+    catId: z.string().nullable().optional(),
     frameStyle: z.enum(FRAME_STYLES).optional(),
     locationName: z.string().max(200).nullable().optional(),
     latitude: z.number().min(-90).max(90).nullable().optional(),

@@ -9,8 +9,12 @@ import { PullToRefresh } from "@/components/PullToRefresh";
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isCapture = pathname === "/capture";
-  // The edit screen is a focused, full-height dialog with its own top bar.
-  const isEditDialog = /^\/cat-entries\/[^/]+\/edit$/.test(pathname);
+  // Focused, full-height dialogs with their own top bar: editing an entry, and
+  // creating/editing a cat profile.
+  const isEditDialog =
+    /^\/cat-entries\/[^/]+\/edit$/.test(pathname) ||
+    pathname === "/cats/new" ||
+    /^\/cats\/[^/]+\/edit$/.test(pathname);
   const isFullScreen = isCapture || isEditDialog;
   // Map gets the full viewport with no width cap — the page handles its own height.
   const isMap = pathname === "/map";
