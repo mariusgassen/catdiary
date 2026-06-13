@@ -148,18 +148,20 @@ export function EntryFrame({
               <span className="photo-corner photo-corner-bl" aria-hidden />
               <span className="photo-corner photo-corner-br" aria-hidden />
             </div>
-            <figcaption className="pt-2 text-center text-[#4a4031] dark:text-[#d8cdb6]">
-              <span className="block text-[13px] italic leading-snug">{nameNode}</span>
-              {breed && (
-                <span className="block text-[10px] uppercase tracking-[0.18em] text-[#8a7d6b] dark:text-[#a89a82]">
-                  {breed}
+            {!preview && (
+              <figcaption className="pt-2 text-center text-[#4a4031] dark:text-[#d8cdb6]">
+                <span className="block text-[13px] italic leading-snug">{nameNode}</span>
+                {breed && (
+                  <span className="block text-[10px] uppercase tracking-[0.18em] text-[#8a7d6b] dark:text-[#a89a82]">
+                    {breed}
+                  </span>
+                )}
+                <span className="mt-1 block text-[9px] uppercase tracking-[0.18em] text-[#a89a82] dark:text-[#8c8268]">
+                  {dateStr}
+                  {locationName ? ` · ${locationName}` : ""}
                 </span>
-              )}
-              <span className="mt-1 block text-[9px] uppercase tracking-[0.18em] text-[#a89a82] dark:text-[#8c8268]">
-                {dateStr}
-                {locationName ? ` · ${locationName}` : ""}
-              </span>
-            </figcaption>
+              </figcaption>
+            )}
             {dots}
           </div>
         </figure>
@@ -179,14 +181,16 @@ export function EntryFrame({
               {film}
               {counterBadge}
             </div>
-            <figcaption className="space-y-0.5 px-3 py-2 font-mono text-[#4a4031] dark:text-[#c2c7d0]">
-              <div className="text-[13px] font-semibold leading-tight">{nameNode}</div>
-              {breed && <div className="text-[11px] text-[#8a7d6b] dark:text-[#9aa0ab]">{breed}</div>}
-              <div className="text-[10px] text-[#a89a82] dark:text-[#7f8593]">
-                {dateStr}
-                {locationName ? ` · ${locationName}` : ""}
-              </div>
-            </figcaption>
+            {!preview && (
+              <figcaption className="space-y-0.5 px-3 py-2 font-mono text-[#4a4031] dark:text-[#c2c7d0]">
+                <div className="text-[13px] font-semibold leading-tight">{nameNode}</div>
+                {breed && <div className="text-[11px] text-[#8a7d6b] dark:text-[#9aa0ab]">{breed}</div>}
+                <div className="text-[10px] text-[#a89a82] dark:text-[#7f8593]">
+                  {dateStr}
+                  {locationName ? ` · ${locationName}` : ""}
+                </div>
+              </figcaption>
+            )}
             {dots}
           </div>
         </figure>
@@ -220,10 +224,12 @@ export function EntryFrame({
                 </p>
               </div>
             </div>
-            <figcaption className="px-3 py-2 text-center text-sm font-medium text-[#4a4031] dark:text-[#d8cdb6]">
-              {nameNode}
-              {breed && <span className="font-normal text-[#8a7d6b]"> · {breed}</span>}
-            </figcaption>
+            {!preview && (
+              <figcaption className="px-3 py-2 text-center text-sm font-medium text-[#4a4031] dark:text-[#d8cdb6]">
+                {nameNode}
+                {breed && <span className="font-normal text-[#8a7d6b]"> · {breed}</span>}
+              </figcaption>
+            )}
             {dots}
           </div>
         </figure>
@@ -244,13 +250,15 @@ export function EntryFrame({
               {counterBadge}
             </div>
             <div className="ticket-perf" aria-hidden />
-            <figcaption className="px-3 pb-2 pt-2.5 text-center font-mono text-[#4a4031] dark:text-[#d8cdb6]">
-              <div className="text-[13px] font-bold uppercase tracking-wide leading-tight">{nameNode}</div>
-              <div className="mt-0.5 text-[10px] uppercase tracking-[0.15em] text-[#a89a82] dark:text-[#8c8268]">
-                {dateStr}
-                {locationName ? ` · ${locationName}` : ""}
-              </div>
-            </figcaption>
+            {!preview && (
+              <figcaption className="px-3 pb-2 pt-2.5 text-center font-mono text-[#4a4031] dark:text-[#d8cdb6]">
+                <div className="text-[13px] font-bold uppercase tracking-wide leading-tight">{nameNode}</div>
+                <div className="mt-0.5 text-[10px] uppercase tracking-[0.15em] text-[#a89a82] dark:text-[#8c8268]">
+                  {dateStr}
+                  {locationName ? ` · ${locationName}` : ""}
+                </div>
+              </figcaption>
+            )}
             {dots}
           </div>
         </figure>
@@ -274,10 +282,12 @@ export function EntryFrame({
               {film}
               {counterBadge}
             </div>
-            <figcaption className="pt-1.5 text-center text-sm font-medium leading-none text-[#3a3128]">
-              {nameNode}
-              {breed && <span className="font-normal text-[#8a7d6b]"> · {breed}</span>}
-            </figcaption>
+            {!preview && (
+              <figcaption className="pt-1.5 text-center text-sm font-medium leading-none text-[#3a3128]">
+                {nameNode}
+                {breed && <span className="font-normal text-[#8a7d6b]"> · {breed}</span>}
+              </figcaption>
+            )}
             {dots}
           </div>
         </figure>
