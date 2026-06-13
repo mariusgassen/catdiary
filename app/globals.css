@@ -73,49 +73,53 @@ body {
   background-size: 22px 22px;
 }
 
-/* Page transitions between routes. Cat Diary is a field journal, so navigating
-   reads like sliding to an adjacent leaf: forward navigations slide the new
-   page in from the right; back navigations (history traversal — the back button
-   or edge-swipe, detected in components/PageTransition.tsx) slide it in from the
-   left, so going back visibly reverses the motion. The wrapper remounts on each
-   navigation to replay the animation; composited (transform + opacity only) to
-   stay smooth on mobile. */
+/* Page transitions between routes. Cat Diary is a field journal, so each
+   navigation folds the new leaf into place like turning a page: forward
+   navigations fold in hinged on the right edge, back navigations (history
+   traversal — the back/forward button or edge-swipe, decided in
+   components/PageTransition.tsx) hinged on the left, so going back visibly
+   reverses the motion. Composited (transform + opacity) to stay smooth on
+   mobile; the perspective + edge-anchored rotateY keeps the page within the
+   viewport so there's no horizontal overflow. */
 .page-enter {
   /* full width so it's layout-neutral inside centered (items-center) parents
      like the auth screen as well as the width-capped main column */
   display: block;
   width: 100%;
+  backface-visibility: hidden;
 }
-.page-enter-fwd {
-  animation: page-enter-fwd 0.3s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+.page-fold-fwd {
+  transform-origin: right center;
+  animation: page-fold-fwd 0.42s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
-.page-enter-back {
-  animation: page-enter-back 0.3s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+.page-fold-back {
+  transform-origin: left center;
+  animation: page-fold-back 0.42s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
-@keyframes page-enter-fwd {
+@keyframes page-fold-fwd {
   from {
     opacity: 0;
-    transform: translate3d(22px, 0, 0);
+    transform: perspective(1500px) rotateY(40deg);
   }
   to {
     opacity: 1;
-    transform: translate3d(0, 0, 0);
+    transform: perspective(1500px) rotateY(0deg);
   }
 }
-@keyframes page-enter-back {
+@keyframes page-fold-back {
   from {
     opacity: 0;
-    transform: translate3d(-22px, 0, 0);
+    transform: perspective(1500px) rotateY(-40deg);
   }
   to {
     opacity: 1;
-    transform: translate3d(0, 0, 0);
+    transform: perspective(1500px) rotateY(0deg);
   }
 }
-/* Honour reduced-motion: drop the slide, keep a gentle fade. */
+/* Honour reduced-motion: drop the fold, keep a gentle fade. */
 @media (prefers-reduced-motion: reduce) {
-  .page-enter-fwd,
-  .page-enter-back {
+  .page-fold-fwd,
+  .page-fold-back {
     animation: page-fade 0.2s ease-out both;
   }
   @keyframes page-fade {
