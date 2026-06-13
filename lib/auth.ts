@@ -66,8 +66,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user, trigger, session }) {
       if (user?.id) {
         token.userId = user.id;
-        const dbUser = await db.user.findUnique({ where: { id: user.id }, select: { avatarKey: true } });
+        const dbUser = await db.user.findUnique({
+          where: { id: user.id },
+          select: { avatarKey: true, isAdmin: true },
+        });
         token.avatarKey = dbUser?.avatarKey ?? null;
+        token.isAdmin = dbUser?.isAdmin ?? false;
       }
       if (trigger === "update" && session?.avatarKey !== undefined) {
         token.avatarKey = session.avatarKey as string | null;
@@ -80,6 +84,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       if (session.user) {
         session.user.avatarKey = (token.avatarKey as string | null | undefined) ?? null;
+        session.user.isAdmin = (token.isAdmin as boolean | undefined) ?? false;
       }
       return session;
     },

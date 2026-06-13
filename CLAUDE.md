@@ -166,6 +166,21 @@ Keep this document in sync with reality as the app evolves.
 - **Nearby cats**: Haversine raw-SQL query in `listNearbyCatEntries`; "Cats near
   you" section in Discover requests geolocation and shows pins within 5 km
   (`GET /api/cat-entries/nearby?lat=&lng=&radius=`)
+- **Seen tracking + insights dashboards**: `EntryView` model records a logged-in
+  viewer's "seen" status per entry — one row per (viewer, entry), deduped with
+  `count`/`firstSeenAt`/`lastSeenAt`; the owner's own views are never recorded
+  (insights measure the audience, not the author). The detail page fires a
+  single `POST /api/cat-entries/[id]/view` via `<RecordView>` for non-owner
+  viewers (`lib/views.ts`, visibility-checked). Two dashboards read aggregates
+  from `lib/insights.ts`: **(b) a user's** `/insights` ("Diary insights":
+  entries/views/readers/paws/notes totals, most-seen entries, recent readers)
+  and **(a) an admin's** `/admin/insights` (platform totals, recent growth,
+  most-seen entries, most-read diarists). Admin is a new `User.isAdmin` flag
+  (set directly in the DB; surfaced on the session token); `requireAdminUserId`
+  in `lib/auth-helpers.ts` re-checks it from the DB and gates
+  `GET /api/admin/insights`. User insights via `GET /api/insights/me`. Entry
+  points are icons on your own profile header (chart = insights, shield =
+  admin when applicable)
 
 ### Social / engagement
 - Notification grouping / summary ("X and 3 others pawed your entry")

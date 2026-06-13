@@ -8,6 +8,7 @@ import { listComments } from "@/lib/comments";
 import { CatEntryCard } from "@/components/CatEntryCard";
 import { BackLink } from "@/components/BackLink";
 import { CommentsSection } from "@/components/CommentsSection";
+import { RecordView } from "@/components/RecordView";
 import { SimilarCats } from "@/components/SimilarCats";
 import { EntryMap } from "@/components/EntryMap";
 import { displayNameFor } from "@/lib/userDisplay";
@@ -55,6 +56,7 @@ export default async function CatEntryPage({ params }: Props) {
 
   return (
     <div className="paper-grid min-h-dvh flex flex-col gap-4 py-4">
+      {viewerId && viewerId !== entry.ownerId && <RecordView entryId={entry.id} />}
       <BackLink />
       <CatEntryCard
         entry={{ ...entry, photoUrls: photoUrlsFor(entry.photos, { full: true }) }}
