@@ -53,7 +53,9 @@ function useGroupedText() {
       case "MENTION":
         return t("types.mention", { actor });
       case "CAT_LINK_REQUEST":
-        return t("types.catLinkRequest", { actor, cat: g.cat?.name ?? "" });
+        return g.cat
+          ? t("types.catLinkRequest", { actor, cat: g.cat.name })
+          : t("types.catLinkRequestEntry", { actor });
       case "CAT_LINK_APPROVED":
         return t("types.catLinkApproved", { actor, cat: g.cat?.name ?? "" });
       default:

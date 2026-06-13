@@ -181,9 +181,12 @@ These all push *toward* the field-journal identity:
    and offer to file it. Filing under your own cat is instant; claiming someone
    else's cat is a `CatLink` request the cat's owner approves, after which the
    sighting joins that cat's timeline. So a single cat's story now spans people
-   and time — *iNaturalist for cats*. Still open: matching against bare sightings
-   nobody has profiled yet, "someone nearby logged this," and tuning the distance
-   threshold / showing a confidence as real data accrues.
+   and time — *iNaturalist for cats*. Suggestions now also include **bare
+   sightings nobody has profiled yet** (linking one starts a shared profile from
+   your sighting; the other person approves on *their* sighting's page), and each
+   suggestion shows a **match confidence**. Still open: "someone *nearby* logged
+   this" (place-scoped suggestions) and tuning the distance→confidence curve as
+   real data accrues.
 2. **Life list / "cats I've met" collection** — a birdwatcher's life list, but
    cats. Count of distinct cats, breeds spotted, neighbourhoods covered. Progress
    against *your own* curiosity, never ranked against others.

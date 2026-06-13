@@ -3,7 +3,14 @@ import { z } from "zod";
 import { requireUserId, UnauthorizedError } from "@/lib/auth-helpers";
 import { CatForbiddenError, CatNotFoundError, requestCatLink } from "@/lib/cats";
 
-const linkSchema = z.object({ catId: z.string().min(1) });
+const linkSchema = z
+  .object({
+    catId: z.string().min(1).optional(),
+    targetEntryId: z.string().min(1).optional(),
+  })
+  .refine((v) => Boolean(v.catId) !== Boolean(v.targetEntryId), {
+    message: "provide exactly one of catId or targetEntryId",
+  });
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -25,7 +32,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 
   try {
-    const result = await requestCatLink({ entryId: id, catId: parsed.data.catId, requesterId });
+    const result = await requestCatLink({
+      entryId: id,
+      catId: parsed.data.catId,
+      targetEntryId: parsed.data.targetEntryId,
+      requesterId,
+    });
     return NextResponse.json(result);
   } catch (err) {
     if (err instanceof CatNotFoundError) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });

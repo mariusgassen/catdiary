@@ -272,7 +272,19 @@ near-term, tactical roadmap and what's already shipped.
   reviews pending claims via `<CatLinkRequests>` on the cat page; a cat picker
   also appears in the capture flow (`GET /api/cats` with no `ownerId` returns
   your own cats). Same-owner links never need approval. Distance threshold is a
-  tunable heuristic; suggestions only appear once the background embedding lands
+  tunable heuristic; suggestions only appear once the background embedding lands.
+  **Suggestions also include bare sightings nobody has profiled yet** ("unowned
+  cats"): `suggestCatsForEntry` returns both `kind: "cat"` candidates and
+  `kind: "entry"` candidates, each with a `confidence` (0–100, derived from the
+  cosine distance and shown as "{n}% match"). Linking a bare sighting starts a
+  cat from *your* sighting (`ensureOwnCatForEntry`) — yours immediately, someone
+  else's by request — so `requestCatLink` takes `catId` **or** `targetEntryId`.
+  Approval now has two directions: `respondToCatLink` derives the approver as
+  "whoever owns the side the requester doesn't", so the cat owner reviews on the
+  cat page (`<CatLinkRequests>`, `listPendingCatLinks`) and the *sighting* owner
+  reviews on their entry's detail page (`<EntryLinkRequests>`,
+  `listPendingEntryLinks`); the `CAT_LINK_REQUEST` notification carries `catId`
+  only for the cat-owner direction so it routes to the right surface
 
 ### Capture flow improvements
 - **Photo editing** — crop, basic brightness/contrast before upload
