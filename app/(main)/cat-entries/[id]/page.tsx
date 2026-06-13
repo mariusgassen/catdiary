@@ -9,6 +9,7 @@ import { CatEntryCard } from "@/components/CatEntryCard";
 import { BackLink } from "@/components/BackLink";
 import { CommentsSection } from "@/components/CommentsSection";
 import { RecordView } from "@/components/RecordView";
+import { ReactionSummary } from "@/components/ReactionStamp";
 import { SimilarCats } from "@/components/SimilarCats";
 import { EntryMap } from "@/components/EntryMap";
 import { displayNameFor } from "@/lib/userDisplay";
@@ -63,6 +64,7 @@ export default async function CatEntryPage({ params }: Props) {
         viewerId={viewerId}
         linkToDetail={false}
       />
+      {entry.reactionBreakdown && <ReactionSummary breakdown={entry.reactionBreakdown} />}
       {entry.latitude != null && entry.longitude != null && (
         <EntryMap lat={entry.latitude} lng={entry.longitude} locationName={entry.locationName} />
       )}

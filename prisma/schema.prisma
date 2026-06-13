@@ -169,10 +169,28 @@ model Follow {
   @@map("follows")
 }
 
+// The themed observational stamp a reader leaves on an entry. PAW is the plain
+// "I saw this" paw; the others are field-journal flavoured (spotted!, handsome
+// devil, be safe). SAME_CAT is special — it's a re-identification *data signal*
+// ("I think I've met this cat"), not applause. One reaction per (user, entry):
+// picking a different stamp replaces the previous one.
+enum ReactionKind {
+  PAW
+  SPOTTED
+  HANDSOME
+  SAME_CAT
+  SAFE
+
+  @@map("reaction_kind")
+}
+
+// A reader's reaction to an entry (table is still `likes` for history's sake).
+// `kind` defaults to PAW so every pre-reactions row reads as a plain paw.
 model Like {
-  userId     String   @map("user_id")
-  catEntryId String   @map("cat_entry_id")
-  createdAt  DateTime @default(now()) @map("created_at")
+  userId     String       @map("user_id")
+  catEntryId String       @map("cat_entry_id")
+  kind       ReactionKind @default(PAW)
+  createdAt  DateTime     @default(now()) @map("created_at")
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   catEntry CatEntry @relation(fields: [catEntryId], references: [id], onDelete: Cascade)

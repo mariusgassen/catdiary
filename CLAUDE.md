@@ -57,6 +57,19 @@ near-term, tactical roadmap and what's already shipped.
   what gets displayed
 - **Likes (paws)**: `POST /api/cat-entries/[id]/like` toggle with optimistic UI,
   viewer's own like state in feed/detail queries, double-tap on the photo
+- **Themed reactions (observational stamps)**: the paw is now one of five
+  field-journal stamps on the `Like` row — `ReactionKind` enum (PAW default,
+  SPOTTED, HANDSOME, SAME_CAT, SAFE; `lib/reactions.ts` is the catalog,
+  `components/ReactionStamp.tsx` the icon map). One reaction per (user, entry):
+  the footer button opens a small picker popover, tapping the stamp you left
+  removes it, picking another swaps it; double-tap on the photo still leaves the
+  plain paw. `POST /api/cat-entries/[id]/like` takes an optional `{ kind }`
+  (bodyless = paw) and returns `{ reacted, kind, total }` via `setReaction` in
+  `lib/likes.ts`. Deliberately **not** a scoreboard: a public entry shows one
+  total count only — the per-stamp breakdown (`listReactionBreakdown`,
+  `<ReactionSummary>`) is shown to the entry owner alone, and nothing ranks
+  users or cats by reactions. SAME_CAT is a re-identification *data signal*, not
+  applause
 - **Comments as margin notes**: the detail page renders comments on a lined
   notebook page (`.ruled-page`: horizontal ruling + red margin rule, avatars in
   the gutter) with each note signed "— name · date"; delete by comment author

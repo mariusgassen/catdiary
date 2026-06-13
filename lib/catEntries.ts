@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { MAX_PHOTOS_PER_ENTRY } from "@/lib/photo-urls";
 import { createNotification } from "@/lib/notifications";
 import type { FrameStyle } from "@/lib/frames";
+import type { ReactionBreakdown, ReactionKind } from "@/lib/reactions";
 
 const PAGE_SIZE = 20;
 
@@ -172,12 +173,30 @@ export async function getCatEntryForViewer(entryId: string, viewerId: string | n
       photos: { orderBy: { position: "asc" } },
       owner: { select: { id: true, username: true, displayName: true, avatarKey: true, image: true } },
       _count: { select: { likes: true, comments: true } },
-      likes: viewerId ? { where: { userId: viewerId }, select: { userId: true } } : false,
+      likes: viewerId ? { where: { userId: viewerId }, select: { userId: true, kind: true } } : false,
     },
   });
   if (!entry) return null;
   if (!(await canViewCatEntry(viewerId, entry.ownerId))) return null;
-  return entry;
+
+  // The per-stamp breakdown is the owner's to see — never surfaced publicly.
+  const reactionBreakdown =
+    viewerId === entry.ownerId ? await listReactionBreakdown(entry.id) : null;
+  return { ...entry, reactionBreakdown };
+}
+
+/**
+ * The per-stamp reaction tally for an entry — the audience breakdown shown only
+ * to the owner. Deliberately never exposed publicly: a public entry shows one
+ * total count, never a per-reaction leaderboard.
+ */
+export async function listReactionBreakdown(catEntryId: string): Promise<ReactionBreakdown> {
+  const rows = await db.like.groupBy({
+    by: ["kind"],
+    where: { catEntryId },
+    _count: { kind: true },
+  });
+  return rows.map((r) => ({ kind: r.kind as ReactionKind, count: r._count.kind }));
 }
 
 export async function storeCatEntryEmbedding(entryId: string, embedding: number[]): Promise<void> {
@@ -274,7 +293,7 @@ export async function listCatEntriesForViewer(opts: {
       owner: { select: { id: true, username: true, displayName: true, avatarKey: true, image: true } },
       _count: { select: { likes: true, comments: true } },
       // Only the viewer's own like row — lets the UI render initial like state.
-      likes: opts.viewerId ? { where: { userId: opts.viewerId }, select: { userId: true } } : false,
+      likes: opts.viewerId ? { where: { userId: opts.viewerId }, select: { userId: true, kind: true } } : false,
     },
   });
 
@@ -395,7 +414,7 @@ export async function listOnThisDayEntries(viewerId: string | null, limit = 6) {
       photos: { orderBy: { position: "asc" } },
       owner: { select: { id: true, username: true, displayName: true, avatarKey: true, image: true } },
       _count: { select: { likes: true, comments: true } },
-      likes: viewerId ? { where: { userId: viewerId }, select: { userId: true } } : false,
+      likes: viewerId ? { where: { userId: viewerId }, select: { userId: true, kind: true } } : false,
     },
   });
 
@@ -416,7 +435,7 @@ export type NearbyEntry = {
   owner: { id: string; username: string | null; displayName: string | null; avatarKey: string | null; image: string | null };
   photos: { id: string; catEntryId: string; photoKey: string; thumbKey: string | null; position: number }[];
   _count: { likes: number; comments: number };
-  likes: { userId: string }[];
+  likes: { userId: string; kind: ReactionKind }[];
 };
 
 /**
@@ -464,7 +483,7 @@ export async function listNearbyCatEntries(opts: {
       photos: { orderBy: { position: "asc" } },
       owner: { select: { id: true, username: true, displayName: true, avatarKey: true, image: true } },
       _count: { select: { likes: true, comments: true } },
-      likes: viewerId ? { where: { userId: viewerId }, select: { userId: true } } : false,
+      likes: viewerId ? { where: { userId: viewerId }, select: { userId: true, kind: true } } : false,
     },
   });
 
@@ -474,7 +493,7 @@ export async function listNearbyCatEntries(opts: {
       latitude: e.latitude!,
       longitude: e.longitude!,
       distanceKm: distanceMap.get(e.id) ?? 0,
-      likes: (Array.isArray(e.likes) ? e.likes : []) as { userId: string }[],
+      likes: (Array.isArray(e.likes) ? e.likes : []) as { userId: string; kind: ReactionKind }[],
     }))
     .sort((a, b) => a.distanceKm - b.distanceKm);
 }
