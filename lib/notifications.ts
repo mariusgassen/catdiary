@@ -17,6 +17,7 @@ const notificationInclude = {
     },
   },
   comment: { select: { id: true, body: true } },
+  cat: { select: { id: true, name: true } },
 } as const;
 
 export type NotificationWithDetails = Awaited<ReturnType<typeof listNotifications>>[number];
@@ -33,9 +34,11 @@ export type GroupedNotification = {
   key: string;
   type: NotificationType;
   catEntryId: string | null;
+  catId: string | null;
   actors: NotificationActor[];
   actorCount: number;
   catEntry: { id: string; name: string | null; photos: { thumbKey: string | null }[] } | null;
+  cat: { id: string; name: string } | null;
   latestAt: Date;
   isRead: boolean;
   notificationIds: string[];
@@ -73,9 +76,11 @@ export function groupNotifications(notifications: NotificationWithDetails[]): Gr
         key: bucketKey,
         type: n.type,
         catEntryId: n.catEntryId,
+        catId: n.catId,
         actors: [n.actor],
         actorCount: 1,
         catEntry: n.catEntry,
+        cat: n.cat,
         latestAt: n.createdAt,
         isRead: n.read,
         notificationIds: [n.id],
@@ -109,8 +114,9 @@ export async function createNotification(params: {
   type: NotificationType;
   catEntryId?: string;
   commentId?: string;
+  catId?: string;
 }) {
-  const { userId, actorId, type, catEntryId, commentId } = params;
+  const { userId, actorId, type, catEntryId, commentId, catId } = params;
 
   if (userId === actorId) return;
 
@@ -124,6 +130,8 @@ export async function createNotification(params: {
   if ((type === "COMMENT" || type === "REPLY") && !user.notifyComments) return;
   if (type === "FOLLOW" && !user.notifyFollows) return;
   if (type === "MENTION" && !user.notifyMentions) return;
+  // CAT_LINK_* notifications are re-identification signals, not social noise —
+  // always delivered (no per-type opt-out for now).
 
   // Deduplicate LIKE and FOLLOW notifications
   if (type === "LIKE" && catEntryId) {
@@ -134,7 +142,7 @@ export async function createNotification(params: {
   }
 
   const notification = await db.notification.create({
-    data: { userId, actorId, type, catEntryId, commentId },
+    data: { userId, actorId, type, catEntryId, commentId, catId },
     include: notificationInclude,
   });
 
@@ -162,6 +170,12 @@ async function sendPushNotification(notification: NotificationPayload) {
       break;
     case "MENTION":
       body = `${actorName} mentioned you`;
+      break;
+    case "CAT_LINK_REQUEST":
+      body = `${actorName} thinks they met one of your cats`;
+      break;
+    case "CAT_LINK_APPROVED":
+      body = `${actorName} confirmed it's the same cat`;
       break;
     default:
       return;

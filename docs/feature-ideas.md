@@ -174,12 +174,16 @@ place to sell cats.** Safe, welfare-positive version:
 These all push *toward* the field-journal identity:
 
 ### Identity & collection
-1. **Re-identification — "Have I seen this cat before?"** The killer naturalist
-   feature. We already have CLIP embeddings + pgvector for "cats that look alike."
-   Extend it: when you log a cat, surface "this looks like a cat you (or someone
-   nearby) logged before — same cat?" Confirmed matches link sightings into one
-   cat's story across people and time. This is *iNaturalist for cats*, and it's
-   the most defensible identity the app could have.
+1. ✅ **Re-identification — "Might this be cat X?"** — **MVP SHIPPED.** The killer
+   naturalist feature. Built on the CLIP embeddings + pgvector behind "cats that
+   look alike" and on the `Cat` entity: on your own sighting we surface the
+   nearest *already-profiled* cats — yours **and** other people's visible cats —
+   and offer to file it. Filing under your own cat is instant; claiming someone
+   else's cat is a `CatLink` request the cat's owner approves, after which the
+   sighting joins that cat's timeline. So a single cat's story now spans people
+   and time — *iNaturalist for cats*. Still open: matching against bare sightings
+   nobody has profiled yet, "someone nearby logged this," and tuning the distance
+   threshold / showing a confidence as real data accrues.
 2. **Life list / "cats I've met" collection** — a birdwatcher's life list, but
    cats. Count of distinct cats, breeds spotted, neighbourhoods covered. Progress
    against *your own* curiosity, never ranked against others.
@@ -241,10 +245,11 @@ Naming these protects the identity better than any feature list:
    for metadata, health reminders, status flags, and per-cat timelines. The
    persistent cat profile + per-cat timeline now exist; metadata/flags build on
    it next.
-4. **Re-identification ("same cat?")** — the long-term defensible identity;
-   builds on the embeddings we already ship (and now on the `Cat` entity).
+4. ~~**Re-identification ("same cat?")**~~ (✅ MVP shipped) — the long-term
+   defensible identity; "might this be cat X?" suggestions + cross-person link
+   approval now ship on top of the embeddings and the `Cat` entity.
 5. **Lost & Found / welfare flags** — high-impact, but only after moderation and
-   the `Cat` entity are in place.
+   the `Cat` entity are in place (the latter now exists).
 
 ---
 

@@ -82,6 +82,9 @@ export function CaptureFlow() {
   const [breed, setBreed] = useState("");
   const [frameStyle, setFrameStyle] = useState<FrameStyle>(DEFAULT_FRAME_STYLE);
   const [showOptional, setShowOptional] = useState(false);
+  // Optionally file this sighting under one of the user's existing cats.
+  const [catId, setCatId] = useState("");
+  const [myCats, setMyCats] = useState<{ id: string; name: string }[]>([]);
 
   // The date the cat was spotted. null = "now" (a fresh sighting); set from a
   // picked photo's EXIF date, or edited by hand for older photos.
@@ -259,6 +262,21 @@ export function CaptureFlow() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, facing]);
 
+  // Load the user's own cats once, so the details step can offer to file this
+  // sighting under one of them.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/cats")
+      .then((res) => (res.ok ? res.json() : { cats: [] }))
+      .then((data: { cats: { id: string; name: string }[] }) => {
+        if (!cancelled) setMyCats(data.cats.map((c) => ({ id: c.id, name: c.name })));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Default to the device's location when entering the details step, unless a
   // location is already known (photo EXIF) or the user turned geo data off.
   useEffect(() => {
@@ -404,6 +422,7 @@ export function CaptureFlow() {
           name: catName.trim() || undefined,
           breed: breed.trim() || undefined,
           notes: caption.trim() || undefined,
+          catId: catId || undefined,
           frameStyle,
           locationName: location?.name ?? null,
           latitude: location?.lat ?? null,
@@ -772,6 +791,20 @@ export function CaptureFlow() {
                 maxLength={120}
                 className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:ring-1 focus:ring-accent placeholder:text-muted"
               />
+              {myCats.length > 0 && (
+                <select
+                  value={catId}
+                  onChange={(e) => setCatId(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:ring-1 focus:ring-accent"
+                >
+                  <option value="">{t("details.catNone")}</option>
+                  {myCats.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           )}
         </div>
