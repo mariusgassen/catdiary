@@ -467,7 +467,7 @@
     "byOwner": "von {name}"
   },
   "yearInCats": {
-    "title": "{name}s Jahr in Katzen",
+    "title": "{possessive} Jahr in Katzen",
     "subtitle": "Ein Kalender aller dokumentierten Katzen",
     "catsLogged": "Katzen erfasst",
     "namedCats": "Benannte Katzen",
@@ -476,8 +476,25 @@
     "busiestMonth": "Aktivster Monat",
     "entriesCount": "{count, plural, one {# Eintrag} other {# Einträge}}",
     "daySightings": "Tag {day}: {count, plural, one {# Sichtung} other {# Sichtungen}}",
+    "monthEntries": "{count, plural, one {# Katze} other {# Katzen}}",
+    "prevMonth": "Voriger Monat",
+    "nextMonth": "Nächster Monat",
+    "noEntriesThisMonth": "Diesen Monat keine Katzen erfasst.",
     "emptyYear": "Dieses Jahr noch keine Katzen erfasst.",
     "untitled": "Eine Katze",
-    "close": "Schließen"
+    "close": "Schließen",
+    "createCalendar": "Fotokalender erstellen"
+  },
+  "catCalendar": {
+    "title": "{possessive} Kalender {year}",
+    "subtitle": "Ein Wandkalender aus deinem Tagebuch — eine Katze pro Monat",
+    "intro": "Wir haben für jeden Monat in {year} eine Katze aus deinen Sichtungen ausgewählt. Tippe einen Monat an, um eine andere zu wählen, dann drucken oder speichern.",
+    "print": "Drucken / als PDF",
+    "choosePhoto": "Katze für {month} wählen",
+    "change": "Ändern",
+    "noPhotos": "Erfasse erst ein paar Katzen in deinem Tagebuch, dann kannst du einen Kalender bauen.",
+    "empty": "Noch kein Vorschlag — tippe, um eine Katze zu wählen.",
+    "back": "Zurück zum Jahr in Katzen",
+    "credit": "Erstellt mit Cat Diary"
   }
 }

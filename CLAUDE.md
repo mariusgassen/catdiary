@@ -175,11 +175,26 @@ near-term, tactical roadmap and what's already shipped.
   entries for one year by UTC day, plus headline figures (cats logged, distinct
   named cats / breeds / places, busiest month) and the list of years with
   entries for the year switcher; served at `GET /api/cat-entries/year?ownerId=&year=`.
-  `components/YearCalendar.tsx` renders twelve Monday-first month grids whose
-  day cells show the cover thumbnail and open a bottom sheet of that day's
-  sightings. A slow, satisfying review of your own history — never a ranking;
-  the honest stepping stone toward the printable/exportable calendar + Plus
-  monetization in `docs/feature-ideas.md`
+  `components/YearCalendar.tsx` renders **one Monday-first month at a time**
+  (prev/next chevrons within the year), opening on the current calendar month
+  with today's cell highlighted; day cells show the cover thumbnail and open a
+  bottom sheet (`z-[60]`, above the bottom nav) of that day's sightings. A slow,
+  satisfying review of your own history — never a ranking. The diary-name
+  possessive in the title is grammar-correct via `possessiveName` in
+  `lib/possessiveDiary.ts` (the shared `possessiveEn`/`possessiveDe` helpers,
+  passed to the translation as `{possessive}`)
+- **Create a photo calendar**: a "Create photo calendar" button on the Year in
+  Cats page opens `/profile/[userId]/calendar`, a printable wall calendar for a
+  year (defaults to next year). `lib/catCalendar.ts#getCatCalendar` is
+  visibility-checked and suggests one cat per month — preferring a cat
+  photographed in that same calendar month (seasonal), then best-loved / most
+  recent shots — and returns the full photo `pool` for swapping; served at
+  `GET /api/cat-entries/calendar?ownerId=&year=`. `components/CalendarBuilder.tsx`
+  renders twelve photo+grid month pages, lets the user swap any month's photo
+  from a bottom-sheet picker, and prints via `window.print()` (the `@media print`
+  rules in `globals.css` isolate `.calendar-print` and break each
+  `.calendar-page` onto its own sheet). The honest delivery of the
+  printable/exportable calendar + Plus monetization in `docs/feature-ideas.md`
 - **Page fade transitions**: each navigation fades the new page in (a short
   opacity-only `.page-enter` animation in `globals.css`). `components/PageTransition.tsx`
   keys the wrapper on the pathname so a fresh element remounts and replays the
