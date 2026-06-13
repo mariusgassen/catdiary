@@ -29,6 +29,12 @@ Keep this document in sync with reality as the app evolves.
 
 ## Roadmap
 
+For the strategic feature brainstorm — the bigger bets (the `Cat` entity,
+re-identification, photo calendar, welfare/lost-and-found, monetization, …) and
+the deliberate **anti-features** that protect the field-journal identity — see
+[`docs/feature-ideas.md`](docs/feature-ideas.md). The sections below track the
+near-term, tactical roadmap and what's already shipped.
+
 ### Done
 - Bottom tab nav with icons (Journal, Discover, Log a cat, Map, My diary)
 - Field-journal entry cards: taped polaroid photo with name/breed caption,
@@ -112,6 +118,9 @@ Keep this document in sync with reality as the app evolves.
   readers, mentions) stored as `User.notifyLikes/notifyComments/notifyFollows/
   notifyMentions`; per-device push toggle in Settings → Notifications via the
   Web Push Notifications Permission API; `PATCH /api/me` accepts all four prefs
+- **Notification grouping / summary**: `groupNotifications` in
+  `lib/notifications.ts` collapses likes/follows into "X and N others pawed your
+  entry"; `NotificationsView` renders the grouped text and links
 - **Invite links**: every user has a personal `/invite/[code]` link ("Invite
   friends" section in Settings — Web Share API with clipboard fallback,
   `POST /api/me/invite`, code generated on first share); the landing page is
@@ -166,9 +175,6 @@ Keep this document in sync with reality as the app evolves.
 - **Nearby cats**: Haversine raw-SQL query in `listNearbyCatEntries`; "Cats near
   you" section in Discover requests geolocation and shows pins within 5 km
   (`GET /api/cat-entries/nearby?lat=&lng=&radius=`)
-
-### Social / engagement
-- Notification grouping / summary ("X and 3 others pawed your entry")
 
 ### Capture flow improvements
 - **Photo editing** — crop, basic brightness/contrast before upload
