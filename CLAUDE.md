@@ -151,10 +151,13 @@ Keep this document in sync with reality as the app evolves.
   incoming page in like turning to an adjacent leaf in the journal — forward
   navigations slide in from the right, back navigations from the left so the
   motion reverses. `components/PageTransition.tsx` decides direction from *how*
-  you navigated: a `popstate` (the back button / edge-swipe) marks the next path
-  change as "back", a tapped link/nav tab as "forward". It keys a wrapper on the
-  pathname so each navigation remounts and replays the CSS `.page-enter-*`
-  animation (in `globals.css`). Applied to the standard pages in
+  you navigated: a `popstate` (the back/forward button or edge-swipe) is a
+  history traversal whose direction is read from a per-entry index stamped into
+  `history.state` (lower index = back, higher = forward); a tapped link/nav tab
+  is a forward push. It restarts the CSS `.page-enter-*` animation (in
+  `globals.css`) imperatively in a layout effect (remove class → reflow → add)
+  rather than remounting, so it runs before paint with no flash and keeps page
+  state. Applied to the standard pages in
   `(main)/layout.tsx` (inside `PullToRefresh`, so only the page slides) and to
   the auth screens; skipped for the map (Leaflet sizing) and the full-screen
   capture/edit dialogs. Composited (transform + opacity) and collapses to a
