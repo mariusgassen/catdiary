@@ -38,7 +38,7 @@ export type GroupedNotification = {
   actors: NotificationActor[];
   actorCount: number;
   catEntry: { id: string; name: string | null; photos: { thumbKey: string | null }[] } | null;
-  cat: { id: string; name: string } | null;
+  cat: { id: string; name: string | null } | null;
   latestAt: Date;
   isRead: boolean;
   notificationIds: string[];

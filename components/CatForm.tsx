@@ -3,17 +3,16 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
-import { Loader2, Trash2, X, Home } from "lucide-react";
+import { Loader2, Trash2, X } from "lucide-react";
 
 type CatFormProps = {
   // Edit mode when an existing cat is passed; create mode otherwise.
   cat?: {
     id: string;
-    name: string;
+    name: string | null;
     breed: string | null;
     color: string | null;
     description: string | null;
-    isOwned: boolean;
   };
   /** Where to return after deleting a cat (the owner's profile). */
   ownerProfileHref?: string;
@@ -32,7 +31,6 @@ export function CatForm({ cat, ownerProfileHref }: CatFormProps) {
   const [breed, setBreed] = useState(cat?.breed ?? "");
   const [color, setColor] = useState(cat?.color ?? "");
   const [description, setDescription] = useState(cat?.description ?? "");
-  const [isOwned, setIsOwned] = useState(cat?.isOwned ?? false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -55,7 +53,6 @@ export function CatForm({ cat, ownerProfileHref }: CatFormProps) {
         breed: breed.trim() || null,
         color: color.trim() || null,
         description: description.trim() || null,
-        isOwned,
       };
       const res = await fetch(isEdit ? `/api/cats/${cat!.id}` : "/api/cats", {
         method: isEdit ? "PATCH" : "POST",
@@ -156,29 +153,6 @@ export function CatForm({ cat, ownerProfileHref }: CatFormProps) {
           rows={3}
           className={`${inputClass} resize-none`}
         />
-
-        {/* "My cat" vs "a cat I've met" — the claimed/met distinction. */}
-        <button
-          type="button"
-          onClick={() => setIsOwned((v) => !v)}
-          className="flex items-center justify-between rounded-xl border border-border bg-surface px-3 py-2.5 text-left text-sm"
-        >
-          <span className="flex items-center gap-2">
-            <Home size={15} className="text-accent" aria-hidden />
-            <span>
-              <span className="font-medium">{t("ownedToggle")}</span>
-              <span className="block text-xs text-muted">{t("ownedHint")}</span>
-            </span>
-          </span>
-          <span
-            className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${isOwned ? "bg-accent" : "bg-border"}`}
-            aria-hidden
-          >
-            <span
-              className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${isOwned ? "left-[1.125rem]" : "left-0.5"}`}
-            />
-          </span>
-        </button>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 

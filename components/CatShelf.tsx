@@ -35,6 +35,7 @@ export async function CatShelf({ cats, isOwnProfile }: CatShelfProps) {
         )}
         {cats.map((cat) => {
           const cover = cat.coverThumbKey ?? cat.coverPhotoKey;
+          const label = cat.displayName ?? t("untitled");
           return (
             <Link key={cat.id} href={`/cats/${cat.id}`} className="flex w-16 shrink-0 flex-col items-center gap-1">
               <span className="relative">
@@ -42,7 +43,7 @@ export async function CatShelf({ cats, isOwnProfile }: CatShelfProps) {
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={`/api/photos/${cover}`}
-                    alt={cat.name}
+                    alt={label}
                     className="h-16 w-16 rounded-full object-cover ring-2 ring-border"
                   />
                 ) : (
@@ -56,7 +57,7 @@ export async function CatShelf({ cats, isOwnProfile }: CatShelfProps) {
                   </span>
                 )}
               </span>
-              <span className="w-full truncate text-center text-[11px] text-foreground/80">{cat.name}</span>
+              <span className="w-full truncate text-center text-[11px] text-foreground/80">{label}</span>
             </Link>
           );
         })}

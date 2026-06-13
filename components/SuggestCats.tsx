@@ -14,6 +14,8 @@ type CatSuggestion = {
   ownerDisplayName: string | null;
   ownerUsername: string | null;
   isOwn: boolean;
+  isShared: boolean;
+  immediate: boolean;
   coverPhotoKey: string | null;
   coverThumbKey: string | null;
   confidence: number;
@@ -93,9 +95,11 @@ export function SuggestCats({ entryId }: { entryId: string }) {
               ? s.isOwn
                 ? t("suggestYourSighting")
                 : t("suggestSightingBy", { name: ownerName })
-              : s.isOwn
-                ? t("suggestYours")
-                : t("suggestBy", { name: ownerName });
+              : s.isShared
+                ? t("suggestShared")
+                : s.isOwn
+                  ? t("suggestYours")
+                  : t("suggestBy", { name: ownerName });
           return (
             <div key={key} className="flex items-center gap-3">
               {cover ? (
@@ -129,7 +133,7 @@ export function SuggestCats({ entryId }: { entryId: string }) {
                   className="flex shrink-0 items-center gap-1 rounded-full bg-accent px-3 py-1.5 text-xs font-semibold text-white transition-opacity disabled:opacity-50"
                 >
                   {state === "saving" && <Loader2 size={12} className="animate-spin" aria-hidden />}
-                  {s.isOwn ? t("suggestFileButton") : t("suggestAskButton")}
+                  {s.immediate ? t("suggestFileButton") : t("suggestAskButton")}
                 </button>
               )}
             </div>

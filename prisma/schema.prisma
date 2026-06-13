@@ -128,25 +128,25 @@ model CatEntry {
   @@map("cat_entries")
 }
 
-// A persistent cat profile — a named cat that one or more sightings
-// (`CatEntry`) point at, building a timeline of that single cat over time
-// ("Mochi, across the months"). `isOwned` distinguishes *my cats* (claimed,
-// cats the user keeps) from *cats I've met* (street cats I document); both are
-// collectible, only the former is "claimed". A cat belongs to the user who
-// created it and its visibility follows that owner's profile visibility (the
-// same rule as their entries). The cat's photo is drawn from its linked
-// entries — there is no separate cat avatar upload. This is the structural
-// backbone for per-cat metadata, re-identification and welfare flags later
-// (see docs/feature-ideas.md); kept deliberately lean for now.
+// A cat — a shared identity that one or more sightings (`CatEntry`) point at,
+// building a timeline of one cat across people and time. A cat is fundamentally
+// an *ownerless cluster of linked sightings*: linking sightings together never
+// makes you its owner. `ownerId` is set only when someone **claims** the cat as
+// their pet (`claimCat`), at which point `isOwned` is true; until then the cat
+// is ownerless and visible to anyone who can see at least one of its sightings.
+// A cat has no canonical name of its own — its name(s) are the distinct names
+// people gave its linked sightings ("aliases", see `deriveAliases`). Its photo
+// is the cover of its most recent linked sighting (no separate avatar upload).
+// `name` is a legacy/owner-set override, nullable and no longer required.
 model Cat {
   id          String   @id @default(cuid())
-  ownerId     String   @map("owner_id")
-  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  name        String
+  ownerId     String?  @map("owner_id") // null = ownerless cluster; set when claimed as a pet
+  owner       User?    @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  name        String? // optional owner-set name; display falls back to sighting aliases
   breed       String?
   color       String?
   description String?
-  isOwned     Boolean  @default(false) @map("is_owned")
+  isOwned     Boolean  @default(false) @map("is_owned") // true once claimed as someone's pet
   createdAt   DateTime @default(now()) @map("created_at")
 
   entries       CatEntry[]

@@ -80,7 +80,11 @@ export default async function CatEntryPage({ params }: Props) {
           className="mx-3 flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm shadow-sm transition-colors hover:text-accent"
         >
           <PawPrint size={15} className="text-accent" aria-hidden />
-          <span>{t("entryLink", { name: entry.cat.name })}</span>
+          <span>
+            {entry.cat.name ?? entry.name
+              ? t("entryLink", { name: (entry.cat.name ?? entry.name)! })
+              : t("entryLinkGeneric")}
+          </span>
         </Link>
       )}
       {isOwner && pendingEntryLinks.length > 0 && <EntryLinkRequests requests={pendingEntryLinks} />}

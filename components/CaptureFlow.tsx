@@ -288,8 +288,8 @@ export function CaptureFlow() {
     let cancelled = false;
     fetch("/api/cats")
       .then((res) => (res.ok ? res.json() : { cats: [] }))
-      .then((data: { cats: { id: string; name: string }[] }) => {
-        if (!cancelled) setMyCats(data.cats.map((c) => ({ id: c.id, name: c.name })));
+      .then((data: { cats: { id: string; name: string | null; displayName: string | null }[] }) => {
+        if (!cancelled) setMyCats(data.cats.map((c) => ({ id: c.id, name: c.displayName ?? c.name ?? "🐱" })));
       })
       .catch(() => {});
     return () => {
