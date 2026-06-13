@@ -24,6 +24,9 @@ type CatEntryCardProps = {
     longitude: number | null;
     createdAt: string | Date;
     frameStyle?: string | null; // journal artifact the photos are framed as
+    frameColor?: string | null; // chrome color preset for the frame
+    frameTilt?: number | null; // hand-set tilt in degrees (null = auto)
+    frameCaption?: string | null; // custom text for the frame's label field
     photoUrls?: string[]; // in position order; first photo is the cover
     owner: {
       id: string;
@@ -187,6 +190,9 @@ export function CatEntryCard({ entry, viewerId, linkToDetail = true }: CatEntryC
       <div className="mb-3 mt-2">
         <EntryFrame
           frameStyle={asFrameStyle(entry.frameStyle)}
+          frameColor={entry.frameColor}
+          frameTilt={entry.frameTilt}
+          frameCaption={entry.frameCaption}
           photoUrls={photoUrls}
           name={entry.name}
           breed={entry.breed}

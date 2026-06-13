@@ -365,6 +365,34 @@
       "admitOne": "Admit one",
       "greetingsFrom": "Greetings from {place}",
       "greetings": "Greetings!"
+    },
+    "frameColorLabel": "Frame color",
+    "colors": {
+      "DEFAULT": "Default",
+      "BLUE": "Blue",
+      "RED": "Red",
+      "GREEN": "Green",
+      "AMBER": "Amber",
+      "VIOLET": "Violet",
+      "INK": "Ink"
+    },
+    "tiltLabel": "Tilt",
+    "tiltAuto": "Auto",
+    "tiltReset": "Reset to auto",
+    "captionLabel": {
+      "INDEX_CARD": "Call number",
+      "POSTCARD": "Greeting",
+      "TICKET": "Ticket line"
+    },
+    "captionPlaceholder": {
+      "INDEX_CARD": "e.g. 636.8 CAT",
+      "POSTCARD": "e.g. Greetings from the alley",
+      "TICKET": "e.g. Admit one"
+    },
+    "captionHelp": {
+      "INDEX_CARD": "The library call number printed in the card header — a playful Dewey-style code, auto-generated unless you set your own.",
+      "POSTCARD": "The big banner across the photo — defaults to a greeting from the place you pinned.",
+      "TICKET": "The line stamped across the ticket header — defaults to “Admit one”."
     }
   },
   "comments": {

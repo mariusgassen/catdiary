@@ -363,6 +363,34 @@
       "admitOne": "Eintritt",
       "greetingsFrom": "Grüße aus {place}",
       "greetings": "Grüße!"
+    },
+    "frameColorLabel": "Rahmenfarbe",
+    "colors": {
+      "DEFAULT": "Standard",
+      "BLUE": "Blau",
+      "RED": "Rot",
+      "GREEN": "Grün",
+      "AMBER": "Bernstein",
+      "VIOLET": "Violett",
+      "INK": "Tinte"
+    },
+    "tiltLabel": "Neigung",
+    "tiltAuto": "Automatisch",
+    "tiltReset": "Auf automatisch zurücksetzen",
+    "captionLabel": {
+      "INDEX_CARD": "Signatur",
+      "POSTCARD": "Gruß",
+      "TICKET": "Ticket-Zeile"
+    },
+    "captionPlaceholder": {
+      "INDEX_CARD": "z. B. 636.8 CAT",
+      "POSTCARD": "z. B. Grüße aus der Gasse",
+      "TICKET": "z. B. Eintritt"
+    },
+    "captionHelp": {
+      "INDEX_CARD": "Die Bibliothekssignatur in der Kartenüberschrift — ein spielerischer Code im Dewey-Stil, automatisch erzeugt, sofern du keinen eigenen festlegst.",
+      "POSTCARD": "Das große Banner über dem Foto — Standard ist ein Gruß aus dem von dir markierten Ort.",
+      "TICKET": "Die Zeile auf dem Ticket-Kopf — Standard ist „Eintritt“."
     }
   },
   "comments": {
