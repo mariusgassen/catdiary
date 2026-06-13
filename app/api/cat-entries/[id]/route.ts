@@ -22,6 +22,11 @@ const updateSchema = z
     locationName: z.string().max(200).nullable().optional(),
     latitude: z.number().min(-90).max(90).nullable().optional(),
     longitude: z.number().min(-180).max(180).nullable().optional(),
+    // The date the cat was spotted; capped just past "now" for clock skew.
+    createdAt: z.coerce
+      .date()
+      .max(new Date(Date.now() + 24 * 60 * 60 * 1000), "date cannot be in the future")
+      .optional(),
   })
   .refine(
     (v) =>

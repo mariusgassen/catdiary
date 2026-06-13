@@ -90,7 +90,8 @@
       "chooseFromPhotos": "Choose from your photos",
       "cancel": "Cancel",
       "chooseFromGallery": "Choose from gallery",
-      "dismiss": "Dismiss"
+      "dismiss": "Dismiss",
+      "zoom": "Zoom"
     },
     "details": {
       "back": "Back to camera",
@@ -101,6 +102,7 @@
       "catNamePlaceholder": "Cat name (optional)",
       "breedPlaceholder": "Breed / color (optional)",
       "locationHint": "Pick a location — search, use your position, or switch location off.",
+      "dateLabel": "Spotted",
       "errorUpload": "Photo upload failed",
       "errorSave": "Could not save the entry",
       "errorGeneric": "Something went wrong"
@@ -312,6 +314,7 @@
     "namePlaceholder": "Name (optional)",
     "breedPlaceholder": "Breed / color (optional)",
     "notesPlaceholder": "Notes (optional) — #tags and @mentions",
+    "dateLabel": "Spotted",
     "delete": "Delete this entry",
     "deleting": "Deleting…",
     "deleteConfirm": "Delete this cat entry? This can't be undone.",
@@ -468,7 +471,7 @@
     "byOwner": "by {name}"
   },
   "yearInCats": {
-    "title": "{name}'s Year in Cats",
+    "title": "{possessive} Year in Cats",
     "subtitle": "A calendar of every cat documented",
     "catsLogged": "Cats logged",
     "namedCats": "Named cats",
@@ -477,9 +480,26 @@
     "busiestMonth": "Busiest month",
     "entriesCount": "{count, plural, one {# entry} other {# entries}}",
     "daySightings": "Day {day}: {count, plural, one {# sighting} other {# sightings}}",
+    "monthEntries": "{count, plural, one {# cat} other {# cats}}",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
+    "noEntriesThisMonth": "No cats logged this month.",
     "emptyYear": "No cats logged this year yet.",
     "untitled": "A cat",
-    "close": "Close"
+    "close": "Close",
+    "createCalendar": "Create photo calendar"
+  },
+  "catCalendar": {
+    "title": "{possessive} {year} Calendar",
+    "subtitle": "A wall calendar from your diary — one cat for every month",
+    "intro": "We picked a cat for each month of {year} from your sightings. Tap any month to choose a different one, then print or save it.",
+    "print": "Print / Save PDF",
+    "choosePhoto": "Choose a cat for {month}",
+    "change": "Change",
+    "noPhotos": "Add a few cats to your diary first, then come back to build a calendar.",
+    "empty": "No suggestion yet — tap to pick a cat.",
+    "back": "Back to Year in Cats",
+    "credit": "Made with Cat Diary"
   },
   "cats": {
     "heading": "Cats",

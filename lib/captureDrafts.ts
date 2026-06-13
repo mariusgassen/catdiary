@@ -20,6 +20,7 @@ export type CaptureDraft = {
   catName: string;
   breed: string;
   frameStyle?: string; // chosen journal frame; absent on older drafts
+  capturedAt?: number | null; // ms since epoch of the spotted date; absent = "now"
   location: DraftLocation;
   geoDisabled: boolean;
   photos: DraftPhoto[];

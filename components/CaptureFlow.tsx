@@ -13,7 +13,9 @@ import {
   ChevronRight,
   Loader2,
   History,
+  CalendarDays,
 } from "lucide-react";
+import { toLocalDateTimeInput } from "@/lib/localDateTime";
 import { LocationPicker, reverseGeocode, type PickedLocation } from "@/components/LocationPicker";
 import { MAX_PHOTOS_PER_ENTRY } from "@/lib/photo-urls";
 import { asFrameStyle, DEFAULT_FRAME_STYLE, type FrameStyle } from "@/lib/frames";
@@ -40,6 +42,14 @@ function makeShot(file: File): Shot {
   return { id: newDraftId(), file, previewUrl: URL.createObjectURL(file) };
 }
 
+// `zoom` isn't in the standard MediaTrack typings yet. When the camera reports
+// a zoom capability we drive it natively (true optical/sensor zoom); otherwise
+// we fall back to digital zoom (CSS scale on the preview + a centre crop on
+// capture).
+type ZoomRange = { min: number; max: number; step: number };
+
+const DIGITAL_ZOOM_MAX = 4;
+
 // ── Main capture flow ─────────────────────────────────────────────────────────
 
 export function CaptureFlow() {
@@ -48,12 +58,20 @@ export function CaptureFlow() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const videoTrackRef = useRef<MediaStreamTrack | null>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState<Step>("camera");
   const [facing, setFacing] = useState<Facing>("environment");
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+
+  // Pinch / slider zoom. `zoomRange` comes from the camera when it supports
+  // native zoom; otherwise it's null and we apply digital zoom on top.
+  const [zoom, setZoom] = useState(1);
+  const [zoomRange, setZoomRange] = useState<ZoomRange | null>(null);
+  const pinchRef = useRef<{ startDist: number; startZoom: number } | null>(null);
+  const pointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
 
   const [shots, setShots] = useState<Shot[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -64,6 +82,10 @@ export function CaptureFlow() {
   const [breed, setBreed] = useState("");
   const [frameStyle, setFrameStyle] = useState<FrameStyle>(DEFAULT_FRAME_STYLE);
   const [showOptional, setShowOptional] = useState(false);
+
+  // The date the cat was spotted. null = "now" (a fresh sighting); set from a
+  // picked photo's EXIF date, or edited by hand for older photos.
+  const [capturedAt, setCapturedAt] = useState<Date | null>(null);
 
   // Location defaults, in priority order: the photo's EXIF GPS data, then the
   // device's location, then whatever place the user searches for — or nothing
@@ -113,6 +135,7 @@ export function CaptureFlow() {
         catName,
         breed,
         frameStyle,
+        capturedAt: capturedAt ? capturedAt.getTime() : null,
         location: location ? { name: location.name, lat: location.lat, lng: location.lng } : null,
         geoDisabled,
         photos: shots.map((s) => ({ name: s.file.name, type: s.file.type, blob: s.file })),
@@ -120,7 +143,7 @@ export function CaptureFlow() {
     }, 500);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [caption, catName, breed, frameStyle, location, geoDisabled, shots, submitting, currentDraftId]);
+  }, [caption, catName, breed, frameStyle, capturedAt, location, geoDisabled, shots, submitting, currentDraftId]);
 
   const slotsLeft = MAX_PHOTOS_PER_ENTRY - shots.length;
 
@@ -155,12 +178,24 @@ export function CaptureFlow() {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     setCameraReady(false);
     setCameraError(null);
+    setZoom(1);
+    setZoomRange(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: f, width: { ideal: 1920 }, height: { ideal: 1920 } },
         audio: false,
       });
       streamRef.current = stream;
+      const track = stream.getVideoTracks()[0] ?? null;
+      videoTrackRef.current = track;
+      // `zoom` isn't in the standard MediaTrackCapabilities type yet.
+      const caps = track?.getCapabilities?.() as
+        | (MediaTrackCapabilities & { zoom?: ZoomRange })
+        | undefined;
+      const zoomCap = caps?.zoom;
+      if (zoomCap && zoomCap.max > zoomCap.min) {
+        setZoomRange({ min: zoomCap.min, max: zoomCap.max, step: zoomCap.step || 0.1 });
+      }
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
@@ -169,6 +204,53 @@ export function CaptureFlow() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Min/max for the current zoom mode: the camera's reported range when native
+  // zoom is available, otherwise a fixed digital range.
+  const zoomMin = zoomRange?.min ?? 1;
+  const zoomMax = zoomRange?.max ?? DIGITAL_ZOOM_MAX;
+  const zoomStep = zoomRange?.step ?? 0.1;
+  const isDigitalZoom = !zoomRange;
+
+  const applyZoom = useCallback(
+    (next: number) => {
+      const clamped = Math.min(zoomMax, Math.max(zoomMin, next));
+      setZoom(clamped);
+      const track = videoTrackRef.current;
+      if (zoomRange && track) {
+        // Native zoom isn't in the standard constraint typings.
+        void track
+          .applyConstraints({ advanced: [{ zoom: clamped }] } as unknown as MediaTrackConstraints)
+          .catch(() => {});
+      }
+    },
+    [zoomMin, zoomMax, zoomRange],
+  );
+
+  // Pinch-to-zoom on the viewfinder (two-pointer distance ratio), mirroring the
+  // photo editor's gesture handling.
+  function viewfinderPointerDown(e: React.PointerEvent) {
+    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointersRef.current.size === 2) {
+      const [a, b] = [...pointersRef.current.values()];
+      pinchRef.current = { startDist: Math.hypot(a.x - b.x, a.y - b.y), startZoom: zoom };
+    }
+  }
+
+  function viewfinderPointerMove(e: React.PointerEvent) {
+    if (!pointersRef.current.has(e.pointerId)) return;
+    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointersRef.current.size >= 2 && pinchRef.current) {
+      const [a, b] = [...pointersRef.current.values()];
+      const ratio = Math.hypot(a.x - b.x, a.y - b.y) / pinchRef.current.startDist;
+      applyZoom(pinchRef.current.startZoom * ratio);
+    }
+  }
+
+  function viewfinderPointerUp(e: React.PointerEvent) {
+    pointersRef.current.delete(e.pointerId);
+    if (pointersRef.current.size < 2) pinchRef.current = null;
+  }
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -211,9 +293,12 @@ export function CaptureFlow() {
     canvas.width = size;
     canvas.height = size;
     const ctx = canvas.getContext("2d")!;
-    const ox = (video.videoWidth - size) / 2;
-    const oy = (video.videoHeight - size) / 2;
-    ctx.drawImage(video, ox, oy, size, size, 0, 0, size, size);
+    // Native zoom already shows in the frame; for digital zoom we crop a
+    // smaller centred region of the frame to match what the preview shows.
+    const srcSize = size / (isDigitalZoom ? zoom : 1);
+    const ox = (video.videoWidth - srcSize) / 2;
+    const oy = (video.videoHeight - srcSize) / 2;
+    ctx.drawImage(video, ox, oy, srcSize, srcSize, 0, 0, size, size);
 
     canvas.toBlob(
       (blob) => {
@@ -232,6 +317,22 @@ export function CaptureFlow() {
     if (files.length === 0) return;
     addShots(files);
     setStep("details");
+
+    // Date the photo was actually taken (EXIF) — the first picked photo with a
+    // valid capture date wins, so logging an old gallery photo back-dates the
+    // entry instead of stamping it "now". Don't override a date already set.
+    if (!capturedAt) {
+      for (const file of files) {
+        const meta = await exifr
+          .parse(file, ["DateTimeOriginal", "CreateDate", "DateTimeDigitized"])
+          .catch(() => null);
+        const taken = meta?.DateTimeOriginal ?? meta?.CreateDate ?? meta?.DateTimeDigitized;
+        if (taken instanceof Date && !Number.isNaN(taken.getTime())) {
+          setCapturedAt(taken);
+          break;
+        }
+      }
+    }
 
     // Prefer the location where a photo was actually taken (EXIF GPS) — the
     // first picked photo that carries GPS data wins.
@@ -263,6 +364,7 @@ export function CaptureFlow() {
     setCatName(draft.catName);
     setBreed(draft.breed);
     setFrameStyle(asFrameStyle(draft.frameStyle));
+    setCapturedAt(draft.capturedAt ? new Date(draft.capturedAt) : null);
     setShowOptional(!!(draft.catName || draft.breed));
     setLocation(draft.location);
     setGeoDisabled(draft.geoDisabled);
@@ -306,6 +408,7 @@ export function CaptureFlow() {
           locationName: location?.name ?? null,
           latitude: location?.lat ?? null,
           longitude: location?.lng ?? null,
+          createdAt: capturedAt ? capturedAt.toISOString() : undefined,
         }),
       });
       if (!create.ok) throw new Error(t("details.errorSave"));
@@ -366,7 +469,14 @@ export function CaptureFlow() {
         </div>
 
         {/* Viewfinder */}
-        <div className="flex-1 relative flex items-center justify-center overflow-hidden">
+        <div
+          className="flex-1 relative flex items-center justify-center overflow-hidden"
+          style={{ touchAction: "none" }}
+          onPointerDown={viewfinderPointerDown}
+          onPointerMove={viewfinderPointerMove}
+          onPointerUp={viewfinderPointerUp}
+          onPointerCancel={viewfinderPointerUp}
+        >
           <video
             ref={videoRef}
             autoPlay
@@ -374,6 +484,8 @@ export function CaptureFlow() {
             muted
             onCanPlay={() => setCameraReady(true)}
             className="w-full h-full object-cover"
+            // Digital zoom scales the preview; native zoom is handled by the camera.
+            style={isDigitalZoom && zoom > 1 ? { transform: `scale(${zoom})` } : undefined}
           />
           {!cameraReady && !cameraError && (
             <div className="absolute inset-0 flex items-center justify-center">
@@ -384,6 +496,25 @@ export function CaptureFlow() {
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
               <Camera size={40} className="text-white/40" />
               <p className="text-white/70 text-sm">{cameraError}</p>
+            </div>
+          )}
+
+          {/* Zoom control — pinch the viewfinder or drag the slider */}
+          {cameraReady && !cameraError && (
+            <div className="absolute inset-x-0 bottom-4 flex flex-col items-center gap-2 px-10">
+              <span className="rounded-full bg-black/45 px-2.5 py-1 text-xs font-semibold tabular-nums text-white backdrop-blur-sm">
+                {zoom.toFixed(1)}×
+              </span>
+              <input
+                type="range"
+                min={zoomMin}
+                max={zoomMax}
+                step={zoomStep}
+                value={zoom}
+                onChange={(e) => applyZoom(Number(e.target.value))}
+                aria-label={t("camera.zoom")}
+                className="zoom-slider w-full max-w-xs"
+              />
             </div>
           )}
         </div>
@@ -595,6 +726,24 @@ export function CaptureFlow() {
             isLocating={isLocating}
             setIsLocating={setIsLocating}
           />
+        </div>
+
+        {/* Date the cat was spotted — prefilled from photo EXIF when available */}
+        <div className="px-4 pt-3">
+          <label className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2.5 text-sm">
+            <CalendarDays size={16} className="shrink-0 text-muted" aria-hidden />
+            <span className="text-muted">{t("details.dateLabel")}</span>
+            <input
+              type="datetime-local"
+              value={toLocalDateTimeInput(capturedAt ?? new Date())}
+              max={toLocalDateTimeInput(new Date())}
+              onChange={(e) => {
+                const v = e.target.value ? new Date(e.target.value) : null;
+                setCapturedAt(v && !Number.isNaN(v.getTime()) ? v : null);
+              }}
+              className="ml-auto bg-transparent text-right outline-none"
+            />
+          </label>
         </div>
 
         {/* Optional fields */}
