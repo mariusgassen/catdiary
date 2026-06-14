@@ -73,6 +73,7 @@ export type CatSummary = {
   color: string | null;
   description: string | null;
   createdAt: Date;
+  lastSeenAt: Date | null; // most recent visible sighting, null if none visible
   entryCount: number; // visible sightings only
   coverPhotoKey: string | null;
   coverThumbKey: string | null;
@@ -103,6 +104,7 @@ async function summarize(cats: CatScalars[], viewerId: string | null): Promise<C
     select: {
       catId: true,
       name: true,
+      createdAt: true,
       photos: { orderBy: { position: "asc" }, take: 1, select: { photoKey: true, thumbKey: true } },
     },
   });
@@ -133,6 +135,7 @@ async function summarize(cats: CatScalars[], viewerId: string | null): Promise<C
       color: cat.color,
       description: cat.description,
       createdAt: cat.createdAt,
+      lastSeenAt: own[0]?.createdAt ?? null, // own is newest-first
       entryCount: own.length,
       coverPhotoKey: cover?.photoKey ?? null,
       coverThumbKey: cover?.thumbKey ?? null,
@@ -227,6 +230,73 @@ export async function listCatsForProfile(profileId: string, viewerId: string | n
     orderBy: [{ isOwned: "desc" }, { createdAt: "desc" }],
   });
   return summarize(cats, viewerId);
+}
+
+/** A tile on a diary's cat shelf — either a profiled `Cat` (cluster / claimed
+    pet) or a still-bare sighting that hasn't been linked to one yet. */
+export type ProfileShelfItem = {
+  kind: "cat" | "sighting";
+  id: string; // cat id or entry id
+  href: string; // `/cats/{id}` or `/cat-entries/{id}`
+  label: string | null; // displayName / sighting name (null → "untitled" in UI)
+  isOwned: boolean;
+  coverPhotoKey: string | null;
+  coverThumbKey: string | null;
+  lastSeenAt: Date; // sort key, descending
+};
+
+/**
+ * Every cat a diary has met, for the profile shelf: the profile's claimed cats
+ * and the ownerless clusters its sightings belong to (`listCatsForProfile`),
+ * **plus** each still-bare sighting (`catId == null`) as its own tile — "a cat
+ * with a single entry is still a cat." Sorted by most recent sighting, newest
+ * first.
+ */
+export async function listProfileShelf(
+  profileId: string,
+  viewerId: string | null,
+): Promise<ProfileShelfItem[]> {
+  if (!(await canViewCatEntry(viewerId, profileId))) return [];
+
+  const [cats, bare] = await Promise.all([
+    listCatsForProfile(profileId, viewerId),
+    db.catEntry.findMany({
+      where: { ownerId: profileId, catId: null },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        name: true,
+        createdAt: true,
+        photos: { orderBy: { position: "asc" }, take: 1, select: { photoKey: true, thumbKey: true } },
+      },
+    }),
+  ]);
+
+  const catItems: ProfileShelfItem[] = cats.map((c) => ({
+    kind: "cat",
+    id: c.id,
+    href: `/cats/${c.id}`,
+    label: c.displayName,
+    isOwned: c.isOwned,
+    coverPhotoKey: c.coverPhotoKey,
+    coverThumbKey: c.coverThumbKey,
+    lastSeenAt: c.lastSeenAt ?? c.createdAt,
+  }));
+
+  const bareItems: ProfileShelfItem[] = bare.map((e) => ({
+    kind: "sighting",
+    id: e.id,
+    href: `/cat-entries/${e.id}`,
+    label: e.name,
+    isOwned: false,
+    coverPhotoKey: e.photos[0]?.photoKey ?? null,
+    coverThumbKey: e.photos[0]?.thumbKey ?? null,
+    lastSeenAt: e.createdAt,
+  }));
+
+  return [...catItems, ...bareItems].sort(
+    (a, b) => b.lastSeenAt.getTime() - a.lastSeenAt.getTime(),
+  );
 }
 
 export type JoinableCluster = CatSummary & { distanceKm: number | null };
