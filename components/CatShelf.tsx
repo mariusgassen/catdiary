@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { Plus, Home } from "lucide-react";
 import { getTranslations } from "next-intl/server";
-import type { CatSummary } from "@/lib/cats";
+import type { ProfileShelfItem } from "@/lib/cats";
 
 type CatShelfProps = {
-  cats: CatSummary[];
+  items: ProfileShelfItem[];
   isOwnProfile: boolean;
 };
 
@@ -13,8 +13,8 @@ type CatShelfProps = {
  * owner always sees a "New cat" tile; visitors see only the cats themselves.
  * Renders nothing for a visitor when there are no cats to show.
  */
-export async function CatShelf({ cats, isOwnProfile }: CatShelfProps) {
-  if (cats.length === 0 && !isOwnProfile) return null;
+export async function CatShelf({ items, isOwnProfile }: CatShelfProps) {
+  if (items.length === 0 && !isOwnProfile) return null;
   const t = await getTranslations("cats");
 
   return (
@@ -33,11 +33,11 @@ export async function CatShelf({ cats, isOwnProfile }: CatShelfProps) {
             <span className="w-full truncate text-center text-[11px] text-muted">{t("newCat")}</span>
           </Link>
         )}
-        {cats.map((cat) => {
-          const cover = cat.coverThumbKey ?? cat.coverPhotoKey;
-          const label = cat.displayName ?? t("untitled");
+        {items.map((item) => {
+          const cover = item.coverThumbKey ?? item.coverPhotoKey;
+          const label = item.label ?? t("untitled");
           return (
-            <Link key={cat.id} href={`/cats/${cat.id}`} className="flex w-16 shrink-0 flex-col items-center gap-1">
+            <Link key={`${item.kind}-${item.id}`} href={item.href} className="flex w-16 shrink-0 flex-col items-center gap-1">
               <span className="relative">
                 {cover ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -51,7 +51,7 @@ export async function CatShelf({ cats, isOwnProfile }: CatShelfProps) {
                     🐱
                   </span>
                 )}
-                {cat.isOwned && (
+                {item.isOwned && (
                   <span className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-white ring-2 ring-surface">
                     <Home size={11} aria-hidden />
                   </span>

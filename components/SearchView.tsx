@@ -51,7 +51,19 @@ type NearbyState =
   | { status: "results"; entries: RandomEntry[]; radiusKm: number }
   | { status: "error"; message: string };
 
-function NearbySection() {
+function GlobalFeed({ entries }: { entries: RandomEntry[] }) {
+  if (entries.length === 0) return null;
+  return (
+    <div>
+      <p className="px-4 pt-3 pb-0 text-xs font-semibold uppercase tracking-wide text-muted">
+        Cats around the world
+      </p>
+      <PolaroidGrid entries={entries} />
+    </div>
+  );
+}
+
+function NearbySection({ globalEntries }: { globalEntries: RandomEntry[] }) {
   const [state, setState] = useState<NearbyState>({ status: "idle" });
 
   async function requestNearby() {
@@ -78,34 +90,43 @@ function NearbySection() {
 
   if (state.status === "idle") {
     return (
-      <div className="px-4 pt-3 pb-1">
-        <button
-          onClick={requestNearby}
-          className="inline-flex items-center gap-2 rounded-lg border border-dashed border-accent/50 bg-surface text-accent text-sm font-medium px-3.5 py-1.5 hover:bg-accent hover:border-accent hover:text-white transition-colors"
-        >
-          <MapPin size={14} aria-hidden />
-          Cats near you
-        </button>
+      <div>
+        <div className="px-4 pt-3 pb-1">
+          <button
+            onClick={requestNearby}
+            className="inline-flex items-center gap-2 rounded-lg border border-dashed border-accent/50 bg-surface text-accent text-sm font-medium px-3.5 py-1.5 hover:bg-accent hover:border-accent hover:text-white transition-colors"
+          >
+            <MapPin size={14} aria-hidden />
+            Cats near you
+          </button>
+        </div>
+        <GlobalFeed entries={globalEntries} />
       </div>
     );
   }
 
   if (state.status === "locating") {
     return (
-      <div className="px-4 pt-3 pb-1 flex items-center gap-2 text-sm text-muted">
-        <Loader2 size={14} className="animate-spin shrink-0" aria-hidden />
-        Finding cats nearby…
+      <div>
+        <div className="px-4 pt-3 pb-1 flex items-center gap-2 text-sm text-muted">
+          <Loader2 size={14} className="animate-spin shrink-0" aria-hidden />
+          Finding cats nearby…
+        </div>
+        <GlobalFeed entries={globalEntries} />
       </div>
     );
   }
 
   if (state.status === "error") {
     return (
-      <div className="px-4 pt-3 pb-1 flex items-center gap-2 text-sm">
-        <span className="text-muted">{state.message}</span>
-        <button onClick={requestNearby} className="text-accent underline shrink-0">
-          Try again
-        </button>
+      <div>
+        <div className="px-4 pt-3 pb-1 flex items-center gap-2 text-sm">
+          <span className="text-muted">{state.message}</span>
+          <button onClick={requestNearby} className="text-accent underline shrink-0">
+            Try again
+          </button>
+        </div>
+        <GlobalFeed entries={globalEntries} />
       </div>
     );
   }
@@ -120,6 +141,14 @@ function NearbySection() {
           : `Cats near you · within ${radiusKm} km`}
       </p>
       {entries.length > 0 && <PolaroidGrid entries={entries} />}
+      <div className="px-4 pt-2">
+        <button
+          onClick={() => setState({ status: "idle" })}
+          className="text-accent text-sm underline"
+        >
+          Show all cats
+        </button>
+      </div>
     </div>
   );
 }
@@ -342,15 +371,7 @@ export function SearchResults({
               ))}
             </div>
           </div>
-          <NearbySection />
-          {randomEntries.length > 0 && (
-            <div>
-              <p className="px-4 pt-3 pb-0 text-xs font-semibold uppercase tracking-wide text-muted">
-                Cats around the world
-              </p>
-              <PolaroidGrid entries={randomEntries} />
-            </div>
-          )}
+          <NearbySection globalEntries={randomEntries} />
         </div>
       )}
     </div>
