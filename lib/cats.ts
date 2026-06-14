@@ -13,6 +13,38 @@ import { createNotification } from "@/lib/notifications";
 
 export class CatNotFoundError extends Error {}
 export class CatForbiddenError extends Error {}
+/** Thrown when two sightings are too far apart to be the same (ownerless) cat. */
+export class CatLinkTooFarError extends Error {}
+
+// Sightings of one *ownerless* cat (a street cat) must be within this distance of
+// each other — a street cat has a territory, so far-apart sightings aren't it.
+// Claimed pets are exempt (they travel). Deliberately generous; tune as needed.
+const MAX_LINK_KM = 25;
+
+function haversineKm(aLat: number, aLng: number, bLat: number, bLng: number): number {
+  const R = 6371;
+  const dLat = ((bLat - aLat) * Math.PI) / 180;
+  const dLng = ((bLng - aLng) * Math.PI) / 180;
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((aLat * Math.PI) / 180) * Math.cos((bLat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+/** Distance from a point to the nearest located sighting in a cluster, or null
+    if the cluster has no geotagged sightings (then there's nothing to enforce). */
+async function nearestClusterKm(catId: string, lat: number, lng: number): Promise<number | null> {
+  const rows = await db.catEntry.findMany({
+    where: { catId, latitude: { not: null }, longitude: { not: null } },
+    select: { latitude: true, longitude: true },
+  });
+  let min: number | null = null;
+  for (const r of rows) {
+    const d = haversineKm(lat, lng, r.latitude!, r.longitude!);
+    if (min === null || d < min) min = d;
+  }
+  return min;
+}
 
 export type CreateCatInput = {
   ownerId: string;
@@ -197,6 +229,88 @@ export async function listCatsForProfile(profileId: string, viewerId: string | n
   return summarize(cats, viewerId);
 }
 
+export type JoinableCluster = CatSummary & { distanceKm: number | null };
+
+/**
+ * Ownerless ("shared") clusters the viewer could join a sighting to — for
+ * grouping street cats with other people's sightings without anyone claiming
+ * ownership. With a query `q`, searches clusters by sighting name (the fallback
+ * when the sighting has no coordinates). Otherwise, when the sighting *is*
+ * geotagged, lists clusters with a sighting within `MAX_LINK_KM`, closest first
+ * (the same boundary linking enforces). Excludes the sighting's own cluster.
+ */
+export async function listJoinableClusters(
+  entryId: string,
+  viewerId: string | null,
+  q?: string,
+): Promise<JoinableCluster[]> {
+  if (!viewerId) return [];
+  const entry = await db.catEntry.findUnique({
+    where: { id: entryId },
+    select: { ownerId: true, catId: true, latitude: true, longitude: true },
+  });
+  if (!entry) return [];
+  if (!(await canViewCatEntry(viewerId, entry.ownerId))) return [];
+
+  const visibleOwnerIds = await listVisibleOwnerIds(viewerId);
+  const excludeId = entry.catId ?? "";
+  const trimmed = q?.trim();
+  const distById = new Map<string, number>();
+  let orderedIds: string[] = [];
+
+  if (trimmed) {
+    const rows = await db.$queryRaw<{ id: string }[]>`
+      SELECT DISTINCT c.id
+      FROM cats c
+      JOIN cat_entries ce ON ce.cat_id = c.id
+      WHERE c.owner_id IS NULL
+        AND c.id != ${excludeId}
+        AND ce.owner_id = ANY(${visibleOwnerIds}::text[])
+        AND ce.name ILIKE ${"%" + trimmed + "%"}
+      LIMIT 8
+    `;
+    orderedIds = rows.map((r) => r.id);
+  } else if (entry.latitude != null && entry.longitude != null) {
+    const lat = entry.latitude;
+    const lng = entry.longitude;
+    const rows = await db.$queryRaw<{ id: string; distance_km: number }[]>`
+      SELECT c.id,
+        MIN(6371.0 * 2.0 * ASIN(SQRT(
+          POWER(SIN(RADIANS((${lat}::double precision - ce.latitude) / 2.0)), 2) +
+          COS(RADIANS(ce.latitude)) * COS(RADIANS(${lat}::double precision)) *
+          POWER(SIN(RADIANS((${lng}::double precision - ce.longitude) / 2.0)), 2)
+        )))::double precision AS distance_km
+      FROM cats c
+      JOIN cat_entries ce ON ce.cat_id = c.id
+      WHERE c.owner_id IS NULL
+        AND c.id != ${excludeId}
+        AND ce.owner_id = ANY(${visibleOwnerIds}::text[])
+        AND ce.latitude IS NOT NULL
+        AND ce.longitude IS NOT NULL
+      GROUP BY c.id
+      HAVING MIN(6371.0 * 2.0 * ASIN(SQRT(
+          POWER(SIN(RADIANS((${lat}::double precision - ce.latitude) / 2.0)), 2) +
+          COS(RADIANS(ce.latitude)) * COS(RADIANS(${lat}::double precision)) *
+          POWER(SIN(RADIANS((${lng}::double precision - ce.longitude) / 2.0)), 2)
+        ))) <= ${MAX_LINK_KM}::double precision
+      ORDER BY distance_km ASC
+      LIMIT 8
+    `;
+    orderedIds = rows.map((r) => r.id);
+    rows.forEach((r) => distById.set(r.id, Number(r.distance_km)));
+  } else {
+    return []; // no coordinates and no search term — nothing to scope by
+  }
+
+  if (orderedIds.length === 0) return [];
+  const cats = await db.cat.findMany({ where: { id: { in: orderedIds } } });
+  const byId = new Map((await summarize(cats, viewerId)).map((s) => [s.id, s]));
+  return orderedIds
+    .map((id) => byId.get(id))
+    .filter((s): s is CatSummary => Boolean(s))
+    .map((s) => ({ ...s, distanceKm: distById.get(s.id) ?? null }));
+}
+
 /** Claim an *ownerless* cat as your pet — you become its owner. */
 export async function claimCat(catId: string, userId: string): Promise<CatSummary | null> {
   const cat = await db.cat.findUnique({ where: { id: catId }, select: { ownerId: true } });
@@ -222,11 +336,58 @@ export async function mergeCats(sourceCatId: string, targetCatId: string, userId
   if (target.ownerId !== userId) throw new CatForbiddenError();
   if (source.ownerId && source.ownerId !== userId) throw new CatForbiddenError();
 
+  await absorbCluster(sourceCatId, targetCatId);
+}
+
+/** Moves every sighting and pending claim from one cat into another, then
+    deletes the now-empty source. The caller owns the permission decision. */
+async function absorbCluster(sourceCatId: string, targetCatId: string) {
   await db.$transaction([
     db.catEntry.updateMany({ where: { catId: sourceCatId }, data: { catId: targetCatId } }),
     db.catLink.deleteMany({ where: { catId: sourceCatId } }),
     db.cat.delete({ where: { id: sourceCatId } }),
   ]);
+}
+
+/**
+ * When the on-screen sighting already belongs to a cluster A and is being linked
+ * to cat B, this is really "A and B are the same cat." Merge them outright when
+ * no third party's consent is needed — both ownerless (communal), or one side is
+ * the requester's own claimed cat (which survives). Returns true if it merged.
+ */
+async function tryMergeClusters(aId: string, bId: string, requesterId: string): Promise<boolean> {
+  if (aId === bId) return true;
+  const [a, b] = await Promise.all([
+    db.cat.findUnique({ where: { id: aId }, select: { ownerId: true } }),
+    db.cat.findUnique({ where: { id: bId }, select: { ownerId: true } }),
+  ]);
+  if (!a || !b) return false;
+
+  let survivor: string;
+  let source: string;
+  let survivorOwnerId: string | null;
+  let sourceOwnerId: string | null;
+  if (a.ownerId === null && b.ownerId === null) {
+    [survivor, source, survivorOwnerId, sourceOwnerId] = [bId, aId, null, null]; // both communal → keep target
+  } else if (b.ownerId === requesterId && (a.ownerId === null || a.ownerId === requesterId)) {
+    [survivor, source, survivorOwnerId, sourceOwnerId] = [bId, aId, b.ownerId, a.ownerId]; // requester's cat survives
+  } else if (a.ownerId === requesterId && (b.ownerId === null || b.ownerId === requesterId)) {
+    [survivor, source, survivorOwnerId, sourceOwnerId] = [aId, bId, a.ownerId, b.ownerId]; // requester's cat survives
+  } else {
+    return false; // someone else owns a side → leave it to single-sighting approval
+  }
+
+  // Folding an ownerless source (which may hold other people's sightings) into a
+  // *claimed* cat would re-home those third parties without consent — only do so
+  // when every source sighting is the requester's. Otherwise leave it to
+  // single-sighting approval.
+  if (survivorOwnerId !== null && sourceOwnerId === null) {
+    const foreign = await db.catEntry.count({ where: { catId: source, ownerId: { not: requesterId } } });
+    if (foreign > 0) return false;
+  }
+
+  await absorbCluster(source, survivor);
+  return true;
 }
 
 /**
@@ -327,28 +488,27 @@ type SuggestRow = {
 };
 
 /**
- * "Might this be cat X?" — visual re-identification candidates for a sighting.
- * Looks up the nearest sightings by CLIP embedding (cosine distance) among
- * diaries the viewer can see, and returns two flavours of match:
- *   • already-profiled cats (your own and other people's), collapsed to the
- *     distinct cat — file your sighting under one of these;
- *   • bare sightings nobody has profiled yet ("unowned cats") — linking one
- *     starts a shared profile (your own immediately; someone else's by request).
- * Owner-only, and empty until the entry's embedding has been computed (it's
- * generated in the background after upload).
+ * "Might this be cat X?" — visual re-identification candidates for a sighting,
+ * by CLIP embedding (cosine distance). Two viewing modes:
+ *   • **owner** (the sighting is yours): nearest already-profiled cats across
+ *     diaries you can see — your cats, other people's claimed cats and ownerless
+ *     clusters — plus bare sightings nobody has profiled yet ("unowned cats").
+ *   • **claim** (the sighting is someone else's): which of *your own* cats look
+ *     like it, so you can say "that's my cat" and ask the owner to confirm.
+ * Flags (`isOwn`/`isShared`/`immediate`) are computed relative to the *viewer*.
+ * Empty until the entry's embedding has been computed (background job).
  */
 export async function suggestCatsForEntry(
   entryId: string,
   viewerId: string | null,
 ): Promise<CatSuggestion[]> {
+  if (!viewerId) return [];
   const entry = await db.catEntry.findUnique({
     where: { id: entryId },
     select: { ownerId: true, catId: true },
   });
   if (!entry) return [];
-  // Suggestions are for the sighting's owner — they're the only one who can act
-  // on them (file it, or ask another diarist to confirm their cat).
-  if (viewerId !== entry.ownerId) return [];
+  if (!(await canViewCatEntry(viewerId, entry.ownerId))) return [];
 
   const source = await db.$queryRaw<Array<{ embedding: string | null }>>`
     SELECT embedding::text FROM cat_entries WHERE id = ${entryId}
@@ -356,76 +516,125 @@ export async function suggestCatsForEntry(
   const embeddingStr = source[0]?.embedding;
   if (!embeddingStr) return [];
 
-  const ownerIds = await listVisibleOwnerIds(viewerId);
-  if (ownerIds.length === 0) return [];
+  const isOwnerView = entry.ownerId === viewerId;
 
-  // Nearest already-profiled cats (collapsed to the distinct cat).
-  const catRows = await db.$queryRaw<SuggestRow[]>`
-    SELECT s."catId", NULL::text AS "entryId", s.name, s."ownerId", s."ownerDisplayName",
-           s."ownerUsername", s."coverPhotoKey", s."coverThumbKey", s.distance
-    FROM (
-      SELECT DISTINCT ON (ce.cat_id)
-        ce.cat_id        AS "catId",
-        c.name           AS name,
-        c.owner_id       AS "ownerId",
-        u.display_name   AS "ownerDisplayName",
-        u.username       AS "ownerUsername",
-        cover.photo_key  AS "coverPhotoKey",
-        cover.thumb_key  AS "coverThumbKey",
-        (ce.embedding <=> ${embeddingStr}::vector) AS distance
+  let catRows: SuggestRow[] = [];
+  let entryRows: SuggestRow[] = [];
+
+  if (isOwnerView) {
+    const ownerIds = await listVisibleOwnerIds(viewerId);
+    if (ownerIds.length === 0) return [];
+
+    // Nearest already-profiled cats (collapsed to the distinct cat). LEFT JOIN
+    // so ownerless clusters (owner_id NULL) are included.
+    catRows = await db.$queryRaw<SuggestRow[]>`
+      SELECT s."catId", NULL::text AS "entryId", s.name, s."ownerId", s."ownerDisplayName",
+             s."ownerUsername", s."coverPhotoKey", s."coverThumbKey", s.distance
+      FROM (
+        SELECT DISTINCT ON (ce.cat_id)
+          ce.cat_id        AS "catId",
+          c.name           AS name,
+          c.owner_id       AS "ownerId",
+          u.display_name   AS "ownerDisplayName",
+          u.username       AS "ownerUsername",
+          cover.photo_key  AS "coverPhotoKey",
+          cover.thumb_key  AS "coverThumbKey",
+          (ce.embedding <=> ${embeddingStr}::vector) AS distance
+        FROM cat_entries ce
+        JOIN cats c ON c.id = ce.cat_id
+        LEFT JOIN users u ON u.id = c.owner_id
+        LEFT JOIN LATERAL (
+          SELECT p.photo_key, p.thumb_key
+          FROM cat_entries e2
+          JOIN cat_entry_photos p ON p.cat_entry_id = e2.id
+          WHERE e2.cat_id = c.id
+          ORDER BY e2.created_at DESC, p.position ASC
+          LIMIT 1
+        ) cover ON TRUE
+        WHERE ce.cat_id IS NOT NULL
+          AND ce.id != ${entryId}
+          AND ce.embedding IS NOT NULL
+          AND (c.owner_id IS NULL OR c.owner_id = ANY(${ownerIds}::text[]))
+          AND ce.owner_id = ANY(${ownerIds}::text[])
+          AND (${entry.catId}::text IS NULL OR ce.cat_id != ${entry.catId})
+        ORDER BY ce.cat_id, distance ASC
+      ) s
+      WHERE s.distance < ${SUGGEST_DISTANCE_THRESHOLD}
+      ORDER BY s.distance ASC
+      LIMIT 4
+    `;
+
+    // Nearest bare sightings — cats nobody has profiled yet.
+    entryRows = await db.$queryRaw<SuggestRow[]>`
+      SELECT NULL::text AS "catId", ce.id AS "entryId", ce.name, ce.owner_id AS "ownerId",
+             u.display_name AS "ownerDisplayName", u.username AS "ownerUsername",
+             cover.photo_key AS "coverPhotoKey", cover.thumb_key AS "coverThumbKey",
+             (ce.embedding <=> ${embeddingStr}::vector) AS distance
       FROM cat_entries ce
-      JOIN cats c ON c.id = ce.cat_id
-      JOIN users u ON u.id = c.owner_id
+      JOIN users u ON u.id = ce.owner_id
       LEFT JOIN LATERAL (
         SELECT p.photo_key, p.thumb_key
-        FROM cat_entries e2
-        JOIN cat_entry_photos p ON p.cat_entry_id = e2.id
-        WHERE e2.cat_id = c.id
-        ORDER BY e2.created_at DESC, p.position ASC
+        FROM cat_entry_photos p
+        WHERE p.cat_entry_id = ce.id
+        ORDER BY p.position ASC
         LIMIT 1
       ) cover ON TRUE
-      WHERE ce.cat_id IS NOT NULL
+      WHERE ce.cat_id IS NULL
         AND ce.id != ${entryId}
         AND ce.embedding IS NOT NULL
-        AND c.owner_id = ANY(${ownerIds}::text[])
-        AND (${entry.catId}::text IS NULL OR ce.cat_id != ${entry.catId})
-      ORDER BY ce.cat_id, distance ASC
-    ) s
-    WHERE s.distance < ${SUGGEST_DISTANCE_THRESHOLD}
-    ORDER BY s.distance ASC
-    LIMIT 4
-  `;
+        AND ce.owner_id = ANY(${ownerIds}::text[])
+        AND (ce.embedding <=> ${embeddingStr}::vector) < ${SUGGEST_DISTANCE_THRESHOLD}
+      ORDER BY distance ASC
+      LIMIT 4
+    `;
+  } else {
+    // Claim mode: only the viewer's *own* cats that look like this sighting.
+    catRows = await db.$queryRaw<SuggestRow[]>`
+      SELECT s."catId", NULL::text AS "entryId", s.name, s."ownerId", s."ownerDisplayName",
+             s."ownerUsername", s."coverPhotoKey", s."coverThumbKey", s.distance
+      FROM (
+        SELECT DISTINCT ON (ce.cat_id)
+          ce.cat_id        AS "catId",
+          c.name           AS name,
+          c.owner_id       AS "ownerId",
+          u.display_name   AS "ownerDisplayName",
+          u.username       AS "ownerUsername",
+          cover.photo_key  AS "coverPhotoKey",
+          cover.thumb_key  AS "coverThumbKey",
+          (ce.embedding <=> ${embeddingStr}::vector) AS distance
+        FROM cat_entries ce
+        JOIN cats c ON c.id = ce.cat_id
+        JOIN users u ON u.id = c.owner_id
+        LEFT JOIN LATERAL (
+          SELECT p.photo_key, p.thumb_key
+          FROM cat_entries e2
+          JOIN cat_entry_photos p ON p.cat_entry_id = e2.id
+          WHERE e2.cat_id = c.id
+          ORDER BY e2.created_at DESC, p.position ASC
+          LIMIT 1
+        ) cover ON TRUE
+        WHERE ce.cat_id IS NOT NULL
+          AND ce.id != ${entryId}
+          AND ce.embedding IS NOT NULL
+          AND c.owner_id = ${viewerId}
+        ORDER BY ce.cat_id, distance ASC
+      ) s
+      WHERE s.distance < ${SUGGEST_DISTANCE_THRESHOLD}
+      ORDER BY s.distance ASC
+      LIMIT 4
+    `;
+  }
 
-  // Nearest bare sightings — cats nobody has profiled yet.
-  const entryRows = await db.$queryRaw<SuggestRow[]>`
-    SELECT NULL::text AS "catId", ce.id AS "entryId", ce.name, ce.owner_id AS "ownerId",
-           u.display_name AS "ownerDisplayName", u.username AS "ownerUsername",
-           cover.photo_key AS "coverPhotoKey", cover.thumb_key AS "coverThumbKey",
-           (ce.embedding <=> ${embeddingStr}::vector) AS distance
-    FROM cat_entries ce
-    JOIN users u ON u.id = ce.owner_id
-    LEFT JOIN LATERAL (
-      SELECT p.photo_key, p.thumb_key
-      FROM cat_entry_photos p
-      WHERE p.cat_entry_id = ce.id
-      ORDER BY p.position ASC
-      LIMIT 1
-    ) cover ON TRUE
-    WHERE ce.cat_id IS NULL
-      AND ce.id != ${entryId}
-      AND ce.embedding IS NOT NULL
-      AND ce.owner_id = ANY(${ownerIds}::text[])
-      AND (ce.embedding <=> ${embeddingStr}::vector) < ${SUGGEST_DISTANCE_THRESHOLD}
-    ORDER BY distance ASC
-    LIMIT 4
-  `;
-
+  const entryIsViewers = entry.ownerId === viewerId;
   return [...catRows, ...entryRows]
     .map((r) => {
       const distance = Number(r.distance);
       const kind = r.catId ? ("cat" as const) : ("entry" as const);
-      const isOwn = r.ownerId === entry.ownerId;
+      const isOwn = r.ownerId === viewerId; // the candidate cat/sighting is the viewer's
       const isShared = kind === "cat" && r.ownerId === null; // an ownerless cluster
+      // Immediate (no approval) only when both sides are the viewer's to move:
+      // their own sighting into their own cat / an ownerless cluster.
+      const immediate = entryIsViewers && (kind === "cat" ? isOwn || isShared : isOwn);
       return {
         kind,
         catId: r.catId,
@@ -436,8 +645,7 @@ export async function suggestCatsForEntry(
         ownerUsername: r.ownerUsername,
         isOwn,
         isShared,
-        // No approval needed when it's yours or an ownerless cluster.
-        immediate: isOwn || isShared,
+        immediate,
         coverPhotoKey: r.coverPhotoKey,
         coverThumbKey: r.coverThumbKey,
         distance,
@@ -467,14 +675,15 @@ async function ensureClusterForEntry(entryId: string, requesterId: string): Prom
 }
 
 /**
- * Claims that `entryId` (the requester's own sighting) is the same animal as a
- * target — either an existing `catId` or another sighting `targetEntryId` that
- * nobody has profiled yet. Resolution:
- *   • an ownerless cluster, your own cat, or your own sighting → filed
- *     immediately (an ownerless cluster is started when linking bare sightings);
- *   • someone else's claimed cat → request, that owner approves;
- *   • someone else's bare sighting → an ownerless cluster is started from *your*
- *     sighting and they're asked to add theirs to it ("their sighting, their nod").
+ * Claims that the sighting `entryId` is the same animal as a target — an
+ * existing `catId` or a still-bare `targetEntryId`. The sighting may be the
+ * requester's *or* someone else's (claiming from their detail page). Resolution:
+ *   • your sighting → an ownerless cluster / your own cat → filed immediately;
+ *   • your sighting → someone else's claimed cat → request, that owner approves;
+ *   • someone else's sighting → your cat / an ownerless cluster → request, that
+ *     sighting's owner approves ("their sighting, their nod");
+ *   • if the sighting already sits in a cluster, the two cats are merged outright
+ *     when no third party is harmed (`tryMergeClusters`).
  * Linking never makes you an owner. You can only target things visible to you.
  */
 export async function requestCatLink(input: {
@@ -485,46 +694,86 @@ export async function requestCatLink(input: {
 }): Promise<CatLinkResult> {
   const { entryId, requesterId } = input;
 
-  const entry = await db.catEntry.findUnique({ where: { id: entryId }, select: { ownerId: true, name: true } });
+  // The on-screen sighting — may be the requester's or, when claiming from
+  // someone else's detail page, somebody else's (visible to the requester).
+  const entry = await db.catEntry.findUnique({
+    where: { id: entryId },
+    select: { ownerId: true, catId: true, latitude: true, longitude: true },
+  });
   if (!entry) throw new CatNotFoundError();
-  if (entry.ownerId !== requesterId) throw new CatForbiddenError();
+  if (!(await canViewCatEntry(requesterId, entry.ownerId))) throw new CatForbiddenError();
+  const hasCoords = entry.latitude != null && entry.longitude != null;
 
-  // Linking to a bare sighting that *does* have a cat is just linking to that cat.
+  // Resolve the target cat (a cluster id), or a bare sighting to start one from.
   let catId = input.catId ?? null;
-  let bareTarget: { id: string; ownerId: string; name: string | null } | null = null;
+  let bareTarget: { id: string; ownerId: string; latitude: number | null; longitude: number | null } | null = null;
   if (!catId && input.targetEntryId) {
     const target = await db.catEntry.findUnique({
       where: { id: input.targetEntryId },
-      select: { id: true, ownerId: true, name: true, catId: true },
+      select: { id: true, ownerId: true, catId: true, latitude: true, longitude: true },
     });
     if (!target) throw new CatNotFoundError();
     if (!(await canViewCatEntry(requesterId, target.ownerId))) throw new CatForbiddenError();
     if (target.catId) catId = target.catId;
-    else bareTarget = { id: target.id, ownerId: target.ownerId, name: target.name };
+    else bareTarget = { id: target.id, ownerId: target.ownerId, latitude: target.latitude, longitude: target.longitude };
   }
 
-  // (a) File the requester's sighting under an existing cat.
+  // (a) Attach the sighting to an existing cat/cluster B.
   if (catId) {
-    const cat = await db.cat.findUnique({ where: { id: catId }, select: { ownerId: true } });
-    if (!cat) throw new CatNotFoundError();
-    // Ownerless cluster or your own cat → file straight away (no owner to ask).
-    if (cat.ownerId === null || cat.ownerId === requesterId) {
+    if (catId === entry.catId) return { status: "APPROVED" }; // already there
+
+    const catB = await db.cat.findUnique({ where: { id: catId }, select: { ownerId: true } });
+    if (!catB) throw new CatNotFoundError();
+    if (catB.ownerId && !(await canViewCatEntry(requesterId, catB.ownerId))) throw new CatForbiddenError();
+
+    // Boundary: an ownerless (street-cat) cluster's sightings must stay close
+    // together. Claimed pets are exempt — they travel.
+    if (catB.ownerId === null && hasCoords) {
+      const km = await nearestClusterKm(catId, entry.latitude!, entry.longitude!);
+      if (km !== null && km > MAX_LINK_KM) throw new CatLinkTooFarError();
+    }
+
+    // The sighting already belongs to cluster A → this unifies two cats. Merge
+    // outright when no third party is harmed; otherwise fall through and just
+    // move this one sighting (with approval if it isn't the requester's).
+    if (entry.catId && (await tryMergeClusters(entry.catId, catId, requesterId))) {
+      return { status: "APPROVED" };
+    }
+
+    const entryIsMine = entry.ownerId === requesterId;
+    const catBMineOrOwnerless = catB.ownerId === null || catB.ownerId === requesterId;
+
+    if (entryIsMine && catBMineOrOwnerless) {
       await db.catEntry.update({ where: { id: entryId }, data: { catId } });
       return { status: "APPROVED" };
     }
-    // Someone else's claimed pet → ask its owner.
-    if (!(await canViewCatEntry(requesterId, cat.ownerId))) throw new CatForbiddenError();
-    return createLinkRequest({ catId, catEntryId: entryId, requesterId, notifyUserId: cat.ownerId, withCatId: true });
+    if (entryIsMine && catB.ownerId) {
+      // My sighting → someone else's claimed cat: that owner approves.
+      return createLinkRequest({ catId, catEntryId: entryId, requesterId, notifyUserId: catB.ownerId, withCatId: true });
+    }
+    if (!entryIsMine && catBMineOrOwnerless) {
+      // Their sighting → my cat / an ownerless cluster: that sighting's owner
+      // approves on their entry page ("their sighting, their nod").
+      return createLinkRequest({ catId, catEntryId: entryId, requesterId, notifyUserId: entry.ownerId, withCatId: false });
+    }
+    throw new CatForbiddenError(); // both sides belong to other people
   }
 
-  // (b) Link to a bare sighting nobody has profiled — start an ownerless cluster.
+  // (b) Link to a bare sighting nobody has profiled — start an ownerless cluster
+  //     from the requester's own sighting and pull the other in.
   if (bareTarget) {
+    if (entry.ownerId !== requesterId) throw new CatForbiddenError();
+    // Boundary: the two bare sightings start an ownerless cluster, so they must
+    // be close together.
+    if (hasCoords && bareTarget.latitude != null && bareTarget.longitude != null) {
+      const km = haversineKm(entry.latitude!, entry.longitude!, bareTarget.latitude, bareTarget.longitude);
+      if (km > MAX_LINK_KM) throw new CatLinkTooFarError();
+    }
     const clusterId = await ensureClusterForEntry(entryId, requesterId);
     if (bareTarget.ownerId === requesterId) {
       await db.catEntry.update({ where: { id: bareTarget.id }, data: { catId: clusterId } });
       return { status: "APPROVED" };
     }
-    // "Their sighting, their nod" — ask the other sighting's owner.
     return createLinkRequest({
       catId: clusterId,
       catEntryId: bareTarget.id,

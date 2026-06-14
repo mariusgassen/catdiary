@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { displayNameFor } from "@/lib/userDisplay";
 import { DevelopingPhoto } from "@/components/DevelopingPhoto";
 
@@ -21,6 +22,7 @@ type SimilarEntry = {
  * Fetched client-side so the diary page itself doesn't wait on the search.
  */
 export function SimilarCats({ entryId }: { entryId: string }) {
+  const t = useTranslations("cats");
   const [entries, setEntries] = useState<SimilarEntry[] | null>(null);
 
   useEffect(() => {
@@ -44,7 +46,7 @@ export function SimilarCats({ entryId }: { entryId: string }) {
     <section className="mx-3">
       <div className="flex items-center gap-3 pb-3">
         <span className="h-px flex-1 bg-border" aria-hidden />
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">Cats that look alike</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">{t("similarTitle")}</h2>
         <span className="h-px flex-1 bg-border" aria-hidden />
       </div>
       <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -65,7 +67,7 @@ export function SimilarCats({ entryId }: { entryId: string }) {
               {photoKey ? (
                 <DevelopingPhoto
                   src={`/api/photos/${photoKey}`}
-                  alt={entry.name ?? "A similar-looking cat"}
+                  alt={entry.name ?? t("similarAlt")}
                   loading="lazy"
                   frameClassName="aspect-square w-full"
                   imgClassName="h-full w-full object-cover"
@@ -76,7 +78,7 @@ export function SimilarCats({ entryId }: { entryId: string }) {
                 </div>
               )}
               <p className="truncate pt-1.5 text-center text-xs font-medium leading-tight text-[#3a3128]">
-                {entry.name ?? "A cat"}
+                {entry.name ?? t("untitled")}
               </p>
               <p className="truncate text-center text-[10px] leading-tight text-[#8a7d6b]">{ownerName}</p>
             </Link>

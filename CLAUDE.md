@@ -301,7 +301,28 @@ near-term, tactical roadmap and what's already shipped.
   cat page (`<CatLinkRequests>`, `listPendingCatLinks`) and the *sighting* owner
   on their entry's detail page (`<EntryLinkRequests>`, `listPendingEntryLinks`);
   the `CAT_LINK_REQUEST` notification carries `catId` only for the cat-owner
-  direction so it routes to the right surface
+  direction so it routes to the right surface. The whole matcher is a single
+  collapsible panel at the bottom of the detail page (`<CatMatcher>`, next to
+  "Cats that look alike"), shown to any signed-in viewer: it loads the embedding
+  **suggestions** *and* a **manual picker** of your own cats (`GET /api/cats`),
+  so you can always file by hand even when nothing is suggested. It works on
+  **other people's** sightings too — `suggestCatsForEntry` runs in a "claim"
+  mode there (which of *your* cats look like it) and a manual pick becomes a
+  request the sighting's owner confirms. All link flags (`isOwn`/`isShared`/
+  `immediate`) are computed relative to the viewer. Finally, when the sighting
+  already sits in a cluster, linking it to another cat **merges the two cats**
+  (`tryMergeClusters` → `absorbCluster`) when no third party is re-homed without
+  consent — both ownerless (communal), or folding into your own claimed cat only
+  when every moved sighting is yours; otherwise it falls back to moving the one
+  sighting with approval. For **street cats**, the matcher also offers ownerless
+  **shared clusters to join** (`listJoinableClusters`, `GET /api/cat-entries/[id]/clusters?q=`):
+  geotagged sightings see clusters within `MAX_LINK_KM` (closest first), and the
+  filter box doubles as a name search (the fallback when a sighting has no
+  coordinates). A **distance boundary** backs this up server-side: linking that
+  forms or grows an *ownerless* cluster is rejected (`CatLinkTooFarError` → 422
+  `TOO_FAR`) when the sighting is more than `MAX_LINK_KM` from the cluster's
+  nearest geotagged sighting — claimed pets are exempt, and missing coordinates
+  skip the check
 
 ### Capture flow improvements
 - **Photo editing** — crop, basic brightness/contrast before upload
