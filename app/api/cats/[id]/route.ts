@@ -11,11 +11,10 @@ import {
 } from "@/lib/cats";
 
 const updateSchema = z.object({
-  name: z.string().trim().min(1).max(120).optional(),
+  name: z.string().trim().min(1).max(120).nullable().optional(),
   breed: z.string().trim().max(120).nullable().optional(),
   color: z.string().trim().max(120).nullable().optional(),
   description: z.string().trim().max(2000).nullable().optional(),
-  isOwned: z.boolean().optional(),
 });
 
 async function withOwner<T>(fn: (userId: string) => Promise<T>) {

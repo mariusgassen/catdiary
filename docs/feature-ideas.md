@@ -137,13 +137,19 @@ section builds on. The lean MVP has landed:
   Visibility reuses `canViewCatEntry` (a cat is visible exactly when its owner's
   diary is); the cat's photo is the cover of its most recent sighting (no
   separate avatar upload).
-- ✅ `isOwned` distinguishes **my cats** (claimed) from **cats I've met** (street
-  cats I document). Both are collectible; only the former is "claimed."
-- ✅ Filed under a cat from the entry edit screen (a selector on the existing
-  entry `PATCH`); a `<CatShelf>` of a diary's cats sits on the profile page.
+- ✅ **A cat is an ownerless cluster of sightings** (remodelled after the first
+  cut): `Cat.ownerId` is nullable and *linking never makes you an owner*.
+  Ownership is a separate act — you **claim** a cat as your pet (`claimCat`,
+  `isOwned`), optionally **merging** it into a profile you already keep
+  (`mergeCats`). A cat has no canonical name; its names are the aliases people
+  gave its sightings. An ownerless cluster is visible to anyone who can see one
+  of its sightings.
+- ✅ Filed under your own cat *or any ownerless cluster* from the entry edit
+  screen / capture picker; a `<CatShelf>` shows a diary's claimed cats plus the
+  clusters its sightings belong to.
 - Still open (the part that *did* need a design doc): structured **care
-  metadata**, **per-cat re-ID**, and welfare **status flags** below — all hang
-  off this `Cat` entity now that it exists.
+  metadata**, and welfare **status flags** below — both hang off this `Cat`
+  entity now that it exists (per-cat re-ID has shipped).
 
 ### ✅ Metadata (chipped, vaccinated, …) — **yes, scoped to owned cats; it's a record book**
 A field journal *is* a record book. For owned cats, structured care metadata is

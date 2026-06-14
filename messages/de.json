@@ -235,6 +235,7 @@
       "catLinkRequest": "{actor} glaubt, {cat} getroffen zu haben",
       "catLinkRequestEntry": "{actor} glaubt, deine Sichtung ist eine bekannte Katze",
       "catLinkApproved": "{actor} hat bestätigt: es ist {cat}",
+      "catLinkApprovedEntry": "{actor} hat bestätigt: dieselbe Katze",
       "default": "{actor} hat mit deinem Tagebuch interagiert"
     }
   },
@@ -544,7 +545,12 @@
     "sightings": "{count, plural, one {# Sichtung} other {# Sichtungen}}",
     "noSightings": "Noch keine Sichtungen für diese Katze erfasst.",
     "editCat": "Katze bearbeiten",
+    "alsoKnownAs": "auch {names}",
+    "claimButton": "Das ist meine Katze",
+    "claimMergePlaceholder": "…oder mit einer meiner Katzen zusammenführen",
+    "claimMergeButton": "Zusammenführen",
     "entryLink": "Teil von {name}s Geschichte",
+    "entryLinkGeneric": "Teil der Geschichte dieser Katze",
     "createTitle": "Neue Katze",
     "editTitle": "Katze bearbeiten",
     "save": "Speichern",
@@ -567,6 +573,7 @@
     "suggestBy": "{name}s Katze",
     "suggestYourSighting": "Deine Sichtung — Profil anlegen",
     "suggestSightingBy": "{name}s Sichtung — noch kein Profil",
+    "suggestShared": "Eine geteilte Katze",
     "matchPercent": "{pct}% Übereinstimmung",
     "untitled": "Eine Katze",
     "suggestFileButton": "Das ist sie",

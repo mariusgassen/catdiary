@@ -6,7 +6,7 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { listCatEntriesForViewer } from "@/lib/catEntries";
-import { listCatsForOwner } from "@/lib/cats";
+import { listCatsForProfile } from "@/lib/cats";
 import { photoUrlsFor } from "@/lib/photo-urls";
 import {
   listPendingFollowRequests,
@@ -95,7 +95,7 @@ export default async function ProfilePage({
   const [{ entries }, cats, followStatus, followCounts, incomingRequests, outgoingRequests] =
     await Promise.all([
       listCatEntriesForViewer({ viewerId, ownerId: profileUser.id }),
-      listCatsForOwner(profileUser.id, viewerId),
+      listCatsForProfile(profileUser.id, viewerId),
       viewerId && !isOwnProfile
         ? getFollowStatus(viewerId, profileUser.id)
         : Promise.resolve("not-tracking" as const),

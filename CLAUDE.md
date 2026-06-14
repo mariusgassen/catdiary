@@ -245,24 +245,29 @@ near-term, tactical roadmap and what's already shipped.
   now create rows with `count = 0`, insights distinguish **readers** (opened,
   `count > 0`) from **reach** (saw it anywhere), and both dashboards surface
   impressions / avg. dwell / avg. read depth
-- **The `Cat` entity (persistent cat profiles)**: the structural unlock from
-  the roadmap — a named `Cat` that multiple sightings point at, building a
-  timeline of one cat over time. `Cat` model (`lib/cats.ts`) is owned by its
-  creator and `isOwned` distinguishes **my cats** (claimed) from **cats I've
-  met** (street cats I document); visibility reuses `canViewCatEntry` (a cat is
-  visible exactly when its owner's diary is). A cat has **no avatar upload** —
-  its photo is the cover of its most recent linked sighting. `CatEntry.catId`
-  (nullable, `onDelete: SetNull`) links a sighting to a cat; deleting a cat
-  keeps the sightings and just unlinks them. CRUD via `POST/GET /api/cats` +
-  `GET/PATCH/DELETE /api/cats/[id]`; a sighting is filed under a cat through the
-  existing entry `PATCH` (`catId`, validated to one of your own cats) with a
-  selector in the edit screen (`components/CatEntryEditForm`). UI: cat profile
-  page `/cats/[id]` (cover, owned badge, sighting grid; shareable while signed
-  out via `proxy.ts`), create/edit sheet `/cats/new` + `/cats/[id]/edit`
-  (`components/CatForm`, full-screen dialog like the entry editor), and a
-  `<CatShelf>` of a diary's cats on the profile page (own profile gets a "New
-  cat" tile). Deliberately lean for now — the backbone for per-cat metadata,
-  re-identification and welfare flags later (see `docs/feature-ideas.md`)
+- **The `Cat` entity (ownerless clusters of sightings)**: the structural unlock
+  from the roadmap — a `Cat` that multiple sightings point at, building a
+  timeline of one cat across people and time. **A cat is fundamentally an
+  ownerless cluster of linked sightings**: `Cat.ownerId` is **nullable** and
+  linking sightings together never makes you an owner. `ownerId` is set only
+  when someone **claims** the cat as their pet (`claimCat`; `isOwned` then
+  true), or by creating one directly in `<CatForm>` (declaring your pet). A cat
+  has **no canonical name** — its name(s) are the distinct names people gave its
+  linked sightings (aliases, derived in `summarize`; an owner may also set a
+  `name`). Visibility: a *claimed* cat follows its owner's diary; an *ownerless*
+  cluster is visible to anyone who can see ≥1 of its sightings (and
+  `listEntriesForCat` filters every entry by its own owner). No avatar upload —
+  the photo is the cover of the most recent visible sighting. `CatEntry.catId`
+  (nullable, `onDelete: SetNull`) links a sighting; `claimCat` /
+  `mergeCats(source,target)` (`POST /api/cats/[id]/claim` · `/merge`) claim an
+  ownerless cluster or fold it into a cat you keep ("claim & merge"). A sighting
+  is filed under your own cat **or any ownerless cluster** via the entry `PATCH`
+  / capture picker; filing under someone else's *claimed* cat needs their nod
+  (see re-identification). UI: cat page `/cats/[id]` (aliases, owned badge,
+  `<ClaimCat>`, sighting grid; shareable signed out), edit sheet
+  `/cats/[id]/edit` + manual `/cats/new` (`<CatForm>`), and a `<CatShelf>` on
+  the profile (a diary's claimed cats + the ownerless clusters its sightings are
+  in). The backbone for per-cat metadata and welfare flags later
 - **Re-identification — "Might this be cat X?" + cross-person linking**: builds
   on the CLIP embeddings ("Cats that look alike") and the `Cat` entity. On your
   own sighting's detail page, `<SuggestCats>` surfaces the nearest *already
@@ -284,15 +289,19 @@ near-term, tactical roadmap and what's already shipped.
   **Suggestions also include bare sightings nobody has profiled yet** ("unowned
   cats"): `suggestCatsForEntry` returns both `kind: "cat"` candidates and
   `kind: "entry"` candidates, each with a `confidence` (0–100, derived from the
-  cosine distance and shown as "{n}% match"). Linking a bare sighting starts a
-  cat from *your* sighting (`ensureOwnCatForEntry`) — yours immediately, someone
+  cosine distance and shown as "{n}% match"). Linking a bare sighting starts an
+  **ownerless cluster** from *your* sighting (`ensureClusterForEntry` — linking
+  never makes you an owner) — your own sightings join immediately, someone
   else's by request — so `requestCatLink` takes `catId` **or** `targetEntryId`.
-  Approval now has two directions: `respondToCatLink` derives the approver as
-  "whoever owns the side the requester doesn't", so the cat owner reviews on the
+  Filing into an existing **ownerless cluster** is immediate too (no owner to
+  ask). Approval has two directions — "their sighting, their nod":
+  `respondToCatLink` derives the approver as "whoever owns the side the requester
+  doesn't" (pulling in someone's sighting → that sighting's owner; adding yours
+  to someone's *claimed* cat → that cat's owner). The cat owner reviews on the
   cat page (`<CatLinkRequests>`, `listPendingCatLinks`) and the *sighting* owner
-  reviews on their entry's detail page (`<EntryLinkRequests>`,
-  `listPendingEntryLinks`); the `CAT_LINK_REQUEST` notification carries `catId`
-  only for the cat-owner direction so it routes to the right surface
+  on their entry's detail page (`<EntryLinkRequests>`, `listPendingEntryLinks`);
+  the `CAT_LINK_REQUEST` notification carries `catId` only for the cat-owner
+  direction so it routes to the right surface
 
 ### Capture flow improvements
 - **Photo editing** — crop, basic brightness/contrast before upload

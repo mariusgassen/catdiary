@@ -235,6 +235,7 @@
       "catLinkRequest": "{actor} thinks they met {cat}",
       "catLinkRequestEntry": "{actor} thinks your sighting is a cat they know",
       "catLinkApproved": "{actor} confirmed it's {cat}",
+      "catLinkApprovedEntry": "{actor} confirmed it's the same cat",
       "default": "{actor} interacted with your diary"
     }
   },
@@ -546,7 +547,12 @@
     "sightings": "{count, plural, one {# sighting} other {# sightings}}",
     "noSightings": "No sightings filed under this cat yet.",
     "editCat": "Edit cat",
+    "alsoKnownAs": "a.k.a. {names}",
+    "claimButton": "This is my cat",
+    "claimMergePlaceholder": "…or merge into one of my cats",
+    "claimMergeButton": "Merge",
     "entryLink": "Part of {name}'s story",
+    "entryLinkGeneric": "Part of this cat's story",
     "createTitle": "New cat",
     "editTitle": "Edit cat",
     "save": "Save",
@@ -569,6 +575,7 @@
     "suggestBy": "{name}'s cat",
     "suggestYourSighting": "Your sighting — start a profile",
     "suggestSightingBy": "{name}'s sighting — not yet profiled",
+    "suggestShared": "A shared cat",
     "matchPercent": "{pct}% match",
     "untitled": "A cat",
     "suggestFileButton": "This is them",

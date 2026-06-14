@@ -4,10 +4,11 @@ import { notFound } from "next/navigation";
 import { SquarePen, PawPrint, Home } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { auth } from "@/lib/auth";
-import { getCatForViewer, listEntriesForCat, listPendingCatLinks } from "@/lib/cats";
+import { getCatForViewer, listEntriesForCat, listPendingCatLinks, listCatsForOwner } from "@/lib/cats";
 import { photoUrlsFor } from "@/lib/photo-urls";
 import { CatEntryGridCard } from "@/components/CatEntryGridCard";
 import { CatLinkRequests } from "@/components/CatLinkRequests";
+import { ClaimCat } from "@/components/ClaimCat";
 import { BackLink } from "@/components/BackLink";
 
 type Props = { params: Promise<{ id: string }> };
@@ -18,14 +19,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const cat = await getCatForViewer(id, session?.user?.id ?? null);
   if (!cat) return { title: "Cat Diary" };
 
-  const title = `${cat.name} — Cat Diary`;
-  const description = cat.description ?? `${cat.name}${cat.breed ? `, ${cat.breed}` : ""}.`;
+  const name = cat.displayName ?? "A cat";
+  const description = cat.description ?? `${name}${cat.breed ? `, ${cat.breed}` : ""}.`;
   const cover = cat.coverPhotoKey ? `/api/photos/${cat.coverPhotoKey}` : undefined;
   return {
-    title,
+    title: `${name} — Cat Diary`,
     description,
     openGraph: {
-      title,
+      title: `${name} — Cat Diary`,
       description,
       type: "profile",
       ...(cover ? { images: [{ url: cover }] } : {}),
@@ -44,10 +45,12 @@ export default async function CatPage({ params }: Props) {
     notFound();
   }
 
-  const isOwner = viewerId === cat.ownerId;
-  const [entries, pendingLinks] = await Promise.all([
+  const isOwner = viewerId !== null && viewerId === cat.ownerId;
+  const canClaim = viewerId !== null && cat.ownerId === null;
+  const [entries, pendingLinks, myCats] = await Promise.all([
     listEntriesForCat(id, viewerId),
-    isOwner ? listPendingCatLinks(id, cat.ownerId) : Promise.resolve([]),
+    isOwner && cat.ownerId ? listPendingCatLinks(id, cat.ownerId) : Promise.resolve([]),
+    canClaim ? listCatsForOwner(viewerId, viewerId) : Promise.resolve([]),
   ]);
   const withPhotos = entries.map((entry) => ({ ...entry, photoUrls: photoUrlsFor(entry.photos) }));
   const coverUrl = cat.coverThumbKey
@@ -55,6 +58,10 @@ export default async function CatPage({ params }: Props) {
     : cat.coverPhotoKey
       ? `/api/photos/${cat.coverPhotoKey}`
       : null;
+
+  const name = cat.displayName ?? t("untitled");
+  // Extra names beyond the one shown as the title.
+  const otherAliases = cat.aliases.filter((a) => a !== name);
 
   return (
     <div className="paper-grid min-h-dvh flex flex-col gap-5 py-4">
@@ -66,7 +73,7 @@ export default async function CatPage({ params }: Props) {
           <div className="flex flex-1 min-w-0 items-center gap-3">
             {coverUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={coverUrl} alt={cat.name} className="h-16 w-16 shrink-0 rounded-full object-cover ring-2 ring-border" />
+              <img src={coverUrl} alt={name} className="h-16 w-16 shrink-0 rounded-full object-cover ring-2 ring-border" />
             ) : (
               <div className="flex h-16 w-16 shrink-0 select-none items-center justify-center rounded-full bg-accent-soft text-2xl ring-2 ring-border">
                 🐱
@@ -74,7 +81,7 @@ export default async function CatPage({ params }: Props) {
             )}
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h1 className="truncate text-2xl font-bold tracking-tight">{cat.name}</h1>
+                <h1 className="truncate text-2xl font-bold tracking-tight">{name}</h1>
                 {cat.isOwned && (
                   <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-semibold text-accent">
                     <Home size={11} aria-hidden />
@@ -82,6 +89,9 @@ export default async function CatPage({ params }: Props) {
                   </span>
                 )}
               </div>
+              {otherAliases.length > 0 && (
+                <p className="truncate pt-0.5 text-xs text-muted">{t("alsoKnownAs", { names: otherAliases.join(" · ") })}</p>
+              )}
               <p className="pt-0.5 text-sm text-muted">
                 {[cat.breed, cat.color].filter(Boolean).join(" · ") || (cat.isOwned ? "" : t("met"))}
               </p>
@@ -102,6 +112,7 @@ export default async function CatPage({ params }: Props) {
           )}
         </div>
         {cat.description && <p className="pt-3 text-sm text-foreground/80">{cat.description}</p>}
+        {canClaim && <ClaimCat catId={cat.id} myCats={myCats.map((c) => ({ id: c.id, name: c.displayName ?? t("untitled") }))} />}
       </header>
 
       {isOwner && pendingLinks.length > 0 && <CatLinkRequests requests={pendingLinks} />}

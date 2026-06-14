@@ -2,12 +2,14 @@ import { db } from "@/lib/db";
 import { canViewCatEntry, listVisibleOwnerIds } from "@/lib/catEntries";
 import { createNotification } from "@/lib/notifications";
 
-// Business logic for the persistent `Cat` profile — a named cat that one or
-// more sightings (`CatEntry`) point at. A cat belongs to the user who created
-// it; its visibility follows that owner's profile visibility, reusing
-// `canViewCatEntry` (the single source of truth for "may this viewer see this
-// owner's cats?"). A cat has no avatar of its own: its photo is drawn from the
-// cover of its most recent linked sighting.
+// Business logic for the `Cat` entity. A cat is a *shared, ownerless cluster of
+// linked sightings* (`CatEntry`): linking sightings together never makes you
+// its owner. `ownerId` is set only when someone **claims** the cat as their pet
+// (`claimCat`). A cat has no canonical name — its names are the distinct names
+// people gave its linked sightings ("aliases"). Visibility: a claimed cat
+// follows its owner's diary visibility; an ownerless cluster is visible to
+// anyone who can see at least one of its sightings. The cat's photo is the
+// cover of its most recent *visible* sighting (no separate avatar upload).
 
 export class CatNotFoundError extends Error {}
 export class CatForbiddenError extends Error {}
@@ -18,88 +20,104 @@ export type CreateCatInput = {
   breed?: string | null;
   color?: string | null;
   description?: string | null;
-  isOwned?: boolean;
 };
 
 export type UpdateCatInput = {
-  name?: string;
+  name?: string | null;
   breed?: string | null;
   color?: string | null;
   description?: string | null;
-  isOwned?: boolean;
 };
 
-/** A cat plus its derived cover photo and sighting count, for lists/headers. */
+/** A cat plus its derived cover photo, aliases and visible sighting count. */
 export type CatSummary = {
   id: string;
-  ownerId: string;
-  name: string;
+  ownerId: string | null; // null = ownerless cluster
+  isOwned: boolean; // claimed as someone's pet
+  name: string | null; // optional owner-set name
+  aliases: string[]; // distinct names from visible linked sightings
+  displayName: string | null; // name ?? aliases[0] ?? null
   breed: string | null;
   color: string | null;
   description: string | null;
-  isOwned: boolean;
   createdAt: Date;
-  entryCount: number;
+  entryCount: number; // visible sightings only
   coverPhotoKey: string | null;
   coverThumbKey: string | null;
 };
 
-// Selects a cat with the cover of its most recent sighting and its sighting
-// count — the shape every read path returns via `toSummary`.
-const catWithCover = {
-  entries: {
-    orderBy: { createdAt: "desc" } as const,
-    take: 1,
-    select: {
-      photos: {
-        orderBy: { position: "asc" } as const,
-        take: 1,
-        select: { photoKey: true, thumbKey: true },
-      },
-    },
-  },
-  _count: { select: { entries: true } },
-};
-
-type CatRow = {
+type CatScalars = {
   id: string;
-  ownerId: string;
-  name: string;
+  ownerId: string | null;
+  isOwned: boolean;
+  name: string | null;
   breed: string | null;
   color: string | null;
   description: string | null;
-  isOwned: boolean;
   createdAt: Date;
-  _count: { entries: number };
-  entries: { photos: { photoKey: string; thumbKey: string | null }[] }[];
 };
 
-function toSummary(cat: CatRow): CatSummary {
-  const cover = cat.entries[0]?.photos[0] ?? null;
-  return {
-    id: cat.id,
-    ownerId: cat.ownerId,
-    name: cat.name,
-    breed: cat.breed,
-    color: cat.color,
-    description: cat.description,
-    isOwned: cat.isOwned,
-    createdAt: cat.createdAt,
-    entryCount: cat._count.entries,
-    coverPhotoKey: cover?.photoKey ?? null,
-    coverThumbKey: cover?.thumbKey ?? null,
-  };
+/**
+ * Builds summaries for a batch of cats, deriving cover, sighting count and
+ * aliases from the cats' *visible* sightings in a single query — so private
+ * contributions never leak into a cat's name, count or cover photo.
+ */
+async function summarize(cats: CatScalars[], viewerId: string | null): Promise<CatSummary[]> {
+  if (cats.length === 0) return [];
+  const visibleOwnerIds = await listVisibleOwnerIds(viewerId);
+  const entries = await db.catEntry.findMany({
+    where: { catId: { in: cats.map((c) => c.id) }, ownerId: { in: visibleOwnerIds } },
+    orderBy: { createdAt: "desc" },
+    select: {
+      catId: true,
+      name: true,
+      photos: { orderBy: { position: "asc" }, take: 1, select: { photoKey: true, thumbKey: true } },
+    },
+  });
+
+  const byCat = new Map<string, typeof entries>();
+  for (const e of entries) {
+    if (!e.catId) continue;
+    (byCat.get(e.catId) ?? byCat.set(e.catId, []).get(e.catId)!).push(e);
+  }
+
+  return cats.map((cat) => {
+    const own = byCat.get(cat.id) ?? [];
+    const cover = own[0]?.photos[0] ?? null;
+    // own is newest-first; build aliases oldest-first for a stable reading order.
+    const aliases: string[] = [];
+    for (const e of [...own].reverse()) {
+      const n = e.name?.trim();
+      if (n && !aliases.includes(n)) aliases.push(n);
+    }
+    return {
+      id: cat.id,
+      ownerId: cat.ownerId,
+      isOwned: cat.isOwned,
+      name: cat.name,
+      aliases,
+      displayName: cat.name ?? aliases[0] ?? null,
+      breed: cat.breed,
+      color: cat.color,
+      description: cat.description,
+      createdAt: cat.createdAt,
+      entryCount: own.length,
+      coverPhotoKey: cover?.photoKey ?? null,
+      coverThumbKey: cover?.thumbKey ?? null,
+    };
+  });
 }
 
+/** Manually creating a cat declares it your pet — you become its owner. */
 export async function createCat(input: CreateCatInput) {
   return db.cat.create({
     data: {
       ownerId: input.ownerId,
+      isOwned: true,
       name: input.name,
       breed: input.breed ?? null,
       color: input.color ?? null,
       description: input.description ?? null,
-      isOwned: input.isOwned ?? false,
     },
   });
 }
@@ -128,27 +146,87 @@ export async function getOwnedCat(catId: string, ownerId: string) {
   return cat;
 }
 
-/** A single cat for its profile page, visibility-checked against the owner. */
+/**
+ * A single cat for its profile page. A claimed cat is visible per its owner's
+ * diary; an ownerless cluster is visible whenever it has at least one sighting
+ * the viewer is allowed to see.
+ */
 export async function getCatForViewer(catId: string, viewerId: string | null): Promise<CatSummary | null> {
-  const cat = await db.cat.findUnique({
-    where: { id: catId },
-    include: catWithCover,
-  });
+  const cat = await db.cat.findUnique({ where: { id: catId } });
   if (!cat) return null;
-  if (!(await canViewCatEntry(viewerId, cat.ownerId))) return null;
-  return toSummary(cat as CatRow);
+  if (cat.ownerId && !(await canViewCatEntry(viewerId, cat.ownerId))) return null;
+
+  const [summary] = await summarize([cat], viewerId);
+  // An ownerless cluster with nothing visible isn't shown to this viewer.
+  if (!cat.ownerId && summary.entryCount === 0) return null;
+  return summary;
 }
 
-/** The cats `ownerId` has profiled, if the viewer may see that owner's diary. */
+/** The cats `ownerId` has *claimed* (owns) — used by the file-under picker. */
 export async function listCatsForOwner(ownerId: string, viewerId: string | null): Promise<CatSummary[]> {
   if (!(await canViewCatEntry(viewerId, ownerId))) return [];
 
   const cats = await db.cat.findMany({
     where: { ownerId },
     orderBy: [{ isOwned: "desc" }, { createdAt: "desc" }],
-    include: catWithCover,
   });
-  return cats.map((c) => toSummary(c as CatRow));
+  return summarize(cats, viewerId);
+}
+
+/**
+ * The cats shown on a diary: ones the profile user has claimed, plus the
+ * ownerless clusters their sightings belong to ("cats they've met").
+ */
+export async function listCatsForProfile(profileId: string, viewerId: string | null): Promise<CatSummary[]> {
+  if (!(await canViewCatEntry(viewerId, profileId))) return [];
+
+  const clusterRows = await db.catEntry.findMany({
+    where: { ownerId: profileId, catId: { not: null } },
+    select: { catId: true },
+    distinct: ["catId"],
+  });
+  const ids = new Set<string>(clusterRows.map((r) => r.catId!));
+  const owned = await db.cat.findMany({ where: { ownerId: profileId }, select: { id: true } });
+  owned.forEach((c) => ids.add(c.id));
+  if (ids.size === 0) return [];
+
+  const cats = await db.cat.findMany({
+    where: { id: { in: [...ids] } },
+    orderBy: [{ isOwned: "desc" }, { createdAt: "desc" }],
+  });
+  return summarize(cats, viewerId);
+}
+
+/** Claim an *ownerless* cat as your pet — you become its owner. */
+export async function claimCat(catId: string, userId: string): Promise<CatSummary | null> {
+  const cat = await db.cat.findUnique({ where: { id: catId }, select: { ownerId: true } });
+  if (!cat) throw new CatNotFoundError();
+  if (cat.ownerId) throw new CatForbiddenError(); // already someone's pet
+  await db.cat.update({ where: { id: catId }, data: { ownerId: userId, isOwned: true } });
+  return getCatForViewer(catId, userId);
+}
+
+/**
+ * Merge `sourceCatId` into `targetCatId`: every sighting and pending claim moves
+ * to the target, then the source cat is deleted. You must own the target; the
+ * source must be ownerless or also yours. This is how "claim & merge" folds a
+ * cluster into a cat you already keep.
+ */
+export async function mergeCats(sourceCatId: string, targetCatId: string, userId: string) {
+  if (sourceCatId === targetCatId) throw new CatForbiddenError();
+  const [source, target] = await Promise.all([
+    db.cat.findUnique({ where: { id: sourceCatId }, select: { ownerId: true } }),
+    db.cat.findUnique({ where: { id: targetCatId }, select: { ownerId: true } }),
+  ]);
+  if (!source || !target) throw new CatNotFoundError();
+  if (target.ownerId !== userId) throw new CatForbiddenError();
+  if (source.ownerId && source.ownerId !== userId) throw new CatForbiddenError();
+
+  await db.$transaction([
+    db.catEntry.updateMany({ where: { catId: sourceCatId }, data: { catId: targetCatId } }),
+    db.catLink.deleteMany({ where: { catId: sourceCatId } }),
+    db.cat.delete({ where: { id: sourceCatId } }),
+  ]);
 }
 
 /**
@@ -161,7 +239,9 @@ export async function listCatsForOwner(ownerId: string, viewerId: string | null)
 export async function listEntriesForCat(catId: string, viewerId: string | null) {
   const cat = await db.cat.findUnique({ where: { id: catId }, select: { ownerId: true } });
   if (!cat) return [];
-  if (!(await canViewCatEntry(viewerId, cat.ownerId))) return [];
+  // A claimed cat is gated by its owner's visibility; an ownerless cluster is
+  // open, with each sighting filtered by its own owner below.
+  if (cat.ownerId && !(await canViewCatEntry(viewerId, cat.ownerId))) return [];
 
   const visibleOwnerIds = await listVisibleOwnerIds(viewerId);
 
@@ -178,11 +258,11 @@ export async function listEntriesForCat(catId: string, viewerId: string | null) 
 }
 
 /**
- * Links (or unlinks, with `catId = null`) one of the owner's sightings to one
- * of the owner's *own* cats. Both the entry and the cat must belong to
- * `ownerId` — filing under someone else's cat goes through `requestCatLink`
- * (the approval flow). Unlinking also clears any cross-person link rows so the
- * sighting drops off a shared cat's timeline.
+ * Files (or unlinks, with `catId = null`) one of the owner's sightings under a
+ * cat. You may file your own sighting under one of *your own* cats or any
+ * **ownerless** cluster (a shared identity) — filing under someone else's
+ * claimed cat goes through `requestCatLink` (the approval flow). Unlinking also
+ * clears any cross-person link rows so the sighting drops off a shared timeline.
  */
 export async function setEntryCat(entryId: string, ownerId: string, catId: string | null) {
   const entry = await db.catEntry.findUnique({ where: { id: entryId }, select: { ownerId: true } });
@@ -192,7 +272,8 @@ export async function setEntryCat(entryId: string, ownerId: string, catId: strin
   if (catId !== null) {
     const cat = await db.cat.findUnique({ where: { id: catId }, select: { ownerId: true } });
     if (!cat) throw new CatNotFoundError();
-    if (cat.ownerId !== ownerId) throw new CatForbiddenError();
+    // Owned by someone else → not allowed here (needs their approval).
+    if (cat.ownerId !== null && cat.ownerId !== ownerId) throw new CatForbiddenError();
   } else {
     // Dropping the link also retracts any approved/pending cross-person claim.
     await db.catLink.deleteMany({ where: { catEntryId: entryId } });
@@ -221,10 +302,12 @@ export type CatSuggestion = {
   catId: string | null; // set for kind "cat"
   entryId: string | null; // set for kind "entry" (the matched bare sighting)
   name: string | null;
-  ownerId: string;
+  ownerId: string | null; // null for an ownerless cluster
   ownerDisplayName: string | null;
   ownerUsername: string | null;
-  isOwn: boolean; // true = yours (one tap); false = someone else's (needs their approval)
+  isOwn: boolean; // your own cat/sighting
+  isShared: boolean; // an ownerless cluster (no owner to ask)
+  immediate: boolean; // links without needing anyone's approval
   coverPhotoKey: string | null;
   coverThumbKey: string | null;
   distance: number;
@@ -235,7 +318,7 @@ type SuggestRow = {
   catId: string | null;
   entryId: string | null;
   name: string | null;
-  ownerId: string;
+  ownerId: string | null;
   ownerDisplayName: string | null;
   ownerUsername: string | null;
   coverPhotoKey: string | null;
@@ -340,15 +423,21 @@ export async function suggestCatsForEntry(
   return [...catRows, ...entryRows]
     .map((r) => {
       const distance = Number(r.distance);
+      const kind = r.catId ? ("cat" as const) : ("entry" as const);
+      const isOwn = r.ownerId === entry.ownerId;
+      const isShared = kind === "cat" && r.ownerId === null; // an ownerless cluster
       return {
-        kind: r.catId ? ("cat" as const) : ("entry" as const),
+        kind,
         catId: r.catId,
         entryId: r.entryId,
         name: r.name,
         ownerId: r.ownerId,
         ownerDisplayName: r.ownerDisplayName,
         ownerUsername: r.ownerUsername,
-        isOwn: r.ownerId === entry.ownerId,
+        isOwn,
+        isShared,
+        // No approval needed when it's yours or an ownerless cluster.
+        immediate: isOwn || isShared,
         coverPhotoKey: r.coverPhotoKey,
         coverThumbKey: r.coverThumbKey,
         distance,
@@ -361,32 +450,18 @@ export async function suggestCatsForEntry(
 
 export type CatLinkResult = { status: "APPROVED" | "PENDING" };
 
-// Picks a name for an auto-created cat from the sightings being merged, so a
-// cat that nobody profiled still gets a sensible title (renameable later).
-function deriveCatName(...candidates: (string | null | undefined)[]): string {
-  for (const c of candidates) {
-    const trimmed = c?.trim();
-    if (trimmed) return trimmed.slice(0, 120);
-  }
-  return "Unnamed cat";
-}
-
-/** Ensures the requester's sighting is filed under one of *their own* cats,
-    creating a fresh cat from the sighting(s) when it isn't. Returns the cat id. */
-async function ensureOwnCatForEntry(
-  entryId: string,
-  requesterId: string,
-  entryName: string | null,
-  otherName?: string | null,
-): Promise<string> {
+/** Ensures the requester's sighting belongs to a cluster it can grow, creating
+    a fresh **ownerless** cat when it doesn't yet. Returns the cluster's cat id.
+    Linking never makes the requester an owner — the cluster stays ownerless
+    until someone claims it. */
+async function ensureClusterForEntry(entryId: string, requesterId: string): Promise<string> {
   const entry = await db.catEntry.findUnique({ where: { id: entryId }, select: { catId: true } });
   if (entry?.catId) {
     const cat = await db.cat.findUnique({ where: { id: entry.catId }, select: { ownerId: true } });
-    if (cat?.ownerId === requesterId) return entry.catId;
+    // Reuse the existing cluster if it's ownerless or already yours to grow.
+    if (cat && (cat.ownerId === null || cat.ownerId === requesterId)) return entry.catId;
   }
-  const created = await db.cat.create({
-    data: { ownerId: requesterId, name: deriveCatName(entryName, otherName) },
-  });
+  const created = await db.cat.create({ data: { ownerId: null, isOwned: false } });
   await db.catEntry.update({ where: { id: entryId }, data: { catId: created.id } });
   return created.id;
 }
@@ -395,12 +470,12 @@ async function ensureOwnCatForEntry(
  * Claims that `entryId` (the requester's own sighting) is the same animal as a
  * target — either an existing `catId` or another sighting `targetEntryId` that
  * nobody has profiled yet. Resolution:
- *   • your own cat / your own sighting → filed immediately (a fresh cat is
- *     created when linking two bare sightings of yours);
- *   • someone else's cat → request, their owner approves;
- *   • someone else's bare sighting → a cat is started from *your* sighting and
- *     they're asked to add theirs to it.
- * You can only target cats/sightings in diaries visible to you.
+ *   • an ownerless cluster, your own cat, or your own sighting → filed
+ *     immediately (an ownerless cluster is started when linking bare sightings);
+ *   • someone else's claimed cat → request, that owner approves;
+ *   • someone else's bare sighting → an ownerless cluster is started from *your*
+ *     sighting and they're asked to add theirs to it ("their sighting, their nod").
+ * Linking never makes you an owner. You can only target things visible to you.
  */
 export async function requestCatLink(input: {
   entryId: string;
@@ -428,28 +503,30 @@ export async function requestCatLink(input: {
     else bareTarget = { id: target.id, ownerId: target.ownerId, name: target.name };
   }
 
-  // (a) Link the requester's sighting to an existing cat.
+  // (a) File the requester's sighting under an existing cat.
   if (catId) {
     const cat = await db.cat.findUnique({ where: { id: catId }, select: { ownerId: true } });
     if (!cat) throw new CatNotFoundError();
-    if (!(await canViewCatEntry(requesterId, cat.ownerId))) throw new CatForbiddenError();
-    if (cat.ownerId === requesterId) {
+    // Ownerless cluster or your own cat → file straight away (no owner to ask).
+    if (cat.ownerId === null || cat.ownerId === requesterId) {
       await db.catEntry.update({ where: { id: entryId }, data: { catId } });
       return { status: "APPROVED" };
     }
+    // Someone else's claimed pet → ask its owner.
+    if (!(await canViewCatEntry(requesterId, cat.ownerId))) throw new CatForbiddenError();
     return createLinkRequest({ catId, catEntryId: entryId, requesterId, notifyUserId: cat.ownerId, withCatId: true });
   }
 
-  // (b) Link to a bare sighting nobody has profiled — start a cat from yours.
+  // (b) Link to a bare sighting nobody has profiled — start an ownerless cluster.
   if (bareTarget) {
-    const newCatId = await ensureOwnCatForEntry(entryId, requesterId, entry.name, bareTarget.name);
+    const clusterId = await ensureClusterForEntry(entryId, requesterId);
     if (bareTarget.ownerId === requesterId) {
-      await db.catEntry.update({ where: { id: bareTarget.id }, data: { catId: newCatId } });
+      await db.catEntry.update({ where: { id: bareTarget.id }, data: { catId: clusterId } });
       return { status: "APPROVED" };
     }
-    // Ask the other sighting's owner to add theirs to your new cat.
+    // "Their sighting, their nod" — ask the other sighting's owner.
     return createLinkRequest({
-      catId: newCatId,
+      catId: clusterId,
       catEntryId: bareTarget.id,
       requesterId,
       notifyUserId: bareTarget.ownerId,
@@ -503,10 +580,12 @@ export async function respondToCatLink(input: {
   });
   if (!link) throw new CatNotFoundError();
 
-  // The approver owns the side the requester does not.
+  // The approver owns the side the requester does not: pulling in someone
+  // else's sighting → that sighting's owner approves; adding your sighting to
+  // someone's claimed cat → that cat's owner approves.
   const expectedApprover =
-    link.requesterId === link.cat.ownerId ? link.catEntry.ownerId : link.cat.ownerId;
-  if (approverId !== expectedApprover) throw new CatForbiddenError();
+    link.catEntry.ownerId !== link.requesterId ? link.catEntry.ownerId : link.cat.ownerId;
+  if (!expectedApprover || approverId !== expectedApprover) throw new CatForbiddenError();
   if (link.status !== "PENDING") return link;
 
   if (approve) {
@@ -567,7 +646,9 @@ export type PendingEntryLink = {
   id: string;
   createdAt: Date;
   requester: { id: string; username: string | null; displayName: string | null; avatarKey: string | null; image: string | null };
-  cat: { id: string; name: string; coverPhotoKey: string | null; coverThumbKey: string | null };
+  // `name` is the cat's display name (owner-set or derived from a sighting), or
+  // null when the cat is a still-nameless cluster.
+  cat: { id: string; name: string | null; coverPhotoKey: string | null; coverThumbKey: string | null };
 };
 
 /**
@@ -592,7 +673,10 @@ export async function listPendingEntryLinks(entryId: string, entryOwnerId: strin
           entries: {
             orderBy: { createdAt: "desc" },
             take: 1,
-            select: { photos: { orderBy: { position: "asc" }, take: 1, select: { photoKey: true, thumbKey: true } } },
+            select: {
+              name: true,
+              photos: { orderBy: { position: "asc" }, take: 1, select: { photoKey: true, thumbKey: true } },
+            },
           },
         },
       },
@@ -600,12 +684,18 @@ export async function listPendingEntryLinks(entryId: string, entryOwnerId: strin
   });
 
   return links.map((l) => {
-    const cover = l.cat.entries[0]?.photos[0] ?? null;
+    const recent = l.cat.entries[0] ?? null;
+    const cover = recent?.photos[0] ?? null;
     return {
       id: l.id,
       createdAt: l.createdAt,
       requester: l.requester,
-      cat: { id: l.cat.id, name: l.cat.name, coverPhotoKey: cover?.photoKey ?? null, coverThumbKey: cover?.thumbKey ?? null },
+      cat: {
+        id: l.cat.id,
+        name: l.cat.name ?? recent?.name ?? null,
+        coverPhotoKey: cover?.photoKey ?? null,
+        coverThumbKey: cover?.thumbKey ?? null,
+      },
     };
   });
 }

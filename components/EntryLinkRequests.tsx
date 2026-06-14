@@ -9,7 +9,7 @@ import { displayNameFor } from "@/lib/userDisplay";
 export type PendingEntryLink = {
   id: string;
   requester: { id: string; username: string | null; displayName: string | null; avatarKey: string | null; image: string | null };
-  cat: { id: string; name: string; coverPhotoKey: string | null; coverThumbKey: string | null };
+  cat: { id: string; name: string | null; coverPhotoKey: string | null; coverThumbKey: string | null };
 };
 
 /**
@@ -48,18 +48,19 @@ export function EntryLinkRequests({ requests }: { requests: PendingEntryLink[] }
       {pending.map((r) => {
         const cover = r.cat.coverThumbKey ?? r.cat.coverPhotoKey;
         const name = displayNameFor(r.requester);
+        const catName = r.cat.name ?? t("untitled");
         return (
           <div key={r.id} className="flex items-center gap-3">
             {cover ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={`/api/photos/${cover}`} alt={r.cat.name} className="h-12 w-12 shrink-0 rounded-full object-cover ring-1 ring-border" />
+              <img src={`/api/photos/${cover}`} alt={catName} className="h-12 w-12 shrink-0 rounded-full object-cover ring-1 ring-border" />
             ) : (
               <span className="flex h-12 w-12 shrink-0 select-none items-center justify-center rounded-full bg-accent-soft text-xl ring-1 ring-border">
                 🐱
               </span>
             )}
             <p className="min-w-0 flex-1 text-sm text-foreground/80">
-              {t("entryRequestBody", { name, cat: r.cat.name })}
+              {t("entryRequestBody", { name, cat: catName })}
             </p>
             <div className="flex shrink-0 items-center gap-1.5">
               <button
