@@ -314,7 +314,15 @@ near-term, tactical roadmap and what's already shipped.
   (`tryMergeClusters` → `absorbCluster`) when no third party is re-homed without
   consent — both ownerless (communal), or folding into your own claimed cat only
   when every moved sighting is yours; otherwise it falls back to moving the one
-  sighting with approval
+  sighting with approval. For **street cats**, the matcher also offers ownerless
+  **shared clusters to join** (`listJoinableClusters`, `GET /api/cat-entries/[id]/clusters?q=`):
+  geotagged sightings see clusters within `MAX_LINK_KM` (closest first), and the
+  filter box doubles as a name search (the fallback when a sighting has no
+  coordinates). A **distance boundary** backs this up server-side: linking that
+  forms or grows an *ownerless* cluster is rejected (`CatLinkTooFarError` → 422
+  `TOO_FAR`) when the sighting is more than `MAX_LINK_KM` from the cluster's
+  nearest geotagged sighting — claimed pets are exempt, and missing coordinates
+  skip the check
 
 ### Capture flow improvements
 - **Photo editing** — crop, basic brightness/contrast before upload

@@ -28,7 +28,9 @@ type MyCat = {
   coverThumbKey: string | null;
 };
 
-type LinkState = "idle" | "saving" | "filed" | "requested";
+type JoinableCluster = MyCat & { distanceKm: number | null };
+
+type LinkState = "idle" | "saving" | "filed" | "requested" | "toofar";
 
 const suggestionKey = (s: CatSuggestion) => `${s.kind}:${s.catId ?? s.entryId}`;
 
@@ -45,10 +47,11 @@ export function CatMatcher({ entryId, isOwner }: { entryId: string; isOwner: boo
   const [open, setOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<CatSuggestion[]>([]);
   const [myCats, setMyCats] = useState<MyCat[]>([]);
+  const [clusters, setClusters] = useState<JoinableCluster[]>([]);
   const [states, setStates] = useState<Record<string, LinkState>>({});
   const [filter, setFilter] = useState("");
 
-  // Lazily load candidates the first time the panel is opened.
+  // Lazily load suggestions and your own cats the first time the panel opens.
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
@@ -69,6 +72,25 @@ export function CatMatcher({ entryId, isOwner }: { entryId: string; isOwner: boo
     };
   }, [open, entryId]);
 
+  // Shared clusters to join: nearby when no filter, searched (debounced) when typing.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    const q = filter.trim();
+    const t = setTimeout(() => {
+      fetch(`/api/cat-entries/${entryId}/clusters${q ? `?q=${encodeURIComponent(q)}` : ""}`)
+        .then((r) => (r.ok ? r.json() : { clusters: [] }))
+        .then((d: { clusters?: JoinableCluster[] }) => {
+          if (!cancelled) setClusters(d.clusters ?? []);
+        })
+        .catch(() => {});
+    }, q ? 300 : 0);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [open, entryId, filter]);
+
   async function link(body: { catId?: string; targetEntryId?: string }, key: string) {
     setStates((prev) => ({ ...prev, [key]: "saving" }));
     try {
@@ -78,7 +100,8 @@ export function CatMatcher({ entryId, isOwner }: { entryId: string; isOwner: boo
         body: JSON.stringify(body),
       });
       if (!res.ok) {
-        setStates((prev) => ({ ...prev, [key]: "idle" }));
+        const err = (await res.json().catch(() => null)) as { error?: string } | null;
+        setStates((prev) => ({ ...prev, [key]: err?.error === "TOO_FAR" ? "toofar" : "idle" }));
         return;
       }
       const { status } = (await res.json()) as { status: "APPROVED" | "PENDING" };
@@ -158,15 +181,13 @@ export function CatMatcher({ entryId, isOwner }: { entryId: string; isOwner: boo
         </div>
       )}
 
+      <input
+        value={filter}
+        onChange={(e) => setFilter(e.target.value)}
+        placeholder={t("matchFilter")}
+        className="mb-2 w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-accent"
+      />
       <p className="pb-2 text-[11px] font-medium uppercase tracking-wide text-muted/70">{t("matchYourCats")}</p>
-      {manualCats.length > 6 && (
-        <input
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          placeholder={t("matchFilter")}
-          className="mb-2 w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-accent"
-        />
-      )}
       {filtered.length === 0 ? (
         <p className="py-2 text-xs text-muted">{t("matchNoCats")}</p>
       ) : (
@@ -185,6 +206,28 @@ export function CatMatcher({ entryId, isOwner }: { entryId: string; isOwner: boo
               />
             );
           })}
+        </div>
+      )}
+
+      {clusters.length > 0 && (
+        <div className="pt-3">
+          <p className="pb-2 text-[11px] font-medium uppercase tracking-wide text-muted/70">{t("matchClusters")}</p>
+          <div className="flex max-h-72 flex-col gap-2 overflow-y-auto">
+            {clusters.map((c) => {
+              const key = `cluster:${c.id}`;
+              return (
+                <MatchRow
+                  key={key}
+                  cover={c.coverThumbKey ?? c.coverPhotoKey}
+                  title={c.displayName ?? t("untitled")}
+                  subtitle={c.distanceKm != null ? t("clusterDistance", { km: c.distanceKm.toFixed(1) }) : t("suggestShared")}
+                  immediate={isOwner}
+                  state={states[key] ?? "idle"}
+                  onAction={() => link({ catId: c.id }, key)}
+                />
+              );
+            })}
+          </div>
         </div>
       )}
     </section>
@@ -232,6 +275,8 @@ function MatchRow({
         <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600">
           <Check size={14} aria-hidden /> {t("suggestFiled")}
         </span>
+      ) : state === "toofar" ? (
+        <span className="shrink-0 text-xs font-semibold text-muted">{t("matchTooFar")}</span>
       ) : state === "requested" ? (
         <span className="flex items-center gap-1 text-xs font-semibold text-muted">
           <Send size={13} aria-hidden /> {t("suggestRequested")}

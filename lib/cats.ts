@@ -13,6 +13,38 @@ import { createNotification } from "@/lib/notifications";
 
 export class CatNotFoundError extends Error {}
 export class CatForbiddenError extends Error {}
+/** Thrown when two sightings are too far apart to be the same (ownerless) cat. */
+export class CatLinkTooFarError extends Error {}
+
+// Sightings of one *ownerless* cat (a street cat) must be within this distance of
+// each other — a street cat has a territory, so far-apart sightings aren't it.
+// Claimed pets are exempt (they travel). Deliberately generous; tune as needed.
+const MAX_LINK_KM = 25;
+
+function haversineKm(aLat: number, aLng: number, bLat: number, bLng: number): number {
+  const R = 6371;
+  const dLat = ((bLat - aLat) * Math.PI) / 180;
+  const dLng = ((bLng - aLng) * Math.PI) / 180;
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((aLat * Math.PI) / 180) * Math.cos((bLat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+/** Distance from a point to the nearest located sighting in a cluster, or null
+    if the cluster has no geotagged sightings (then there's nothing to enforce). */
+async function nearestClusterKm(catId: string, lat: number, lng: number): Promise<number | null> {
+  const rows = await db.catEntry.findMany({
+    where: { catId, latitude: { not: null }, longitude: { not: null } },
+    select: { latitude: true, longitude: true },
+  });
+  let min: number | null = null;
+  for (const r of rows) {
+    const d = haversineKm(lat, lng, r.latitude!, r.longitude!);
+    if (min === null || d < min) min = d;
+  }
+  return min;
+}
 
 export type CreateCatInput = {
   ownerId: string;
@@ -195,6 +227,88 @@ export async function listCatsForProfile(profileId: string, viewerId: string | n
     orderBy: [{ isOwned: "desc" }, { createdAt: "desc" }],
   });
   return summarize(cats, viewerId);
+}
+
+export type JoinableCluster = CatSummary & { distanceKm: number | null };
+
+/**
+ * Ownerless ("shared") clusters the viewer could join a sighting to — for
+ * grouping street cats with other people's sightings without anyone claiming
+ * ownership. With a query `q`, searches clusters by sighting name (the fallback
+ * when the sighting has no coordinates). Otherwise, when the sighting *is*
+ * geotagged, lists clusters with a sighting within `MAX_LINK_KM`, closest first
+ * (the same boundary linking enforces). Excludes the sighting's own cluster.
+ */
+export async function listJoinableClusters(
+  entryId: string,
+  viewerId: string | null,
+  q?: string,
+): Promise<JoinableCluster[]> {
+  if (!viewerId) return [];
+  const entry = await db.catEntry.findUnique({
+    where: { id: entryId },
+    select: { ownerId: true, catId: true, latitude: true, longitude: true },
+  });
+  if (!entry) return [];
+  if (!(await canViewCatEntry(viewerId, entry.ownerId))) return [];
+
+  const visibleOwnerIds = await listVisibleOwnerIds(viewerId);
+  const excludeId = entry.catId ?? "";
+  const trimmed = q?.trim();
+  const distById = new Map<string, number>();
+  let orderedIds: string[] = [];
+
+  if (trimmed) {
+    const rows = await db.$queryRaw<{ id: string }[]>`
+      SELECT DISTINCT c.id
+      FROM cats c
+      JOIN cat_entries ce ON ce.cat_id = c.id
+      WHERE c.owner_id IS NULL
+        AND c.id != ${excludeId}
+        AND ce.owner_id = ANY(${visibleOwnerIds}::text[])
+        AND ce.name ILIKE ${"%" + trimmed + "%"}
+      LIMIT 8
+    `;
+    orderedIds = rows.map((r) => r.id);
+  } else if (entry.latitude != null && entry.longitude != null) {
+    const lat = entry.latitude;
+    const lng = entry.longitude;
+    const rows = await db.$queryRaw<{ id: string; distance_km: number }[]>`
+      SELECT c.id,
+        MIN(6371.0 * 2.0 * ASIN(SQRT(
+          POWER(SIN(RADIANS((${lat}::double precision - ce.latitude) / 2.0)), 2) +
+          COS(RADIANS(ce.latitude)) * COS(RADIANS(${lat}::double precision)) *
+          POWER(SIN(RADIANS((${lng}::double precision - ce.longitude) / 2.0)), 2)
+        )))::double precision AS distance_km
+      FROM cats c
+      JOIN cat_entries ce ON ce.cat_id = c.id
+      WHERE c.owner_id IS NULL
+        AND c.id != ${excludeId}
+        AND ce.owner_id = ANY(${visibleOwnerIds}::text[])
+        AND ce.latitude IS NOT NULL
+        AND ce.longitude IS NOT NULL
+      GROUP BY c.id
+      HAVING MIN(6371.0 * 2.0 * ASIN(SQRT(
+          POWER(SIN(RADIANS((${lat}::double precision - ce.latitude) / 2.0)), 2) +
+          COS(RADIANS(ce.latitude)) * COS(RADIANS(${lat}::double precision)) *
+          POWER(SIN(RADIANS((${lng}::double precision - ce.longitude) / 2.0)), 2)
+        ))) <= ${MAX_LINK_KM}::double precision
+      ORDER BY distance_km ASC
+      LIMIT 8
+    `;
+    orderedIds = rows.map((r) => r.id);
+    rows.forEach((r) => distById.set(r.id, Number(r.distance_km)));
+  } else {
+    return []; // no coordinates and no search term — nothing to scope by
+  }
+
+  if (orderedIds.length === 0) return [];
+  const cats = await db.cat.findMany({ where: { id: { in: orderedIds } } });
+  const byId = new Map((await summarize(cats, viewerId)).map((s) => [s.id, s]));
+  return orderedIds
+    .map((id) => byId.get(id))
+    .filter((s): s is CatSummary => Boolean(s))
+    .map((s) => ({ ...s, distanceKm: distById.get(s.id) ?? null }));
 }
 
 /** Claim an *ownerless* cat as your pet — you become its owner. */
@@ -582,22 +696,26 @@ export async function requestCatLink(input: {
 
   // The on-screen sighting — may be the requester's or, when claiming from
   // someone else's detail page, somebody else's (visible to the requester).
-  const entry = await db.catEntry.findUnique({ where: { id: entryId }, select: { ownerId: true, catId: true } });
+  const entry = await db.catEntry.findUnique({
+    where: { id: entryId },
+    select: { ownerId: true, catId: true, latitude: true, longitude: true },
+  });
   if (!entry) throw new CatNotFoundError();
   if (!(await canViewCatEntry(requesterId, entry.ownerId))) throw new CatForbiddenError();
+  const hasCoords = entry.latitude != null && entry.longitude != null;
 
   // Resolve the target cat (a cluster id), or a bare sighting to start one from.
   let catId = input.catId ?? null;
-  let bareTarget: { id: string; ownerId: string } | null = null;
+  let bareTarget: { id: string; ownerId: string; latitude: number | null; longitude: number | null } | null = null;
   if (!catId && input.targetEntryId) {
     const target = await db.catEntry.findUnique({
       where: { id: input.targetEntryId },
-      select: { id: true, ownerId: true, catId: true },
+      select: { id: true, ownerId: true, catId: true, latitude: true, longitude: true },
     });
     if (!target) throw new CatNotFoundError();
     if (!(await canViewCatEntry(requesterId, target.ownerId))) throw new CatForbiddenError();
     if (target.catId) catId = target.catId;
-    else bareTarget = { id: target.id, ownerId: target.ownerId };
+    else bareTarget = { id: target.id, ownerId: target.ownerId, latitude: target.latitude, longitude: target.longitude };
   }
 
   // (a) Attach the sighting to an existing cat/cluster B.
@@ -607,6 +725,13 @@ export async function requestCatLink(input: {
     const catB = await db.cat.findUnique({ where: { id: catId }, select: { ownerId: true } });
     if (!catB) throw new CatNotFoundError();
     if (catB.ownerId && !(await canViewCatEntry(requesterId, catB.ownerId))) throw new CatForbiddenError();
+
+    // Boundary: an ownerless (street-cat) cluster's sightings must stay close
+    // together. Claimed pets are exempt — they travel.
+    if (catB.ownerId === null && hasCoords) {
+      const km = await nearestClusterKm(catId, entry.latitude!, entry.longitude!);
+      if (km !== null && km > MAX_LINK_KM) throw new CatLinkTooFarError();
+    }
 
     // The sighting already belongs to cluster A → this unifies two cats. Merge
     // outright when no third party is harmed; otherwise fall through and just
@@ -638,6 +763,12 @@ export async function requestCatLink(input: {
   //     from the requester's own sighting and pull the other in.
   if (bareTarget) {
     if (entry.ownerId !== requesterId) throw new CatForbiddenError();
+    // Boundary: the two bare sightings start an ownerless cluster, so they must
+    // be close together.
+    if (hasCoords && bareTarget.latitude != null && bareTarget.longitude != null) {
+      const km = haversineKm(entry.latitude!, entry.longitude!, bareTarget.latitude, bareTarget.longitude);
+      if (km > MAX_LINK_KM) throw new CatLinkTooFarError();
+    }
     const clusterId = await ensureClusterForEntry(entryId, requesterId);
     if (bareTarget.ownerId === requesterId) {
       await db.catEntry.update({ where: { id: bareTarget.id }, data: { catId: clusterId } });
