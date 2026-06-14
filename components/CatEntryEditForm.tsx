@@ -10,6 +10,7 @@ import { FramePicker } from "@/components/FramePicker";
 import {
   asFrameStyle,
   asFrameColor,
+  asFramePaper,
   clampTilt,
   type FrameStyle,
   type FrameColorKey,
@@ -27,8 +28,10 @@ type CatEntryEditFormProps = {
     longitude: number | null;
     frameStyle?: string | null;
     frameColor?: string | null;
+    framePaper?: string | null;
     frameTilt?: number | null;
     frameCaption?: string | null;
+    frameLabel?: string | null;
     catId?: string | null;
     createdAt: string | Date;
   };
@@ -51,8 +54,10 @@ export function CatEntryEditForm({ entry, coverUrl, cats = [] }: CatEntryEditFor
   const [catId, setCatId] = useState(entry.catId ?? "");
   const [frameStyle, setFrameStyle] = useState<FrameStyle>(asFrameStyle(entry.frameStyle));
   const [frameColor, setFrameColor] = useState<FrameColorKey>(asFrameColor(entry.frameColor));
+  const [framePaper, setFramePaper] = useState<FrameColorKey>(asFramePaper(entry.framePaper));
   const [frameTilt, setFrameTilt] = useState<number | null>(clampTilt(entry.frameTilt));
   const [frameCaption, setFrameCaption] = useState(entry.frameCaption ?? "");
+  const [frameLabel, setFrameLabel] = useState(entry.frameLabel ?? "");
   const [capturedAt, setCapturedAt] = useState<Date>(new Date(entry.createdAt));
   const [location, setLocation] = useState<PickedLocation | null>(
     entry.latitude != null && entry.longitude != null
@@ -90,8 +95,10 @@ export function CatEntryEditForm({ entry, coverUrl, cats = [] }: CatEntryEditFor
           catId: catId || null,
           frameStyle,
           frameColor,
+          framePaper,
           frameTilt,
           frameCaption: frameCaption.trim() || null,
+          frameLabel: frameLabel.trim() || null,
           locationName: location?.name ?? null,
           latitude: location?.lat ?? null,
           longitude: location?.lng ?? null,
@@ -213,10 +220,14 @@ export function CatEntryEditForm({ entry, coverUrl, cats = [] }: CatEntryEditFor
           onChange={setFrameStyle}
           color={frameColor}
           onColorChange={setFrameColor}
+          paper={framePaper}
+          onPaperChange={setFramePaper}
           tilt={frameTilt}
           onTiltChange={setFrameTilt}
           caption={frameCaption}
           onCaptionChange={setFrameCaption}
+          label={frameLabel}
+          onLabelChange={setFrameLabel}
           sampleUrl={coverUrl}
           name={name.trim() || null}
           breed={breed.trim() || null}

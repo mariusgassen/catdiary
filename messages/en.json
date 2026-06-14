@@ -352,6 +352,7 @@
     "editEntry": "Edit entry",
     "photoAlt": "{name} — photo {n}",
     "aCatPhotoAlt": "A cat — photo {n}",
+    "framePreviewLabel": "Preview",
     "chooseFrame": "Frame",
     "frames": {
       "name": {
@@ -366,7 +367,8 @@
       "greetingsFrom": "Greetings from {place}",
       "greetings": "Greetings!"
     },
-    "frameColorLabel": "Frame color",
+    "frameColorLabel": "Border color",
+    "framePaperLabel": "Paper color",
     "colors": {
       "DEFAULT": "Default",
       "BLUE": "Blue",
@@ -376,6 +378,9 @@
       "VIOLET": "Violet",
       "INK": "Ink"
     },
+    "frameLabelTitle": "Header label",
+    "frameLabelPlaceholder": "Call no.",
+    "frameLabelHelp": "The heading to the left of the call number — “Call no.” by default (a library shelf-mark label).",
     "tiltLabel": "Tilt",
     "tiltAuto": "Auto",
     "tiltReset": "Reset to auto",

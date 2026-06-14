@@ -68,6 +68,48 @@ export function frameInk(value: unknown): string | null {
   return key === "DEFAULT" ? null : FRAME_INKS[key];
 }
 
+// ── Frame paper ─────────────────────────────────────────────────────────────
+// Separate from the chrome color: this tints the card *stock* itself (the
+// polaroid's white, the index card's cream, …) with a soft hue wash. It reuses
+// the same color keys, but is applied as a translucent gradient laid over the
+// frame's existing background so it adapts to both the light and dark themes
+// (the wash is the same; only the paper underneath differs).
+
+export const DEFAULT_FRAME_PAPER: FrameColorKey = "DEFAULT";
+
+const PAPER_WASH_ALPHA = 0.16;
+
+function hexToRgba(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+/** Narrows any value to a known paper preset (same keys as the color palette). */
+export function asFramePaper(value: unknown): FrameColorKey {
+  return asFrameColor(value);
+}
+
+/**
+ * A CSS `background-image` value (a flat translucent wash) for the chosen paper
+ * tint, layered over the frame's own opaque background — or null for the
+ * default, untinted stock. Returned as a gradient because `background-image`
+ * paints on top of the class-set `background-color`, keeping the paper solid.
+ */
+export function framePaperWash(value: unknown): string | null {
+  const key = asFramePaper(value);
+  if (key === "DEFAULT") return null;
+  const rgba = hexToRgba(FRAME_INKS[key], PAPER_WASH_ALPHA);
+  return `linear-gradient(${rgba}, ${rgba})`;
+}
+
+/** A pale swatch color for the paper picker (the wash over white). */
+export function framePaperSwatch(value: unknown): string | null {
+  const key = asFramePaper(value);
+  return key === "DEFAULT" ? null : hexToRgba(FRAME_INKS[key], PAPER_WASH_ALPHA);
+}
+
 // ── Frame tilt ──────────────────────────────────────────────────────────────
 // A hand-set tilt overrides the per-entry, id-hashed auto tilt. Kept to a small
 // range so the journal still reads as "glued in by hand", not askew.
@@ -94,6 +136,21 @@ export const MAX_FRAME_CAPTION = 80;
 /** Whether a frame style has a customizable label/caption field. */
 export function frameHasCaption(style: FrameStyle): boolean {
   return FRAMES_WITH_CAPTION.includes(style);
+}
+
+// ── Frame label ───────────────────────────────────────────────────────────────
+// A second text slot on the index card: the header *heading* to the left of the
+// call number — "Call no." (German: "Signatur", the library shelf-mark term).
+// Only the index card has this paired label/value layout, so it's the only
+// frame with a customizable label.
+
+export const FRAMES_WITH_LABEL: readonly FrameStyle[] = ["INDEX_CARD"];
+
+export const MAX_FRAME_LABEL = 40;
+
+/** Whether a frame style has a customizable header label field. */
+export function frameHasLabel(style: FrameStyle): boolean {
+  return FRAMES_WITH_LABEL.includes(style);
 }
 
 /**

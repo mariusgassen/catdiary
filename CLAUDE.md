@@ -41,12 +41,20 @@ near-term, tactical roadmap and what's already shipped.
   rubber-stamp date, notes with hashtags, place name, paw-print likes
 - **Custom frames (journal artifacts)**: each entry picks a `CatEntry.frameStyle`
   enum — Polaroid (default), pressed-specimen card, library index card, postcard
-  ("Greetings from {place}"), or ticket stub. The render layer is
-  `components/EntryFrame.tsx` (shared by the feed/detail cards and the
-  `FramePicker` preview); the frame is chosen in the capture flow and the edit
-  screen, previewed on the user's own cover photo, and persisted in capture
-  drafts. Purely presentational — it never gates documenting (always defaults to
-  Polaroid)
+  ("Greetings from {place}"), or ticket stub — and can further customize the
+  frame: a **border color** (`frameColor`) and **paper tint** (`framePaper`),
+  both preset keys from a shared palette in `lib/frames.ts` (paper is a
+  translucent wash layered over the stock so it reads in light + dark); a
+  hand-set **tilt** (`frameTilt`, degrees; null = the id-hashed auto wobble); and
+  the frame's own text — the value field (`frameCaption`: the index card's call
+  number, the ticket line, the postcard greeting) and, for the index card, the
+  header label (`frameLabel`: "Call no." / German "Signatur"). The render layer
+  is `components/EntryFrame.tsx` (shared by the feed/detail cards and the
+  `FramePicker`); `FramePicker` shows a large live preview of the selected frame
+  plus a style strip and the color/paper/tilt/text controls. The frame is chosen
+  in the capture flow and the edit screen, previewed on the user's own cover
+  photo, and persisted in capture drafts. All of it is purely presentational —
+  it never gates documenting (everything defaults to a plain Polaroid)
 - Date-grouped feed timeline with day dividers and masthead
 - Capture flow: camera viewfinder (front/back), gallery picker, hashtag
   highlighting in caption textarea

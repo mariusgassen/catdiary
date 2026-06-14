@@ -350,6 +350,7 @@
     "editEntry": "Eintrag bearbeiten",
     "photoAlt": "{name} — Foto {n}",
     "aCatPhotoAlt": "Eine Katze — Foto {n}",
+    "framePreviewLabel": "Vorschau",
     "chooseFrame": "Rahmen",
     "frames": {
       "name": {
@@ -364,7 +365,8 @@
       "greetingsFrom": "Grüße aus {place}",
       "greetings": "Grüße!"
     },
-    "frameColorLabel": "Rahmenfarbe",
+    "frameColorLabel": "Randfarbe",
+    "framePaperLabel": "Papierfarbe",
     "colors": {
       "DEFAULT": "Standard",
       "BLUE": "Blau",
@@ -374,11 +376,14 @@
       "VIOLET": "Violett",
       "INK": "Tinte"
     },
+    "frameLabelTitle": "Überschrift",
+    "frameLabelPlaceholder": "Signatur",
+    "frameLabelHelp": "Die Überschrift links neben der Signaturnummer — standardmäßig „Signatur“ (die Bibliotheks-Bezeichnung für den Standort).",
     "tiltLabel": "Neigung",
     "tiltAuto": "Automatisch",
     "tiltReset": "Auf automatisch zurücksetzen",
     "captionLabel": {
-      "INDEX_CARD": "Signatur",
+      "INDEX_CARD": "Signaturnummer",
       "POSTCARD": "Gruß",
       "TICKET": "Ticket-Zeile"
     },
