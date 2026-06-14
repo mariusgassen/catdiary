@@ -301,7 +301,20 @@ near-term, tactical roadmap and what's already shipped.
   cat page (`<CatLinkRequests>`, `listPendingCatLinks`) and the *sighting* owner
   on their entry's detail page (`<EntryLinkRequests>`, `listPendingEntryLinks`);
   the `CAT_LINK_REQUEST` notification carries `catId` only for the cat-owner
-  direction so it routes to the right surface
+  direction so it routes to the right surface. The whole matcher is a single
+  collapsible panel at the bottom of the detail page (`<CatMatcher>`, next to
+  "Cats that look alike"), shown to any signed-in viewer: it loads the embedding
+  **suggestions** *and* a **manual picker** of your own cats (`GET /api/cats`),
+  so you can always file by hand even when nothing is suggested. It works on
+  **other people's** sightings too — `suggestCatsForEntry` runs in a "claim"
+  mode there (which of *your* cats look like it) and a manual pick becomes a
+  request the sighting's owner confirms. All link flags (`isOwn`/`isShared`/
+  `immediate`) are computed relative to the viewer. Finally, when the sighting
+  already sits in a cluster, linking it to another cat **merges the two cats**
+  (`tryMergeClusters` → `absorbCluster`) when no third party is re-homed without
+  consent — both ownerless (communal), or folding into your own claimed cat only
+  when every moved sighting is yours; otherwise it falls back to moving the one
+  sighting with approval
 
 ### Capture flow improvements
 - **Photo editing** — crop, basic brightness/contrast before upload

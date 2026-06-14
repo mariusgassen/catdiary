@@ -14,7 +14,7 @@ import { CommentsSection } from "@/components/CommentsSection";
 import { RecordView } from "@/components/RecordView";
 import { ReactionSummary } from "@/components/ReactionStamp";
 import { SimilarCats } from "@/components/SimilarCats";
-import { SuggestCats } from "@/components/SuggestCats";
+import { CatMatcher } from "@/components/CatMatcher";
 import { EntryLinkRequests } from "@/components/EntryLinkRequests";
 import { EntryMap } from "@/components/EntryMap";
 import { displayNameFor } from "@/lib/userDisplay";
@@ -88,7 +88,6 @@ export default async function CatEntryPage({ params }: Props) {
         </Link>
       )}
       {isOwner && pendingEntryLinks.length > 0 && <EntryLinkRequests requests={pendingEntryLinks} />}
-      {isOwner && !entry.cat && <SuggestCats entryId={entry.id} />}
       {entry.reactionBreakdown && <ReactionSummary breakdown={entry.reactionBreakdown} />}
       {entry.latitude != null && entry.longitude != null && (
         <EntryMap lat={entry.latitude} lng={entry.longitude} locationName={entry.locationName} />
@@ -99,6 +98,7 @@ export default async function CatEntryPage({ params }: Props) {
         viewerId={viewerId}
         initialComments={comments}
       />
+      {viewerId && <CatMatcher entryId={entry.id} isOwner={isOwner} />}
       <SimilarCats entryId={entry.id} />
     </div>
   );
