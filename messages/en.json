@@ -233,6 +233,7 @@
       "followPlural": "{actor} are now reading your diary",
       "mention": "{actor} mentioned you",
       "catLinkRequest": "{actor} thinks they met {cat}",
+      "catLinkRequestEntry": "{actor} thinks your sighting is a cat they know",
       "catLinkApproved": "{actor} confirmed it's {cat}",
       "default": "{actor} interacted with your diary"
     }
@@ -566,12 +567,17 @@
     "suggestTitle": "Might this be a cat you know?",
     "suggestYours": "Your cat",
     "suggestBy": "{name}'s cat",
+    "suggestYourSighting": "Your sighting — start a profile",
+    "suggestSightingBy": "{name}'s sighting — not yet profiled",
+    "matchPercent": "{pct}% match",
+    "untitled": "A cat",
     "suggestFileButton": "This is them",
     "suggestAskButton": "Ask to link",
     "suggestFiled": "Filed",
     "suggestRequested": "Requested",
     "requestsTitle": "Same cat? Requests",
     "requestBody": "{name} thinks they met this cat",
+    "entryRequestBody": "{name} thinks this is their cat {cat}",
     "requestApprove": "Approve",
     "requestDecline": "Decline"
   }

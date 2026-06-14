@@ -207,13 +207,37 @@ export async function setEntryCat(entryId: string, ownerId: string, catId: strin
 // confirms — and is the obvious knob to tune as real data accrues.
 const SUGGEST_DISTANCE_THRESHOLD = 0.25;
 
+// Turn a CLIP cosine distance into a friendly 0–100 "match" reading. Distances
+// run ~0 (near-identical) upward; everything we surface is under the threshold,
+// so this maps the shown range onto a confidence the UI can label.
+function confidenceFromDistance(distance: number): number {
+  return Math.max(0, Math.min(100, Math.round((1 - distance) * 100)));
+}
+
 export type CatSuggestion = {
-  catId: string;
-  name: string;
+  // "cat" = an existing profile to file under; "entry" = a bare sighting nobody
+  // has profiled yet (linking it starts/uses a profile, see requestCatLink).
+  kind: "cat" | "entry";
+  catId: string | null; // set for kind "cat"
+  entryId: string | null; // set for kind "entry" (the matched bare sighting)
+  name: string | null;
   ownerId: string;
   ownerDisplayName: string | null;
   ownerUsername: string | null;
-  isOwn: boolean; // true = your cat (one tap files it); false = someone else's (needs their approval)
+  isOwn: boolean; // true = yours (one tap); false = someone else's (needs their approval)
+  coverPhotoKey: string | null;
+  coverThumbKey: string | null;
+  distance: number;
+  confidence: number; // 0–100, derived from distance
+};
+
+type SuggestRow = {
+  catId: string | null;
+  entryId: string | null;
+  name: string | null;
+  ownerId: string;
+  ownerDisplayName: string | null;
+  ownerUsername: string | null;
   coverPhotoKey: string | null;
   coverThumbKey: string | null;
   distance: number;
@@ -221,12 +245,14 @@ export type CatSuggestion = {
 
 /**
  * "Might this be cat X?" — visual re-identification candidates for a sighting.
- * Looks up the nearest *already-profiled* sightings by CLIP embedding (cosine
- * distance), among diaries the viewer can see, and collapses them to the
- * distinct cats they belong to: your own cats and other people's visible cats
- * alike. Excludes the cat this sighting is already filed under. Returns nothing
- * until the entry's embedding has been computed (it's generated in the
- * background after upload).
+ * Looks up the nearest sightings by CLIP embedding (cosine distance) among
+ * diaries the viewer can see, and returns two flavours of match:
+ *   • already-profiled cats (your own and other people's), collapsed to the
+ *     distinct cat — file your sighting under one of these;
+ *   • bare sightings nobody has profiled yet ("unowned cats") — linking one
+ *     starts a shared profile (your own immediately; someone else's by request).
+ * Owner-only, and empty until the entry's embedding has been computed (it's
+ * generated in the background after upload).
  */
 export async function suggestCatsForEntry(
   entryId: string,
@@ -250,20 +276,10 @@ export async function suggestCatsForEntry(
   const ownerIds = await listVisibleOwnerIds(viewerId);
   if (ownerIds.length === 0) return [];
 
-  const rows = await db.$queryRaw<
-    Array<{
-      catId: string;
-      name: string;
-      ownerId: string;
-      ownerDisplayName: string | null;
-      ownerUsername: string | null;
-      coverPhotoKey: string | null;
-      coverThumbKey: string | null;
-      distance: number;
-    }>
-  >`
-    SELECT s."catId", s.name, s."ownerId", s."ownerDisplayName", s."ownerUsername",
-           s."coverPhotoKey", s."coverThumbKey", s.distance
+  // Nearest already-profiled cats (collapsed to the distinct cat).
+  const catRows = await db.$queryRaw<SuggestRow[]>`
+    SELECT s."catId", NULL::text AS "entryId", s.name, s."ownerId", s."ownerDisplayName",
+           s."ownerUsername", s."coverPhotoKey", s."coverThumbKey", s.distance
     FROM (
       SELECT DISTINCT ON (ce.cat_id)
         ce.cat_id        AS "catId",
@@ -297,84 +313,200 @@ export async function suggestCatsForEntry(
     LIMIT 4
   `;
 
-  return rows.map((r) => ({
-    catId: r.catId,
-    name: r.name,
-    ownerId: r.ownerId,
-    ownerDisplayName: r.ownerDisplayName,
-    ownerUsername: r.ownerUsername,
-    isOwn: r.ownerId === entry.ownerId,
-    coverPhotoKey: r.coverPhotoKey,
-    coverThumbKey: r.coverThumbKey,
-    distance: Number(r.distance),
-  }));
+  // Nearest bare sightings — cats nobody has profiled yet.
+  const entryRows = await db.$queryRaw<SuggestRow[]>`
+    SELECT NULL::text AS "catId", ce.id AS "entryId", ce.name, ce.owner_id AS "ownerId",
+           u.display_name AS "ownerDisplayName", u.username AS "ownerUsername",
+           cover.photo_key AS "coverPhotoKey", cover.thumb_key AS "coverThumbKey",
+           (ce.embedding <=> ${embeddingStr}::vector) AS distance
+    FROM cat_entries ce
+    JOIN users u ON u.id = ce.owner_id
+    LEFT JOIN LATERAL (
+      SELECT p.photo_key, p.thumb_key
+      FROM cat_entry_photos p
+      WHERE p.cat_entry_id = ce.id
+      ORDER BY p.position ASC
+      LIMIT 1
+    ) cover ON TRUE
+    WHERE ce.cat_id IS NULL
+      AND ce.id != ${entryId}
+      AND ce.embedding IS NOT NULL
+      AND ce.owner_id = ANY(${ownerIds}::text[])
+      AND (ce.embedding <=> ${embeddingStr}::vector) < ${SUGGEST_DISTANCE_THRESHOLD}
+    ORDER BY distance ASC
+    LIMIT 4
+  `;
+
+  return [...catRows, ...entryRows]
+    .map((r) => {
+      const distance = Number(r.distance);
+      return {
+        kind: r.catId ? ("cat" as const) : ("entry" as const),
+        catId: r.catId,
+        entryId: r.entryId,
+        name: r.name,
+        ownerId: r.ownerId,
+        ownerDisplayName: r.ownerDisplayName,
+        ownerUsername: r.ownerUsername,
+        isOwn: r.ownerId === entry.ownerId,
+        coverPhotoKey: r.coverPhotoKey,
+        coverThumbKey: r.coverThumbKey,
+        distance,
+        confidence: confidenceFromDistance(distance),
+      };
+    })
+    .sort((a, b) => a.distance - b.distance)
+    .slice(0, 5);
 }
 
 export type CatLinkResult = { status: "APPROVED" | "PENDING" };
 
+// Picks a name for an auto-created cat from the sightings being merged, so a
+// cat that nobody profiled still gets a sensible title (renameable later).
+function deriveCatName(...candidates: (string | null | undefined)[]): string {
+  for (const c of candidates) {
+    const trimmed = c?.trim();
+    if (trimmed) return trimmed.slice(0, 120);
+  }
+  return "Unnamed cat";
+}
+
+/** Ensures the requester's sighting is filed under one of *their own* cats,
+    creating a fresh cat from the sighting(s) when it isn't. Returns the cat id. */
+async function ensureOwnCatForEntry(
+  entryId: string,
+  requesterId: string,
+  entryName: string | null,
+  otherName?: string | null,
+): Promise<string> {
+  const entry = await db.catEntry.findUnique({ where: { id: entryId }, select: { catId: true } });
+  if (entry?.catId) {
+    const cat = await db.cat.findUnique({ where: { id: entry.catId }, select: { ownerId: true } });
+    if (cat?.ownerId === requesterId) return entry.catId;
+  }
+  const created = await db.cat.create({
+    data: { ownerId: requesterId, name: deriveCatName(entryName, otherName) },
+  });
+  await db.catEntry.update({ where: { id: entryId }, data: { catId: created.id } });
+  return created.id;
+}
+
 /**
- * Claims that `entryId` (the requester's sighting) is the same animal as
- * `catId`. If the cat is the requester's own, the sighting is filed
- * immediately. If it belongs to someone else, a PENDING request is recorded and
- * that owner is notified to approve — you can only see/claim cats in diaries
- * visible to you.
+ * Claims that `entryId` (the requester's own sighting) is the same animal as a
+ * target — either an existing `catId` or another sighting `targetEntryId` that
+ * nobody has profiled yet. Resolution:
+ *   • your own cat / your own sighting → filed immediately (a fresh cat is
+ *     created when linking two bare sightings of yours);
+ *   • someone else's cat → request, their owner approves;
+ *   • someone else's bare sighting → a cat is started from *your* sighting and
+ *     they're asked to add theirs to it.
+ * You can only target cats/sightings in diaries visible to you.
  */
 export async function requestCatLink(input: {
   entryId: string;
-  catId: string;
+  catId?: string;
+  targetEntryId?: string;
   requesterId: string;
 }): Promise<CatLinkResult> {
-  const { entryId, catId, requesterId } = input;
+  const { entryId, requesterId } = input;
 
-  const entry = await db.catEntry.findUnique({ where: { id: entryId }, select: { ownerId: true } });
+  const entry = await db.catEntry.findUnique({ where: { id: entryId }, select: { ownerId: true, name: true } });
   if (!entry) throw new CatNotFoundError();
   if (entry.ownerId !== requesterId) throw new CatForbiddenError();
 
-  const cat = await db.cat.findUnique({ where: { id: catId }, select: { ownerId: true } });
-  if (!cat) throw new CatNotFoundError();
-  if (!(await canViewCatEntry(requesterId, cat.ownerId))) throw new CatForbiddenError();
-
-  // Your own cat: no approval needed, file it straight away.
-  if (cat.ownerId === requesterId) {
-    await db.catEntry.update({ where: { id: entryId }, data: { catId } });
-    return { status: "APPROVED" };
+  // Linking to a bare sighting that *does* have a cat is just linking to that cat.
+  let catId = input.catId ?? null;
+  let bareTarget: { id: string; ownerId: string; name: string | null } | null = null;
+  if (!catId && input.targetEntryId) {
+    const target = await db.catEntry.findUnique({
+      where: { id: input.targetEntryId },
+      select: { id: true, ownerId: true, name: true, catId: true },
+    });
+    if (!target) throw new CatNotFoundError();
+    if (!(await canViewCatEntry(requesterId, target.ownerId))) throw new CatForbiddenError();
+    if (target.catId) catId = target.catId;
+    else bareTarget = { id: target.id, ownerId: target.ownerId, name: target.name };
   }
 
-  // Someone else's cat: record (or refresh) a pending claim and notify them.
+  // (a) Link the requester's sighting to an existing cat.
+  if (catId) {
+    const cat = await db.cat.findUnique({ where: { id: catId }, select: { ownerId: true } });
+    if (!cat) throw new CatNotFoundError();
+    if (!(await canViewCatEntry(requesterId, cat.ownerId))) throw new CatForbiddenError();
+    if (cat.ownerId === requesterId) {
+      await db.catEntry.update({ where: { id: entryId }, data: { catId } });
+      return { status: "APPROVED" };
+    }
+    return createLinkRequest({ catId, catEntryId: entryId, requesterId, notifyUserId: cat.ownerId, withCatId: true });
+  }
+
+  // (b) Link to a bare sighting nobody has profiled — start a cat from yours.
+  if (bareTarget) {
+    const newCatId = await ensureOwnCatForEntry(entryId, requesterId, entry.name, bareTarget.name);
+    if (bareTarget.ownerId === requesterId) {
+      await db.catEntry.update({ where: { id: bareTarget.id }, data: { catId: newCatId } });
+      return { status: "APPROVED" };
+    }
+    // Ask the other sighting's owner to add theirs to your new cat.
+    return createLinkRequest({
+      catId: newCatId,
+      catEntryId: bareTarget.id,
+      requesterId,
+      notifyUserId: bareTarget.ownerId,
+      withCatId: false, // route the recipient to their own sighting to approve
+    });
+  }
+
+  throw new CatNotFoundError();
+}
+
+async function createLinkRequest(input: {
+  catId: string;
+  catEntryId: string;
+  requesterId: string;
+  notifyUserId: string;
+  withCatId: boolean;
+}): Promise<CatLinkResult> {
+  const { catId, catEntryId, requesterId, notifyUserId, withCatId } = input;
   await db.catLink.upsert({
-    where: { catId_catEntryId: { catId, catEntryId: entryId } },
-    create: { catId, catEntryId: entryId, requesterId, status: "PENDING" },
+    where: { catId_catEntryId: { catId, catEntryId } },
+    create: { catId, catEntryId, requesterId, status: "PENDING" },
     update: { status: "PENDING", requesterId },
   });
   await createNotification({
-    userId: cat.ownerId,
+    userId: notifyUserId,
     actorId: requesterId,
     type: "CAT_LINK_REQUEST",
-    catEntryId: entryId,
-    catId,
+    catEntryId,
+    ...(withCatId ? { catId } : {}),
   });
-
   return { status: "PENDING" };
 }
 
 /**
- * The cat owner approves or declines a "same cat?" claim. On approval the
- * sighting's `catId` is repointed at the cat (joining its timeline) and the
- * requester is notified; on decline the request is just marked DECLINED.
+ * Approves or declines a "same cat?" claim. The approver is whichever party the
+ * requester is *not*: when the requester proposed their sighting for your cat,
+ * you (the cat owner) approve; when they proposed adding your sighting to their
+ * cat, you (the sighting owner) approve. On approval the sighting joins the cat
+ * and the requester is notified.
  */
 export async function respondToCatLink(input: {
   linkId: string;
-  catOwnerId: string;
+  approverId: string;
   approve: boolean;
 }) {
-  const { linkId, catOwnerId, approve } = input;
+  const { linkId, approverId, approve } = input;
 
   const link = await db.catLink.findUnique({
     where: { id: linkId },
-    include: { cat: { select: { ownerId: true } } },
+    include: { cat: { select: { ownerId: true } }, catEntry: { select: { ownerId: true } } },
   });
   if (!link) throw new CatNotFoundError();
-  if (link.cat.ownerId !== catOwnerId) throw new CatForbiddenError();
+
+  // The approver owns the side the requester does not.
+  const expectedApprover =
+    link.requesterId === link.cat.ownerId ? link.catEntry.ownerId : link.cat.ownerId;
+  if (approverId !== expectedApprover) throw new CatForbiddenError();
   if (link.status !== "PENDING") return link;
 
   if (approve) {
@@ -384,7 +516,7 @@ export async function respondToCatLink(input: {
     ]);
     await createNotification({
       userId: link.requesterId,
-      actorId: catOwnerId,
+      actorId: approverId,
       type: "CAT_LINK_APPROVED",
       catEntryId: link.catEntryId,
       catId: link.catId,
@@ -403,13 +535,18 @@ export type PendingCatLink = {
   catEntry: { id: string; name: string | null; photos: { photoKey: string; thumbKey: string | null }[] };
 };
 
-/** Pending "same cat?" claims on a cat, for its owner to review on the cat page. */
+/**
+ * Pending claims that someone's sighting is *your* cat, for you to review on the
+ * cat page. Excludes your own outgoing claims (where you proposed adding another
+ * person's sighting to this cat — those await *their* approval, see
+ * `listPendingEntryLinks`).
+ */
 export async function listPendingCatLinks(catId: string, catOwnerId: string): Promise<PendingCatLink[]> {
   const cat = await db.cat.findUnique({ where: { id: catId }, select: { ownerId: true } });
   if (!cat || cat.ownerId !== catOwnerId) return [];
 
   return db.catLink.findMany({
-    where: { catId, status: "PENDING" },
+    where: { catId, status: "PENDING", requesterId: { not: catOwnerId } },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -423,5 +560,52 @@ export async function listPendingCatLinks(catId: string, catOwnerId: string): Pr
         },
       },
     },
+  });
+}
+
+export type PendingEntryLink = {
+  id: string;
+  createdAt: Date;
+  requester: { id: string; username: string | null; displayName: string | null; avatarKey: string | null; image: string | null };
+  cat: { id: string; name: string; coverPhotoKey: string | null; coverThumbKey: string | null };
+};
+
+/**
+ * Pending claims that *your* sighting is someone else's cat, for you to review
+ * on that sighting's detail page — the other direction of `listPendingCatLinks`.
+ */
+export async function listPendingEntryLinks(entryId: string, entryOwnerId: string): Promise<PendingEntryLink[]> {
+  const entry = await db.catEntry.findUnique({ where: { id: entryId }, select: { ownerId: true } });
+  if (!entry || entry.ownerId !== entryOwnerId) return [];
+
+  const links = await db.catLink.findMany({
+    where: { catEntryId: entryId, status: "PENDING", requesterId: { not: entryOwnerId } },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      createdAt: true,
+      requester: { select: { id: true, username: true, displayName: true, avatarKey: true, image: true } },
+      cat: {
+        select: {
+          id: true,
+          name: true,
+          entries: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: { photos: { orderBy: { position: "asc" }, take: 1, select: { photoKey: true, thumbKey: true } } },
+          },
+        },
+      },
+    },
+  });
+
+  return links.map((l) => {
+    const cover = l.cat.entries[0]?.photos[0] ?? null;
+    return {
+      id: l.id,
+      createdAt: l.createdAt,
+      requester: l.requester,
+      cat: { id: l.cat.id, name: l.cat.name, coverPhotoKey: cover?.photoKey ?? null, coverThumbKey: cover?.thumbKey ?? null },
+    };
   });
 }

@@ -8,9 +8,9 @@ const respondSchema = z.object({ approve: z.boolean() });
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  let catOwnerId: string;
+  let approverId: string;
   try {
-    catOwnerId = await requireUserId();
+    approverId = await requireUserId();
   } catch (err) {
     if (err instanceof UnauthorizedError) {
       return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
@@ -25,7 +25,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 
   try {
-    await respondToCatLink({ linkId: id, catOwnerId, approve: parsed.data.approve });
+    await respondToCatLink({ linkId: id, approverId, approve: parsed.data.approve });
     return NextResponse.json({ ok: true });
   } catch (err) {
     if (err instanceof CatNotFoundError) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });

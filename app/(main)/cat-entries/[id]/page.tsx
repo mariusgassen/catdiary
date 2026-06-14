@@ -5,6 +5,7 @@ import { PawPrint } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { getCatEntryForViewer } from "@/lib/catEntries";
+import { listPendingEntryLinks } from "@/lib/cats";
 import { photoUrlsFor } from "@/lib/photo-urls";
 import { listComments } from "@/lib/comments";
 import { CatEntryCard } from "@/components/CatEntryCard";
@@ -14,6 +15,7 @@ import { RecordView } from "@/components/RecordView";
 import { ReactionSummary } from "@/components/ReactionStamp";
 import { SimilarCats } from "@/components/SimilarCats";
 import { SuggestCats } from "@/components/SuggestCats";
+import { EntryLinkRequests } from "@/components/EntryLinkRequests";
 import { EntryMap } from "@/components/EntryMap";
 import { displayNameFor } from "@/lib/userDisplay";
 import { possessiveDiaryEn, possessiveDiaryDe } from "@/lib/possessiveDiary";
@@ -56,9 +58,11 @@ export default async function CatEntryPage({ params }: Props) {
     notFound();
   }
 
-  const [comments, t] = await Promise.all([
+  const isOwner = viewerId === entry.ownerId;
+  const [comments, t, pendingEntryLinks] = await Promise.all([
     listComments(entry.id, viewerId),
     getTranslations("cats"),
+    isOwner ? listPendingEntryLinks(entry.id, entry.ownerId) : Promise.resolve([]),
   ]);
 
   return (
@@ -79,7 +83,8 @@ export default async function CatEntryPage({ params }: Props) {
           <span>{t("entryLink", { name: entry.cat.name })}</span>
         </Link>
       )}
-      {viewerId === entry.ownerId && !entry.cat && <SuggestCats entryId={entry.id} />}
+      {isOwner && pendingEntryLinks.length > 0 && <EntryLinkRequests requests={pendingEntryLinks} />}
+      {isOwner && !entry.cat && <SuggestCats entryId={entry.id} />}
       {entry.reactionBreakdown && <ReactionSummary breakdown={entry.reactionBreakdown} />}
       {entry.latitude != null && entry.longitude != null && (
         <EntryMap lat={entry.latitude} lng={entry.longitude} locationName={entry.locationName} />

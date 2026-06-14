@@ -233,6 +233,7 @@
       "followPlural": "{actor} lesen jetzt dein Tagebuch",
       "mention": "{actor} hat dich erwähnt",
       "catLinkRequest": "{actor} glaubt, {cat} getroffen zu haben",
+      "catLinkRequestEntry": "{actor} glaubt, deine Sichtung ist eine bekannte Katze",
       "catLinkApproved": "{actor} hat bestätigt: es ist {cat}",
       "default": "{actor} hat mit deinem Tagebuch interagiert"
     }
@@ -564,12 +565,17 @@
     "suggestTitle": "Könnte das eine Katze sein, die du kennst?",
     "suggestYours": "Deine Katze",
     "suggestBy": "{name}s Katze",
+    "suggestYourSighting": "Deine Sichtung — Profil anlegen",
+    "suggestSightingBy": "{name}s Sichtung — noch kein Profil",
+    "matchPercent": "{pct}% Übereinstimmung",
+    "untitled": "Eine Katze",
     "suggestFileButton": "Das ist sie",
     "suggestAskButton": "Verknüpfung anfragen",
     "suggestFiled": "Zugeordnet",
     "suggestRequested": "Angefragt",
     "requestsTitle": "Gleiche Katze? Anfragen",
     "requestBody": "{name} glaubt, diese Katze getroffen zu haben",
+    "entryRequestBody": "{name} glaubt, das ist ihre Katze {cat}",
     "requestApprove": "Bestätigen",
     "requestDecline": "Ablehnen"
   }
