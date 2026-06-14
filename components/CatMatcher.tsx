@@ -30,6 +30,14 @@ type MyCat = {
 
 type JoinableCluster = MyCat & { distanceKm: number | null };
 
+type JoinableSighting = {
+  id: string;
+  name: string | null;
+  coverPhotoKey: string | null;
+  coverThumbKey: string | null;
+  distanceKm: number | null;
+};
+
 type LinkState = "idle" | "saving" | "filed" | "requested" | "toofar";
 
 const suggestionKey = (s: CatSuggestion) => `${s.kind}:${s.catId ?? s.entryId}`;
@@ -48,6 +56,7 @@ export function CatMatcher({ entryId, isOwner }: { entryId: string; isOwner: boo
   const [suggestions, setSuggestions] = useState<CatSuggestion[]>([]);
   const [myCats, setMyCats] = useState<MyCat[]>([]);
   const [clusters, setClusters] = useState<JoinableCluster[]>([]);
+  const [sightings, setSightings] = useState<JoinableSighting[]>([]);
   const [states, setStates] = useState<Record<string, LinkState>>({});
   const [filter, setFilter] = useState("");
 
@@ -72,16 +81,20 @@ export function CatMatcher({ entryId, isOwner }: { entryId: string; isOwner: boo
     };
   }, [open, entryId]);
 
-  // Shared clusters to join: nearby when no filter, searched (debounced) when typing.
+  // Your own bare sightings + shared clusters to join: nearby when no filter,
+  // searched (debounced) when typing.
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
     const q = filter.trim();
     const t = setTimeout(() => {
       fetch(`/api/cat-entries/${entryId}/clusters${q ? `?q=${encodeURIComponent(q)}` : ""}`)
-        .then((r) => (r.ok ? r.json() : { clusters: [] }))
-        .then((d: { clusters?: JoinableCluster[] }) => {
-          if (!cancelled) setClusters(d.clusters ?? []);
+        .then((r) => (r.ok ? r.json() : { clusters: [], sightings: [] }))
+        .then((d: { clusters?: JoinableCluster[]; sightings?: JoinableSighting[] }) => {
+          if (!cancelled) {
+            setClusters(d.clusters ?? []);
+            setSightings(d.sightings ?? []);
+          }
         })
         .catch(() => {});
     }, q ? 300 : 0);
@@ -130,7 +143,10 @@ export function CatMatcher({ entryId, isOwner }: { entryId: string; isOwner: boo
   }
 
   const suggestedCatIds = new Set(suggestions.map((s) => s.catId).filter(Boolean));
+  const suggestedEntryIds = new Set(suggestions.map((s) => s.entryId).filter(Boolean));
   const manualCats = myCats.filter((c) => !suggestedCatIds.has(c.id));
+  // Bare sightings already shown as embedding suggestions don't need a second row.
+  const manualSightings = sightings.filter((s) => !suggestedEntryIds.has(s.id));
   const needle = filter.trim().toLowerCase();
   const filtered = needle
     ? manualCats.filter((c) => (c.displayName ?? "").toLowerCase().includes(needle))
@@ -206,6 +222,28 @@ export function CatMatcher({ entryId, isOwner }: { entryId: string; isOwner: boo
               />
             );
           })}
+        </div>
+      )}
+
+      {manualSightings.length > 0 && (
+        <div className="pt-3">
+          <p className="pb-2 text-[11px] font-medium uppercase tracking-wide text-muted/70">{t("matchYourSightings")}</p>
+          <div className="flex max-h-72 flex-col gap-2 overflow-y-auto">
+            {manualSightings.map((s) => {
+              const key = `sighting:${s.id}`;
+              return (
+                <MatchRow
+                  key={key}
+                  cover={s.coverThumbKey ?? s.coverPhotoKey}
+                  title={s.name ?? t("untitled")}
+                  subtitle={s.distanceKm != null ? t("clusterDistance", { km: s.distanceKm.toFixed(1) }) : t("suggestYourSighting")}
+                  immediate={isOwner}
+                  state={states[key] ?? "idle"}
+                  onAction={() => link({ targetEntryId: s.id }, key)}
+                />
+              );
+            })}
+          </div>
         </div>
       )}
 
