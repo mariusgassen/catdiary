@@ -311,6 +311,83 @@ export async function listJoinableClusters(
     .map((s) => ({ ...s, distanceKm: distById.get(s.id) ?? null }));
 }
 
+export type JoinableSighting = {
+  id: string; // the bare sighting's entry id
+  name: string | null;
+  coverPhotoKey: string | null;
+  coverThumbKey: string | null;
+  distanceKm: number | null;
+};
+
+/**
+ * The viewer's *own* bare sightings (un-profiled `CatEntry`s, `catId == null`)
+ * they could link this sighting to — so "have you seen this cat before?" can be
+ * answered by picking one of your existing sightings, not only by claiming a cat
+ * you own. Scoped the same way as `listJoinableClusters`: with a query `q`,
+ * matched by name; otherwise, when the sighting *is* geotagged, restricted to
+ * sightings within `MAX_LINK_KM` (the boundary linking enforces), closest first.
+ * Excludes the on-screen sighting itself.
+ */
+export async function listJoinableOwnSightings(
+  entryId: string,
+  viewerId: string | null,
+  q?: string,
+): Promise<JoinableSighting[]> {
+  if (!viewerId) return [];
+  const entry = await db.catEntry.findUnique({
+    where: { id: entryId },
+    select: { ownerId: true, latitude: true, longitude: true },
+  });
+  if (!entry) return [];
+  if (!(await canViewCatEntry(viewerId, entry.ownerId))) return [];
+
+  const trimmed = q?.trim();
+  const geotagged = entry.latitude != null && entry.longitude != null;
+  if (!trimmed && !geotagged) return []; // no coordinates and no search term — nothing to scope by
+
+  const candidates = await db.catEntry.findMany({
+    where: {
+      ownerId: viewerId,
+      catId: null,
+      id: { not: entryId },
+      ...(trimmed ? { name: { contains: trimmed, mode: "insensitive" } } : {}),
+    },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      name: true,
+      latitude: true,
+      longitude: true,
+      photos: { orderBy: { position: "asc" }, take: 1, select: { photoKey: true, thumbKey: true } },
+    },
+    take: 200,
+  });
+
+  const mapped = candidates.map((c) => ({
+    id: c.id,
+    name: c.name,
+    coverPhotoKey: c.photos[0]?.photoKey ?? null,
+    coverThumbKey: c.photos[0]?.thumbKey ?? null,
+    distanceKm:
+      geotagged && c.latitude != null && c.longitude != null
+        ? haversineKm(entry.latitude!, entry.longitude!, c.latitude, c.longitude)
+        : null,
+  }));
+
+  if (trimmed) {
+    // Name search: matches in any location (the fallback when the sighting has
+    // no coordinates), closest first when distances are known.
+    return mapped
+      .sort((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity))
+      .slice(0, 8);
+  }
+  // Geotagged, no query: only sightings within the link radius, closest first.
+  return mapped
+    .filter((s) => s.distanceKm != null && s.distanceKm <= MAX_LINK_KM)
+    .sort((a, b) => a.distanceKm! - b.distanceKm!)
+    .slice(0, 8);
+}
+
 /** Claim an *ownerless* cat as your pet — you become its owner. */
 export async function claimCat(catId: string, userId: string): Promise<CatSummary | null> {
   const cat = await db.cat.findUnique({ where: { id: catId }, select: { ownerId: true } });

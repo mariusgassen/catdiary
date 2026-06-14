@@ -315,10 +315,15 @@ near-term, tactical roadmap and what's already shipped.
   consent — both ownerless (communal), or folding into your own claimed cat only
   when every moved sighting is yours; otherwise it falls back to moving the one
   sighting with approval. For **street cats**, the matcher also offers ownerless
-  **shared clusters to join** (`listJoinableClusters`, `GET /api/cat-entries/[id]/clusters?q=`):
-  geotagged sightings see clusters within `MAX_LINK_KM` (closest first), and the
-  filter box doubles as a name search (the fallback when a sighting has no
-  coordinates). A **distance boundary** backs this up server-side: linking that
+  **shared clusters to join** (`listJoinableClusters`, `GET /api/cat-entries/[id]/clusters?q=`)
+  **and the viewer's own nearby/searched bare sightings** (`listJoinableOwnSightings`,
+  returned as `sightings` from the same endpoint) — so "have you seen this cat?"
+  on *anyone's* sighting can be answered by picking one of your own sightings,
+  not only by claiming a cat you own (this is why the prompt on someone else's
+  sighting reads "Have you seen this cat?" rather than "Is this one of your
+  cats?"). Both: geotagged sightings see candidates within `MAX_LINK_KM`
+  (closest first), and the filter box doubles as a name search (the fallback when
+  a sighting has no coordinates). A **distance boundary** backs this up server-side: linking that
   forms or grows an *ownerless* cluster is rejected (`CatLinkTooFarError` → 422
   `TOO_FAR`) when the sighting is more than `MAX_LINK_KM` from the cluster's
   nearest geotagged sighting — claimed pets are exempt, and missing coordinates
