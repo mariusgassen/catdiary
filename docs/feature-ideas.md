@@ -151,15 +151,19 @@ section builds on. The lean MVP has landed:
   metadata**, and welfare **status flags** below — both hang off this `Cat`
   entity now that it exists (per-cat re-ID has shipped).
 
-### ✅ Metadata (chipped, vaccinated, …) — **yes, scoped to owned cats; it's a record book**
+### ✅ Metadata (chipped, vaccinated, …) — **SHIPPED, scoped to owned cats; it's a record book**
 A field journal *is* a record book. For owned cats, structured care metadata is
 squarely on-brand and genuinely useful:
 - On the `Cat` entity (not on every sighting): microchip ID, neutered/spayed,
-  vaccination dates, birthday, weight log, vet notes, allergies.
-- Quietly powerful: vaccination/vet **reminders** (re-uses the existing
-  notification + web-push plumbing).
-- Privacy: care data is private by default; owner chooses what (if anything) is
-  visible.
+  birthday, vet notes, allergies, plus a vaccination history and a weight log
+  (`CatVaccination`/`CatWeightEntry`, each a one-to-many off `Cat`).
+- Privacy: care data is private by default (`Cat.carePublic`); the owner
+  opts in to make it visible to anyone who can already see the cat. Editable
+  from `<CatForm>` (scalar fields + the public toggle); vaccination/weight
+  add-and-delete lives in `<CatCareRecord>` on the cat's own page
+  (`GET/PATCH /api/cats/[id]/care`, `/vaccinations`, `/weight`).
+- Still open: vaccination/vet **reminders** (would re-use the existing
+  notification + web-push plumbing) and a weight-trend chart.
 
 ### ⚠️ For adoption / for sitting — **yes, but as a *status flag*, hard-walled against becoming a marketplace**
 The user's own guardrail is correct and load-bearing: **this must not become a
@@ -257,7 +261,10 @@ Naming these protects the identity better than any feature list:
 4. ~~**Re-identification ("same cat?")**~~ (✅ MVP shipped) — the long-term
    defensible identity; "might this be cat X?" suggestions + cross-person link
    approval now ship on top of the embeddings and the `Cat` entity.
-5. **Lost & Found / welfare flags** — high-impact, but only after moderation and
+5. ~~**Care metadata** (microchip, neuter status, birthday, vet notes,
+   allergies, vaccinations, weight log)~~ (✅ shipped) — vaccination/vet
+   reminders remain open as a follow-up.
+6. **Lost & Found / welfare flags** — high-impact, but only after moderation and
    the `Cat` entity are in place (the latter now exists).
 
 ---

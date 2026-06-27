@@ -328,6 +328,25 @@ near-term, tactical roadmap and what's already shipped.
   `TOO_FAR`) when the sighting is more than `MAX_LINK_KM` from the cluster's
   nearest geotagged sighting — claimed pets are exempt, and missing coordinates
   skip the check
+- **Care metadata (a record book for owned cats)**: structured pet metadata on
+  the `Cat` entity — microchip ID, neutered/spayed, birthday, vet notes,
+  allergies — plus a vaccination history and a weight log
+  (`CatVaccination`/`CatWeightEntry`, each one-to-many off `Cat`, cascade-deleted
+  with it). Private by default: `Cat.carePublic` (false by default) gates
+  visibility for anyone but the owner, who always sees their own record;
+  `lib/catCare.ts` is the business logic (`getCatCareRecord`,
+  `listVaccinations`/`listWeightEntries`, `updateCatCare`, `addVaccination`/
+  `deleteVaccination`, `addWeightEntry`/`deleteWeightEntry`), reusing
+  `CatNotFoundError`/`CatForbiddenError` from `lib/cats.ts`. API:
+  `GET/PATCH /api/cats/[id]/care`, `GET/POST /api/cats/[id]/vaccinations` +
+  `DELETE /api/cats/[id]/vaccinations/[vid]`, `GET/POST /api/cats/[id]/weight` +
+  `DELETE /api/cats/[id]/weight/[wid]` — all owner-only for writes. UI: the
+  scalar fields and the `carePublic` toggle are edited in `<CatForm>` (create
+  and edit, since creating a cat there always makes you its owner); the
+  vaccination/weight lists with add-and-delete controls are a separate
+  `<CatCareRecord>` section on `/cats/[id]`, shown to the owner always and to
+  other viewers only when the record is public (and otherwise omitted
+  entirely, including when there's simply nothing in it to show)
 
 ### Capture flow improvements
 - **Photo editing** — crop, basic brightness/contrast before upload

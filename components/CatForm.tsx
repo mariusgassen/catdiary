@@ -13,10 +13,21 @@ type CatFormProps = {
     breed: string | null;
     color: string | null;
     description: string | null;
+    microchipId: string | null;
+    neutered: boolean | null;
+    birthday: string | Date | null;
+    vetNotes: string | null;
+    allergies: string | null;
+    carePublic: boolean;
   };
   /** Where to return after deleting a cat (the owner's profile). */
   ownerProfileHref?: string;
 };
+
+function toDateInputValue(value: string | Date | null | undefined): string {
+  if (!value) return "";
+  return new Date(value).toISOString().slice(0, 10);
+}
 
 /*
  * Mobile-style sheet to create or edit a cat profile — mirrors the entry edit
@@ -31,6 +42,14 @@ export function CatForm({ cat, ownerProfileHref }: CatFormProps) {
   const [breed, setBreed] = useState(cat?.breed ?? "");
   const [color, setColor] = useState(cat?.color ?? "");
   const [description, setDescription] = useState(cat?.description ?? "");
+  const [microchipId, setMicrochipId] = useState(cat?.microchipId ?? "");
+  const [neutered, setNeutered] = useState<"unknown" | "yes" | "no">(
+    cat?.neutered === true ? "yes" : cat?.neutered === false ? "no" : "unknown",
+  );
+  const [birthday, setBirthday] = useState(toDateInputValue(cat?.birthday));
+  const [vetNotes, setVetNotes] = useState(cat?.vetNotes ?? "");
+  const [allergies, setAllergies] = useState(cat?.allergies ?? "");
+  const [carePublic, setCarePublic] = useState(cat?.carePublic ?? false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -63,12 +82,30 @@ export function CatForm({ cat, ownerProfileHref }: CatFormProps) {
         setError(t("errorSave"));
         return;
       }
+      const catId = isEdit ? cat!.id : ((await res.json()).cat.id as string);
+
+      const careRes = await fetch(`/api/cats/${catId}/care`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          microchipId: microchipId.trim() || null,
+          neutered: neutered === "unknown" ? null : neutered === "yes",
+          birthday: birthday || null,
+          vetNotes: vetNotes.trim() || null,
+          allergies: allergies.trim() || null,
+          carePublic,
+        }),
+      });
+      if (!careRes.ok) {
+        setError(t("errorSave"));
+        return;
+      }
+
       if (isEdit) {
         router.back();
         router.refresh();
       } else {
-        const { cat: created } = await res.json();
-        router.replace(`/cats/${created.id}`);
+        router.replace(`/cats/${catId}`);
         router.refresh();
       }
     } finally {
@@ -153,6 +190,76 @@ export function CatForm({ cat, ownerProfileHref }: CatFormProps) {
           rows={3}
           className={`${inputClass} resize-none`}
         />
+
+        <div className="flex flex-col gap-1 border-t border-dashed border-border pt-4">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">{t("careHeading")}</h2>
+          <p className="text-xs text-muted">{t("careHint")}</p>
+        </div>
+        <input
+          placeholder={t("microchipPlaceholder")}
+          value={microchipId}
+          onChange={(e) => setMicrochipId(e.target.value)}
+          maxLength={60}
+          className={inputClass}
+        />
+        <select
+          value={neutered}
+          onChange={(e) => setNeutered(e.target.value as "unknown" | "yes" | "no")}
+          aria-label={t("neuteredLabel")}
+          className={inputClass}
+        >
+          <option value="unknown">{t("neuteredUnknown")}</option>
+          <option value="yes">{t("neuteredYes")}</option>
+          <option value="no">{t("neuteredNo")}</option>
+        </select>
+        <label className="flex flex-col gap-1 text-xs font-medium text-muted">
+          {t("birthdayLabel")}
+          <input
+            type="date"
+            value={birthday}
+            onChange={(e) => setBirthday(e.target.value)}
+            max={new Date().toISOString().slice(0, 10)}
+            className={inputClass}
+          />
+        </label>
+        <textarea
+          placeholder={t("vetNotesPlaceholder")}
+          value={vetNotes}
+          onChange={(e) => setVetNotes(e.target.value)}
+          maxLength={2000}
+          rows={2}
+          className={`${inputClass} resize-none`}
+        />
+        <textarea
+          placeholder={t("allergiesPlaceholder")}
+          value={allergies}
+          onChange={(e) => setAllergies(e.target.value)}
+          maxLength={1000}
+          rows={2}
+          className={`${inputClass} resize-none`}
+        />
+        <button
+          type="button"
+          onClick={() => setCarePublic((v) => !v)}
+          role="switch"
+          aria-checked={carePublic}
+          className="flex w-full items-center justify-between gap-3 rounded-xl border border-border bg-surface px-3 py-2.5 text-left"
+        >
+          <span className="min-w-0">
+            <span className="block text-sm font-medium">{t("carePublicLabel")}</span>
+            <span className="block text-xs text-muted">{t("carePublicHint")}</span>
+          </span>
+          <span
+            aria-hidden
+            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${carePublic ? "bg-accent" : "bg-border"}`}
+          >
+            <span
+              className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-all ${
+                carePublic ? "left-[22px]" : "left-0.5"
+              }`}
+            />
+          </span>
+        </button>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 

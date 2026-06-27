@@ -5,9 +5,11 @@ import { SquarePen, PawPrint, Home } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { getCatForViewer, listEntriesForCat, listPendingCatLinks, listCatsForOwner } from "@/lib/cats";
+import { getCatCareRecord } from "@/lib/catCare";
 import { photoUrlsFor } from "@/lib/photo-urls";
 import { CatEntryGridCard } from "@/components/CatEntryGridCard";
 import { CatLinkRequests } from "@/components/CatLinkRequests";
+import { CatCareRecord } from "@/components/CatCareRecord";
 import { ClaimCat } from "@/components/ClaimCat";
 import { BackLink } from "@/components/BackLink";
 
@@ -47,10 +49,11 @@ export default async function CatPage({ params }: Props) {
 
   const isOwner = viewerId !== null && viewerId === cat.ownerId;
   const canClaim = viewerId !== null && cat.ownerId === null;
-  const [entries, pendingLinks, myCats] = await Promise.all([
+  const [entries, pendingLinks, myCats, careRecord] = await Promise.all([
     listEntriesForCat(id, viewerId),
     isOwner && cat.ownerId ? listPendingCatLinks(id, cat.ownerId) : Promise.resolve([]),
     canClaim ? listCatsForOwner(viewerId, viewerId) : Promise.resolve([]),
+    getCatCareRecord(id, viewerId),
   ]);
   const withPhotos = entries.map((entry) => ({ ...entry, photoUrls: photoUrlsFor(entry.photos) }));
   const coverUrl = cat.coverThumbKey
@@ -116,6 +119,8 @@ export default async function CatPage({ params }: Props) {
       </header>
 
       {isOwner && pendingLinks.length > 0 && <CatLinkRequests requests={pendingLinks} />}
+
+      {careRecord && <CatCareRecord catId={cat.id} record={careRecord} isOwner={isOwner} />}
 
       {withPhotos.length === 0 ? (
         <p className="px-6 py-10 text-center text-sm text-muted">{t("noSightings")}</p>
