@@ -149,12 +149,58 @@ model Cat {
   isOwned     Boolean  @default(false) @map("is_owned") // true once claimed as someone's pet
   createdAt   DateTime @default(now()) @map("created_at")
 
+  // Care record — owner-only pet metadata, irrelevant to ownerless clusters in
+  // practice (only an owner can set it). `carePublic` defaults to false: a
+  // sighting's existence is public by design, but medical/identifying details
+  // about someone's pet are not, unless the owner opts in.
+  microchipId String?   @map("microchip_id")
+  neutered    Boolean?  @map("neutered") // null = unset/unknown, distinct from false
+  birthday    DateTime? @map("birthday") @db.Date
+  vetNotes    String?   @map("vet_notes")
+  allergies   String?
+  carePublic  Boolean   @default(false) @map("care_public") // true = care record visible to anyone who can view the cat
+
   entries       CatEntry[]
   links         CatLink[]
   notifications Notification[]
+  vaccinations  CatVaccination[]
+  weightEntries CatWeightEntry[]
 
   @@index([ownerId, createdAt])
   @@map("cats")
+}
+
+// One vaccination record on a cat's care timeline. `name` is free text (e.g.
+// "Rabies", "FVRCP") rather than an enum — vaccine naming varies too much by
+// country/vet to usefully constrain.
+model CatVaccination {
+  id        String    @id @default(cuid())
+  catId     String    @map("cat_id")
+  name      String
+  givenAt   DateTime  @map("given_at") @db.Date
+  dueAt     DateTime? @map("due_at") @db.Date // optional next-due date, for a future reminder
+  notes     String?
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  cat Cat @relation(fields: [catId], references: [id], onDelete: Cascade)
+
+  @@index([catId, givenAt])
+  @@map("cat_vaccinations")
+}
+
+// One weigh-in on a cat's weight log, for tracking trends over time.
+model CatWeightEntry {
+  id         String   @id @default(cuid())
+  catId      String   @map("cat_id")
+  weightKg   Float    @map("weight_kg")
+  measuredAt DateTime @map("measured_at") @db.Date
+  notes      String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  cat Cat @relation(fields: [catId], references: [id], onDelete: Cascade)
+
+  @@index([catId, measuredAt])
+  @@map("cat_weight_entries")
 }
 
 // A re-identification claim: a proposal that one user's sighting (`catEntry`) is
